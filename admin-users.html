@@ -1,0 +1,611 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Users & Roles | Admin Corner</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link
+        href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600&family=Outfit:wght@300;400;700&display=swap"
+        rel="stylesheet">
+    <link rel="stylesheet" href="style.css">
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <script>
+        // Premium Auth Guard for Admins
+        const checkAdminAuth = async () => {
+            const SUPABASE_URL = 'https://aobwkcjfhbruihkandlg.supabase.co';
+            const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImFvYndrY2pmaGJydWloa2FuZGxnIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzIwMjE1MjAsImV4cCI6MjA4NzU5NzUyMH0.V7OdMoiiDuXIMOdoUDLlUMjdavSjObHpajb2gHh0E38';
+            const tempSupabase = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+            const { data: { session } } = await tempSupabase.auth.getSession();
+
+            if (!session) {
+                window.location.replace('index.html');
+                return;
+            }
+
+            const { data: userData } = await tempSupabase.from('Access').select('role').eq('email_id', session.user.email).single();
+            if (!userData || userData.role !== 'Super admin') {
+                window.location.replace('dashboard.html');
+            } else {
+                document.body.style.display = 'block';
+            }
+        };
+        checkAdminAuth();
+    </script>
+    <style>
+        body {
+            display: none;
+        }
+
+        .admin-page-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 2rem;
+        }
+
+        .users-table-container {
+            background: var(--glass-bg);
+            border: 1px solid var(--glass-border);
+            border-radius: 1.5rem;
+            overflow: hidden;
+            backdrop-filter: blur(10px);
+        }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            text-align: left;
+        }
+
+        th {
+            background: rgba(255, 255, 255, 0.02);
+            padding: 1.25rem 1.5rem;
+            font-size: 0.8rem;
+            font-weight: 700;
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+            color: var(--text-secondary);
+            border-bottom: 1px solid var(--glass-border);
+        }
+
+        td {
+            padding: 1.25rem 1.5rem;
+            font-size: 0.95rem;
+            color: var(--text-primary);
+            border-bottom: 1px solid var(--glass-border);
+        }
+
+        tr:last-child td {
+            border-bottom: none;
+        }
+
+        .role-badge {
+            padding: 0.4rem 0.8rem;
+            border-radius: 2rem;
+            font-size: 0.75rem;
+            font-weight: 600;
+            background: rgba(56, 189, 248, 0.1);
+            color: var(--accent-color);
+            border: 1px solid rgba(56, 189, 248, 0.2);
+        }
+
+        .btn-add {
+            background: var(--accent-color);
+            color: #000;
+            border: none;
+            padding: 0.75rem 1.5rem;
+            border-radius: 0.75rem;
+            font-weight: 600;
+            cursor: pointer;
+            font-family: 'Outfit', sans-serif;
+            transition: all 0.2s ease;
+        }
+
+        .btn-add:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 4px 12px rgba(56, 189, 248, 0.3);
+        }
+    </style>
+</head>
+
+<body>
+    <div class="dashboard-wrapper">
+        <header class="top-header">
+            <div class="header-left">
+                <div class="sidebar-logo">DBMCI One Mentorship</div>
+            </div>
+            <div class="header-actions">
+                <div class="user-profile" id="user-profile-btn">
+                    <div class="avatar">G</div>
+                    <div class="profile-info">
+                        <span class="name">Gourav</span>
+                        <span class="role">Super admin</span>
+                    </div>
+                    <div class="profile-dropdown">
+                        <a href="#" class="dropdown-item" id="open-profile-btn">
+                            <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24"
+                                fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"
+                                stroke-linejoin="round">
+                                <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"></path>
+                                <circle cx="12" cy="7" r="4"></circle>
+                            </svg>
+                            My Profile
+                        </a>
+                        <div class="dropdown-divider"></div>
+                        <a href="#" id="logout-btn" class="dropdown-item logout">
+                            <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24"
+                                fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"
+                                stroke-linejoin="round">
+                                <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"></path>
+                                <polyline points="16 17 21 12 16 7"></polyline>
+                                <line x1="21" y1="12" x2="9" y2="12"></line>
+                            </svg>
+                            Logout
+                        </a>
+                    </div>
+                </div>
+            </div>
+        </header>
+        <div class="dashboard-container">
+            <aside class="sidebar">
+                <nav class="sidebar-nav">
+                    <div class="nav-group">Main Menu</div>
+                    <a href="dashboard.html" class="nav-item">Homepage</a>
+                    <a href="#" class="nav-item">Book a Session</a>
+                    <a href="#" class="nav-item">History</a>
+
+                    <div class="admin-only" id="admin-section" style="display: block;">
+                        <div class="nav-group">Admin Corner</div>
+                        <a href="admin-users.html" class="nav-item active">Users & Roles</a>
+                    </div>
+                </nav>
+            </aside>
+            <main class="dashboard-main">
+                <div class="admin-page-header">
+                    <div>
+                        <h1>Users & Roles</h1>
+                        <p style="color: var(--text-secondary);">Manage your platform users and their permissions.</p>
+                    </div>
+                    <button class="btn-add"
+                        onclick="document.getElementById('add-user-modal').classList.add('active')">+ Add User</button>
+                </div>
+
+                <div class="users-table-container">
+                    <table id="users-table">
+                        <thead>
+                            <tr>
+                                <th>Name</th>
+                                <th>Email</th>
+                                <th>Role</th>
+                                <th>Phone</th>
+                            </tr>
+                        </thead>
+                        <tbody id="users-body">
+                            <!-- Data populated via JS -->
+                        </tbody>
+                    </table>
+                </div>
+            </main>
+        </div>
+    </div>
+
+    <!-- Enhanced Add User Modal -->
+    <div id="add-user-modal" class="modal-overlay">
+        <div class="login-card" style="max-width: 600px; padding: 2.5rem;">
+            <div class="header" style="margin-bottom: 2rem;">
+                <h2>Add Users</h2>
+                <p>Choose between manual entry or batch CSV upload</p>
+
+                <div class="tab-switcher"
+                    style="display: flex; gap: 1rem; margin-top: 1.5rem; border-bottom: 1px solid var(--glass-border); padding-bottom: 0.5rem;">
+                    <button id="tab-manual" class="tab-btn active"
+                        style="background: none; border: none; color: var(--accent-color); font-weight: 600; cursor: pointer; padding: 0.5rem 1rem; border-bottom: 2px solid var(--accent-color);">Manual
+                        Entry</button>
+                    <button id="tab-csv" class="tab-btn"
+                        style="background: none; border: none; color: var(--text-secondary); font-weight: 600; cursor: pointer; padding: 0.5rem 1rem;">CSV
+                        Upload</button>
+                </div>
+            </div>
+
+            <!-- Manual Form -->
+            <form id="add-user-form" class="tab-content">
+                <div class="input-grid" style="display: grid; grid-template-columns: 1fr 1fr; gap: 1rem;">
+                    <div class="input-group">
+                        <label>Full Name</label>
+                        <input type="text" id="add-name" required placeholder="Gourav">
+                    </div>
+                    <div class="input-group">
+                        <label>Email Address</label>
+                        <input type="email" id="add-email" required placeholder="email@example.com">
+                    </div>
+                    <div class="input-group">
+                        <label>Phone Number</label>
+                        <input type="tel" id="add-phone" required placeholder="9007996101">
+                    </div>
+                    <div class="input-group">
+                        <label>Role</label>
+                        <select id="add-role"
+                            style="background: rgba(15, 23, 42, 0.6); border: 1px solid var(--glass-border); border-radius: 0.75rem; padding: 0.875rem 1rem; color: var(--text-primary); width: 100%;">
+                            <option value="Students">Students</option>
+                            <option value="Mentor">Mentor</option>
+                            <option value="Admin">Admin</option>
+                            <option value="Academics">Academics</option>
+                            <option value="Super admin">Super admin</option>
+                        </select>
+                    </div>
+                </div>
+                <div class="input-group" style="margin-top: 1rem;">
+                    <label>Default Password</label>
+                    <div class="password-wrapper">
+                        <input type="password" id="add-password" required placeholder="Set temporary password">
+                        <button type="button" class="toggle-btn"
+                            onclick="togglePasswordVisibility('add-password', this)">
+                            <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24"
+                                fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"
+                                stroke-linejoin="round" class="eye-icon">
+                                <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"></path>
+                                <circle cx="12" cy="12" r="3"></circle>
+                            </svg>
+                        </button>
+                    </div>
+                </div>
+                <div style="display: flex; gap: 1rem; margin-top: 2rem;">
+                    <button type="button" class="login-button" style="background: rgba(255,255,255,0.05); color: #fff;"
+                        onclick="document.getElementById('add-user-modal').classList.remove('active')">Cancel</button>
+                    <button type="submit" class="login-button">Save User</button>
+                </div>
+            </form>
+
+            <!-- CSV Form -->
+            <div id="csv-upload-section" class="tab-content"
+                style="display: none; text-align: center; padding: 2rem 0;">
+                <div class="upload-area"
+                    style="border: 2px dashed var(--glass-border); border-radius: 1rem; padding: 3rem 2rem; transition: all 0.3s ease;">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="48" height="48" viewBox="0 0 24 24" fill="none"
+                        stroke="var(--accent-color)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"
+                        style="margin-bottom: 1rem;">
+                        <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path>
+                        <polyline points="17 8 12 3 7 8"></polyline>
+                        <line x1="12" y1="3" x2="12" y2="15"></line>
+                    </svg>
+                    <h3 style="margin-bottom: 0.5rem;">Upload CSV File</h3>
+                    <p style="color: var(--text-secondary); font-size: 0.9rem; margin-bottom: 1.5rem;">Format: Name,
+                        Email, Phone, Role, Password</p>
+
+                    <input type="file" id="csv-file-input" accept=".csv" style="display: none;">
+                    <button class="btn-add" onclick="document.getElementById('csv-file-input').click()">Select
+                        File</button>
+                    <div id="file-name-display"
+                        style="margin-top: 1rem; font-size: 0.9rem; color: var(--accent-color); font-weight: 600;">
+                    </div>
+                </div>
+
+                <div style="display: flex; gap: 1rem; margin-top: 2rem;">
+                    <button type="button" class="login-button" style="background: rgba(255,255,255,0.05); color: #fff;"
+                        onclick="document.getElementById('add-user-modal').classList.remove('active')">Cancel</button>
+                    <button id="process-csv-btn" class="login-button" disabled style="opacity: 0.5;">Upload &
+                        Process</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Profile & Password Modal -->
+    <div id="password-modal" class="modal-overlay">
+        <div class="login-card" style="max-width: 500px; position: relative;">
+            <button class="modal-close-btn"
+                onclick="document.getElementById('password-modal').classList.remove('active')" aria-label="Close modal">
+                <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none"
+                    stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                    <line x1="18" y1="6" x2="6" y2="18"></line>
+                    <line x1="6" y1="6" x2="18" y2="18"></line>
+                </svg>
+            </button>
+            <div class="header">
+                <h2 id="pwd-modal-title">My Profile</h2>
+                <p id="pwd-modal-desc">View your details and update your security settings.</p>
+            </div>
+            <form id="update-password-form">
+                <div class="profile-details-stack"
+                    style="display: flex; flex-direction: column; gap: 1rem; margin-bottom: 2rem;">
+                    <div class="input-group">
+                        <label>Name</label>
+                        <input type="text" id="profile-name" readonly
+                            style="opacity: 0.8; cursor: not-allowed; background: rgba(255,255,255,0.03); border: none;">
+                    </div>
+                    <div class="input-group">
+                        <label>Email ID</label>
+                        <input type="email" id="profile-email" readonly
+                            style="opacity: 0.8; cursor: not-allowed; background: rgba(255,255,255,0.03); border: none;">
+                    </div>
+                    <div class="input-group">
+                        <label>Phone Number</label>
+                        <input type="text" id="profile-phone" readonly
+                            style="opacity: 0.8; cursor: not-allowed; background: rgba(255,255,255,0.03); border: none;">
+                    </div>
+                </div>
+
+                <div class="header" style="margin: 1.5rem 0 1rem 0; text-align: left; padding: 0;">
+                    <h3 style="font-size: 1rem; color: var(--accent-color);">Change Password</h3>
+                </div>
+
+                <div class="input-group">
+                    <label>New Password</label>
+                    <div class="password-wrapper">
+                        <input type="password" id="new-password" required placeholder="••••••••">
+                        <button type="button" class="toggle-btn"
+                            onclick="togglePasswordVisibility('new-password', this)">
+                            <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24"
+                                fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"
+                                stroke-linejoin="round" class="eye-icon">
+                                <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"></path>
+                                <circle cx="12" cy="12" r="3"></circle>
+                            </svg>
+                        </button>
+                    </div>
+                </div>
+                <div class="input-group">
+                    <label>Confirm Password</label>
+                    <div class="password-wrapper">
+                        <input type="password" id="confirm-password" required placeholder="••••••••">
+                        <button type="button" class="toggle-btn"
+                            onclick="togglePasswordVisibility('confirm-password', this)">
+                            <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24"
+                                fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"
+                                stroke-linejoin="round" class="eye-icon">
+                                <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"></path>
+                                <circle cx="12" cy="12" r="3"></circle>
+                            </svg>
+                        </button>
+                    </div>
+                </div>
+
+                <div style="display: flex; gap: 1rem; margin-top: 2rem;">
+                    <button type="submit" id="update-pwd-submit" class="login-button" style="flex: 1; opacity: 0.5;"
+                        disabled>Update Password</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <script src="supabase-init.js"></script>
+    <script>
+        document.addEventListener('DOMContentLoaded', async () => {
+            const usersBody = document.getElementById('users-body');
+
+            // Initial load
+            const fetchUsers = async () => {
+                const { data, error } = await supabaseClient
+                    .from('Access')
+                    .select('*')
+                    .order('created_at', { ascending: false });
+
+                if (data) {
+                    usersBody.innerHTML = data.map(user => `
+                        <tr>
+                            <td><span style="font-weight: 600;">${user.name}</span></td>
+                            <td>${user.email_id}</td>
+                            <td><span class="role-badge">${user.role}</span></td>
+                            <td style="color: var(--text-secondary);">${user.phone_number}</td>
+                        </tr>
+                    `).join('');
+                }
+            };
+
+            await fetchUsers();
+
+            // Form submission
+            const addForm = document.getElementById('add-user-form');
+            addForm.addEventListener('submit', async (e) => {
+                e.preventDefault();
+                const btn = addForm.querySelector('button[type="submit"]');
+                btn.disabled = true;
+                btn.textContent = 'Saving...';
+
+                const newUser = {
+                    name: document.getElementById('add-name').value,
+                    email_id: document.getElementById('add-email').value,
+                    phone_number: document.getElementById('add-phone').value,
+                    role: document.getElementById('add-role').value,
+                    password: document.getElementById('add-password').value
+                };
+
+                const { error } = await supabaseClient.from('Access').insert([newUser]);
+
+                if (error) {
+                    alert('Error: ' + error.message);
+                } else {
+                    alert('User added to Access table successfully!');
+                    document.getElementById('add-user-modal').style.display = 'none';
+                    addForm.reset();
+                    await fetchUsers();
+                }
+                btn.disabled = false;
+                btn.textContent = 'Save User';
+            });
+
+            // Re-use logout
+            const logoutBtn = document.getElementById('logout-btn');
+            if (logoutBtn) {
+                logoutBtn.addEventListener('click', async (e) => {
+                    e.preventDefault();
+                    await supabaseClient.auth.signOut();
+                    window.location.replace('index.html');
+                });
+            }
+
+            // Tab Switching Logic
+            const tabManual = document.getElementById('tab-manual');
+            const tabCsv = document.getElementById('tab-csv');
+            const manualForm = document.getElementById('add-user-form');
+            const csvSection = document.getElementById('csv-upload-section');
+
+            tabManual.addEventListener('click', () => {
+                tabManual.classList.add('active');
+                tabManual.style.borderBottom = '2px solid var(--accent-color)';
+                tabManual.style.color = 'var(--accent-color)';
+                tabCsv.classList.remove('active');
+                tabCsv.style.borderBottom = 'none';
+                tabCsv.style.color = 'var(--text-secondary)';
+                manualForm.style.display = 'block';
+                csvSection.style.display = 'none';
+            });
+
+            tabCsv.addEventListener('click', () => {
+                tabCsv.classList.add('active');
+                tabCsv.style.borderBottom = '2px solid var(--accent-color)';
+                tabCsv.style.color = 'var(--accent-color)';
+                tabManual.classList.remove('active');
+                tabManual.style.borderBottom = 'none';
+                tabManual.style.color = 'var(--text-secondary)';
+                manualForm.style.display = 'none';
+                csvSection.style.display = 'block';
+            });
+
+            // CSV File Handling
+            const fileInput = document.getElementById('csv-file-input');
+            const fileNameDisplay = document.getElementById('file-name-display');
+            const processBtn = document.getElementById('process-csv-btn');
+            let parsedUsers = [];
+
+            fileInput.addEventListener('change', (e) => {
+                const file = e.target.files[0];
+                if (file) {
+                    fileNameDisplay.textContent = `Selected: ${file.name}`;
+                    const reader = new FileReader();
+                    reader.onload = (event) => {
+                        const content = event.target.result;
+                        const lines = content.split('\n');
+                        parsedUsers = lines.slice(1) // Skip header
+                            .filter(line => line.trim() !== '')
+                            .map(line => {
+                                const [name, email, phone, role, password] = line.split(',').map(s => s.trim());
+                                return {
+                                    name,
+                                    email_id: email,
+                                    phone_number: phone,
+                                    role,
+                                    password
+                                };
+                            });
+
+                        if (parsedUsers.length > 0) {
+                            processBtn.disabled = false;
+                            processBtn.style.opacity = '1';
+                            processBtn.textContent = `Upload ${parsedUsers.length} Users`;
+                        }
+                    };
+                    reader.readAsText(file);
+                }
+            });
+
+            processBtn.addEventListener('click', async () => {
+                processBtn.disabled = true;
+                processBtn.textContent = 'Processing...';
+
+                const { data, error } = await supabaseClient
+                    .from('Access')
+                    .insert(parsedUsers);
+
+                if (error) {
+                    alert('Error importing CSV: ' + error.message);
+                } else {
+                    alert(`Successfully imported ${parsedUsers.length} users!`);
+                    document.getElementById('add-user-modal').style.display = 'none';
+                    fileInput.value = '';
+                    fileNameDisplay.textContent = '';
+                    processBtn.disabled = true;
+                    processBtn.style.opacity = '0.5';
+                    await fetchUsers();
+                }
+                processBtn.textContent = 'Upload & Process';
+            });
+
+            // Profile Dropdown Toggle
+            const profileBtn = document.getElementById('user-profile-btn');
+            if (profileBtn) {
+                profileBtn.addEventListener('click', (e) => {
+                    e.stopPropagation();
+                    profileBtn.classList.toggle('active');
+                });
+            }
+            document.addEventListener('click', () => profileBtn?.classList.remove('active'));
+
+            // Open Profile Modal manually
+            document.getElementById('open-profile-btn')?.addEventListener('click', async (e) => {
+                e.preventDefault();
+
+                // Fetch current user details for the modal
+                const { data: { session } } = await supabaseClient.auth.getSession();
+                const { data: profileData } = await supabaseClient
+                    .from('Access')
+                    .select('name, phone_number, email_id')
+                    .eq('email_id', session.user.email)
+                    .single();
+
+                if (profileData) {
+                    document.getElementById('profile-name').value = profileData.name || '';
+                    document.getElementById('profile-email').value = profileData.email_id || session.user.email;
+                    document.getElementById('profile-phone').value = profileData.phone_number || '';
+                    document.getElementById('new-password').value = '';
+                    document.getElementById('confirm-password').value = '';
+                    updateSubmitState();
+                }
+
+                document.getElementById('pwd-modal-title').textContent = "My Profile";
+                document.getElementById('pwd-modal-desc').textContent = "View your details and update your security settings.";
+                document.getElementById('password-modal').classList.add('active');
+            });
+
+            // Handle Password Update in Profile Modal
+            const updatePwdForm = document.getElementById('update-password-form');
+            const newPwdInput = document.getElementById('new-password');
+            const confirmPwdInput = document.getElementById('confirm-password');
+            const submitBtn = document.getElementById('update-pwd-submit');
+
+            const updateSubmitState = () => {
+                const hasContent = newPwdInput.value.trim() !== '' && confirmPwdInput.value.trim() !== '';
+                submitBtn.disabled = !hasContent;
+                submitBtn.style.opacity = hasContent ? '1' : '0.5';
+            };
+
+            newPwdInput?.addEventListener('input', updateSubmitState);
+            confirmPwdInput?.addEventListener('input', updateSubmitState);
+
+            if (updatePwdForm) {
+                updatePwdForm.addEventListener('submit', async (e) => {
+                    e.preventDefault();
+                    const newPwd = document.getElementById('new-password').value;
+                    const confirmPwd = document.getElementById('confirm-password').value;
+
+                    if (newPwd !== confirmPwd) return alert("Passwords do not match!");
+
+                    const btn = updatePwdForm.querySelector('button[type="submit"]');
+                    btn.disabled = true;
+                    btn.textContent = 'Updating...';
+
+                    const { data: { session } } = await supabaseClient.auth.getSession();
+                    const result = await window.updatePasswordWithBio(newPwd, session.user.email);
+
+                    if (result.success) {
+                        alert('Password updated successfully!');
+                        document.getElementById('password-modal').classList.remove('active');
+                        updatePwdForm.reset();
+                    } else {
+                        alert('Error: ' + result.message);
+                    }
+                    btn.disabled = false;
+                    btn.textContent = 'Update Password';
+                });
+            }
+
+            // Logout Logic
+            // (Already handled in the top section of script)
+        });
+    </script>
+</body>
+
+</html>
