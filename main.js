@@ -17,10 +17,26 @@ document.addEventListener('DOMContentLoaded', () => {
             button.style.opacity = '0.7';
             button.disabled = true;
 
-            setTimeout(async () => {
+            const checkAndLogin = async () => {
+                // 1. Pre-check deactivation
+                const { data: preData } = await supabaseClient
+                    .from('Access')
+                    .select('is_active')
+                    .ilike('email_id', email)
+                    .single();
+
+                if (preData && preData.is_active === false) {
+                    alert('Your account has been deactivated. Send an email to care@dbmci.one in case of any queries');
+                    button.textContent = originalText;
+                    button.style.opacity = '1';
+                    button.disabled = false;
+                    return;
+                }
+
+                // 2. Auth Login
                 const { data, error } = await supabaseClient.auth.signInWithPassword({
-                    email: email,
-                    password: password,
+                    email,
+                    password
                 });
 
                 if (error) {
@@ -29,15 +45,15 @@ document.addEventListener('DOMContentLoaded', () => {
                     button.style.opacity = '1';
                     button.disabled = false;
                 } else {
-                    // Check if user is active in the Access table
-                    const { data: userData } = await supabaseClient
+                    // Final confirmation check
+                    const { data: finalData } = await supabaseClient
                         .from('Access')
                         .select('is_active')
                         .ilike('email_id', data.user.email)
                         .single();
 
-                    if (userData && userData.is_active === false) {
-                        alert('Your account is inactive. Please contact the administrator.');
+                    if (finalData && finalData.is_active === false) {
+                        alert('Your account has been deactivated. Send an email to care@dbmci.one in case of any queries');
                         await supabaseClient.auth.signOut();
                         button.textContent = originalText;
                         button.style.opacity = '1';
@@ -46,15 +62,11 @@ document.addEventListener('DOMContentLoaded', () => {
                     }
 
                     const modal = document.getElementById('success-modal');
-                    if (modal) {
-                        modal.classList.add('active');
-                    }
-
-                    setTimeout(() => {
-                        window.location.href = 'dashboard.html';
-                    }, 2000);
+                    if (modal) modal.classList.add('active');
+                    setTimeout(() => { window.location.href = 'dashboard.html'; }, 2000);
                 }
-            }, 500);
+            };
+            checkAndLogin();
         });
     }
 

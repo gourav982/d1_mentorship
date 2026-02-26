@@ -20,7 +20,8 @@ document.addEventListener('DOMContentLoaded', async () => {
         // Double check status - kick out if inactive
         if (userData.is_active === false) {
             await supabaseClient.auth.signOut();
-            window.location.replace('index.html?error=inactive');
+            alert('Your account has been deactivated. Send an email to care@dbmci.one in case of any queries');
+            window.location.replace('index.html');
             return;
         }
         if (userData.name) userNameElement.textContent = userData.name;
