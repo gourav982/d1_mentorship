@@ -33,12 +33,11 @@ document.addEventListener('DOMContentLoaded', () => {
                         return;
                     }
 
-                    // 2. Strict Status Check from NEW table
-                    const userEmail = data.user.email;
+                    // 2. Strict Status Check from NEW table (using UUID)
                     const { data: statusData, error: dbError } = await window.supabaseClient
                         .from('User_Status')
                         .select('is_active')
-                        .ilike('email_id', userEmail)
+                        .eq('user_id', data.user.id)
                         .single();
 
                     // If user is deactivated

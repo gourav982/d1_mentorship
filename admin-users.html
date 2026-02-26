@@ -621,27 +621,26 @@
             if (menu) menu.classList.toggle('active');
         };
 
-        window.deactivateUser = async (email, currentIsActive) => {
+        window.deactivateUser = async (userId, currentIsActive) => {
             const newStatus = !currentIsActive;
             const action = newStatus ? 'activate' : 'deactivate';
-            const emailToUse = (email || '').trim();
 
-            if (confirm(`Are you sure you want to ${action} ${emailToUse}?`)) {
+            if (confirm(`Are you sure you want to ${action} this user?`)) {
                 try {
-                    // Update the status in the dedicated User_Status table
+                    // Update the status using the secure UUID
                     const { data, error } = await window.supabaseClient
                         .from('User_Status')
                         .update({ is_active: newStatus })
-                        .ilike('email_id', emailToUse)
+                        .eq('user_id', userId)
                         .select();
 
                     if (error) throw error;
 
                     if (!data || data.length === 0) {
-                        throw new Error('Verification failed: User status record not found in Secure table.');
+                        throw new Error('Verification failed: Security record not found.');
                     }
 
-                    alert(`User status changed successfully!`);
+                    alert(`Status updated successfully.`);
                     if (window.refreshUsers) await window.refreshUsers();
                     else window.location.reload();
 
@@ -745,7 +744,8 @@
                                     Reset Password
                                 </button>
                                 <div class="dropdown-divider" style="margin: 0.25rem 0;"></div>
-                                <button class="action-menu-item ${user.is_active !== false ? 'danger' : ''}" onclick="deactivateUser('${user.email_id}', ${user.is_active !== false})">
+                                <button class="action-menu-item ${user.is_active !== false ? 'danger' : ''}" 
+                                        onclick="deactivateUser('${user.user_id}', ${user.is_active !== false})">
                                     <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M18.36 6.64a9 9 0 1 1-12.73 0"></path><line x1="12" y1="2" x2="12" y2="12"></line></svg>
                                     ${user.is_active !== false ? 'Deactivate' : 'Activate'} User
                                 </button>
@@ -756,7 +756,7 @@
             };
 
             const fetchUsers = async () => {
-                // Fetch joined data: Access + User_Status
+                // Fetch joined data using UUID relationship
                 const { data, error } = await supabaseClient
                     .from('Access')
                     .select('*, User_Status(is_active)')
@@ -768,7 +768,6 @@
                 }
 
                 if (data) {
-                    // Flatten the joined data for the UI
                     allUsers = data.map(u => ({
                         ...u,
                         is_active: u.User_Status ? u.User_Status.is_active : true
@@ -822,16 +821,14 @@
                 });
 
                 if (authError) {
-                    // If user exists in Auth but not in DB, we continue to try inserting in DB
-                    if (authError.message.includes('already registered')) {
-                        console.warn('User already in Auth, attempting to create DB record...');
-                    } else {
-                        alert('Authentication Error: ' + authError.message);
-                        btn.disabled = false;
-                        btn.textContent = 'Save User';
-                        return;
-                    }
+                    alert('Authentication Error: ' + authError.message);
+                    btn.disabled = false;
+                    btn.textContent = 'Save User';
+                    return;
                 }
+
+                const authId = authData.user.id;
+                newUser.user_id = authId; // Attach the UUID
 
                 // 2. Insert into Access Table
                 const { error: dbError } = await supabaseClient.from('Access').insert([newUser]);
@@ -839,9 +836,9 @@
                 if (dbError) {
                     alert('Database Error: ' + dbError.message);
                 } else {
-                    // 3. Initialize Status in the new Secure table
+                    // 3. Initialize Status in the new Secure table using UUID
                     await supabaseClient.from('User_Status').insert([{
-                        email_id: newUser.email_id,
+                        user_id: authId,
                         is_active: true
                     }]);
 
