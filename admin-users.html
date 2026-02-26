@@ -628,7 +628,7 @@
 
             if (confirm(`Are you sure you want to ${action} ${emailToUse}?`)) {
                 try {
-                    // Update and Request data back to verify it actually happened
+                    // 1. Perform Update with casing robustness
                     const { data, error } = await window.supabaseClient
                         .from('Access')
                         .update({ is_active: newStatus })
@@ -638,10 +638,10 @@
                     if (error) throw error;
 
                     if (!data || data.length === 0) {
-                        throw new Error('Verification failed: Status was not updated. This usually happens if the email is not found or RLS policies are blocking the update.');
+                        throw new Error('User record not found or update blocked by permissions.');
                     }
 
-                    alert(`User ${action}d successfully. (Verified with DB)`);
+                    alert(`User ${action}d successfully!`);
                     if (window.refreshUsers) await window.refreshUsers();
                     else window.location.reload();
 
