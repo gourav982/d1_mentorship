@@ -25,7 +25,7 @@
                 return;
             }
 
-            const { data: userData } = await tempSupabase.from('Access').select('role').eq('email_id', session.user.email).single();
+            const { data: userData } = await tempSupabase.from('Access').select('role').ilike('email_id', session.user.email).single();
             if (!userData || userData.role !== 'Super admin') {
                 window.location.replace('dashboard.html');
             } else {

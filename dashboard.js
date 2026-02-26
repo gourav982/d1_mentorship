@@ -8,30 +8,46 @@ document.addEventListener('DOMContentLoaded', async () => {
         return;
     }
 
-    // Fetch full user data including security status join
+    // Fetch profile with a robust fallback
     const userNameElement = document.querySelector('.profile-info .name');
-    const { data: userData } = await supabaseClient
+    const roleElement = document.querySelector('.profile-info .role');
+
+    // First try: UUID Match (Fastest/Safest)
+    let { data: userData, error: fetchError } = await supabaseClient
         .from('Access')
         .select('name, role, is_first_login, phone_number, email_id, User_Status(is_active)')
-        .ilike('email_id', session.user.email)
+        .eq('user_id', session.user.id)
         .single();
 
+    // Second try: Email Match (Fallback if UUID not linked yet)
+    if (!userData || fetchError) {
+        console.warn('UUID match failed, falling back to Email search...');
+        const emailSearch = await supabaseClient
+            .from('Access')
+            .select('name, role, is_first_login, phone_number, email_id, User_Status(is_active)')
+            .ilike('email_id', session.user.email)
+            .single();
+        userData = emailSearch.data;
+    }
+
     if (userData) {
-        // Double check status from the NEW secure join
-        const isActive = userData.User_Status ? userData.User_Status.is_active : true;
+        // Status check
+        const isActive = (userData.User_Status && userData.User_Status.is_active !== undefined)
+            ? userData.User_Status.is_active : true;
 
         if (isActive === false) {
             await supabaseClient.auth.signOut();
-            alert('Your account has been deactivated. Send an email to care@dbmci.one in case of any queries');
+            alert('Your account has been deactivated.');
             window.location.replace('index.html');
             return;
         }
-        if (userData.name) userNameElement.textContent = userData.name;
 
-        const roleElement = document.querySelector('.profile-info .role');
-        if (roleElement && userData.role) {
-            roleElement.textContent = userData.role;
-        }
+        // Update UI
+        if (userData.name) userNameElement.textContent = userData.name;
+        if (roleElement && userData.role) roleElement.textContent = userData.role;
+
+        // Save to global for profile modal
+        window.currentUserProfile = userData;
 
         if (userData.role === 'Super admin') {
             const adminSection = document.getElementById('admin-section');
@@ -55,9 +71,9 @@ document.addEventListener('DOMContentLoaded', async () => {
 
         // Pre-fill profile data for the modal
         const fillProfileData = () => {
-            document.getElementById('profile-name').value = userData.name || '';
+            document.getElementById('profile-name').value = userData.name || 'Not Found';
             document.getElementById('profile-email').value = userData.email_id || session.user.email;
-            document.getElementById('profile-phone').value = userData.phone_number || '';
+            document.getElementById('profile-phone').value = userData.phone_number || 'Not Added';
             document.getElementById('new-password').value = '';
             document.getElementById('confirm-password').value = '';
             updateSubmitState();
