@@ -420,6 +420,48 @@
         </div>
     </div>
 
+    <!-- Edit Role Modal -->
+    <div id="edit-role-modal" class="modal-overlay">
+        <div class="login-card" style="max-width: 400px; position: relative;">
+            <button class="modal-close-btn"
+                onclick="document.getElementById('edit-role-modal').classList.remove('active')"
+                aria-label="Close modal">
+                <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none"
+                    stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                    <line x1="18" y1="6" x2="6" y2="18"></line>
+                    <line x1="6" y1="6" x2="18" y2="18"></line>
+                </svg>
+            </button>
+            <div class="header">
+                <h2>Edit Role</h2>
+                <p>Change user permission level</p>
+            </div>
+            <form id="edit-role-form">
+                <input type="hidden" id="edit-email-id">
+                <div class="input-group">
+                    <label>Selected User</label>
+                    <div id="edit-user-display"
+                        style="padding: 0.875rem 1rem; background: rgba(255,255,255,0.03); border-radius: 0.75rem; color: var(--text-secondary); font-size: 0.9rem;">
+                    </div>
+                </div>
+                <div class="input-group" style="margin-top: 1.5rem;">
+                    <label>New Role</label>
+                    <select id="edit-role-select"
+                        style="background: rgba(15, 23, 42, 0.6); border: 1px solid var(--glass-border); border-radius: 0.75rem; padding: 0.875rem 1rem; color: var(--text-primary); width: 100%;">
+                        <option value="Students">Students</option>
+                        <option value="Mentor">Mentor</option>
+                        <option value="Admin">Admin</option>
+                        <option value="Academics">Academics</option>
+                        <option value="Super admin">Super admin</option>
+                    </select>
+                </div>
+                <div style="display: flex; gap: 1rem; margin-top: 2rem;">
+                    <button type="submit" class="login-button" style="flex: 1;">Update Role</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
     <!-- Profile & Password Modal -->
     <div id="password-modal" class="modal-overlay">
         <div class="login-card" style="max-width: 500px; position: relative;">
@@ -540,7 +582,13 @@
         };
 
         window.editRole = async (email) => {
-            alert(`Edit role for ${email} feature coming soon!`);
+            const user = allUsers.find(u => u.email_id === email);
+            if (!user) return;
+
+            document.getElementById('edit-email-id').value = email;
+            document.getElementById('edit-user-display').textContent = `${user.name} (${email})`;
+            document.getElementById('edit-role-select').value = user.role;
+            document.getElementById('edit-role-modal').classList.add('active');
         };
 
         document.addEventListener('DOMContentLoaded', async () => {
@@ -823,6 +871,38 @@
                     btn.textContent = 'Update Password';
                 });
             }
+
+            // Handle Role Update
+            const editRoleForm = document.getElementById('edit-role-form');
+            if (editRoleForm) {
+                editRoleForm.addEventListener('submit', async (e) => {
+                    e.preventDefault();
+                    const email = document.getElementById('edit-email-id').value;
+                    const newRole = document.getElementById('edit-role-select').value;
+
+                    const btn = editRoleForm.querySelector('button[type="submit"]');
+                    btn.disabled = true;
+                    btn.textContent = 'Updating...';
+
+                    const { error } = await supabaseClient
+                        .from('Access')
+                        .update({ role: newRole })
+                        .eq('email_id', email);
+
+                    if (error) {
+                        alert('Error updating role: ' + error.message);
+                    } else {
+                        alert('Role updated successfully!');
+                        document.getElementById('edit-role-modal').classList.remove('active');
+                        await window.refreshUsers(); // Helper to re-fetch
+                    }
+                    btn.disabled = false;
+                    btn.textContent = 'Update Role';
+                });
+            }
+
+            // Expose refresh function
+            window.refreshUsers = fetchUsers;
 
             // Logout Logic
             // (Already handled in the top section of script)
