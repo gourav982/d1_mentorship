@@ -597,16 +597,27 @@
         };
 
         window.resetPassword = async (email) => {
-            if (confirm(`Are you sure you want to reset password for ${email}? This will force the user to set a new password on their next login.`)) {
-                const { error } = await supabaseClient
+            if (confirm(`Are you sure you want to reset password for ${email}? This will send a secure password reset link to their email and force them to set a new password on login.`)) {
+                // 1. Send the email via Supabase Auth
+                const { error: authError } = await supabaseClient.auth.resetPasswordForEmail(email, {
+                    redirectTo: window.location.origin + '/dashboard.html',
+                });
+
+                if (authError) {
+                    alert('Error sending reset email: ' + authError.message);
+                    return;
+                }
+
+                // 2. Set the is_first_login flag to force our custom password modal locally
+                const { error: dbError } = await supabaseClient
                     .from('Access')
                     .update({ is_first_login: true })
                     .eq('email_id', email);
 
-                if (error) {
-                    alert('Error resetting password: ' + error.message);
+                if (dbError) {
+                    alert('Error updating user flag: ' + dbError.message);
                 } else {
-                    alert('Password reset successfully! User will be prompted to create a new password on login.');
+                    alert('Reset email sent successfully! The user will be prompted to set a new password when they follow the link.');
                     await window.refreshUsers();
                 }
             }
