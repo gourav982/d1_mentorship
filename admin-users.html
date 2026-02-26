@@ -583,6 +583,7 @@
 
     <script src="supabase-init.js"></script>
     <script>
+        const supabaseClient = window.supabaseClient;
         window.toggleCentreField = () => {
             // For Add Modal
             const addRole = document.getElementById('add-role')?.value;
@@ -620,19 +621,25 @@
             if (menu) menu.classList.toggle('active');
         };
 
-        window.deactivateUser = async (email, currentStatus) => {
-            const action = currentStatus === false ? 'activate' : 'deactivate';
+        window.deactivateUser = async (email, currentIsActive) => {
+            const newStatus = !currentIsActive;
+            const action = newStatus ? 'activate' : 'deactivate';
+
             if (confirm(`Are you sure you want to ${action} ${email}?`)) {
                 const { error } = await supabaseClient
                     .from('Access')
-                    .update({ is_active: currentStatus === false })
-                    .eq('email_id', email);
+                    .update({ is_active: newStatus })
+                    .ilike('email_id', email);
 
                 if (error) {
                     alert('Error: ' + error.message);
                 } else {
                     alert(`User ${action}d successfully!`);
-                    await window.refreshUsers();
+                    if (window.refreshUsers) {
+                        await window.refreshUsers();
+                    } else {
+                        location.reload(); // Fallback
+                    }
                 }
             }
         };
@@ -732,7 +739,7 @@
                                 <div class="dropdown-divider" style="margin: 0.25rem 0;"></div>
                                 <button class="action-menu-item ${user.is_active !== false ? 'danger' : ''}" onclick="deactivateUser('${user.email_id}', ${user.is_active !== false})">
                                     <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M18.36 6.64a9 9 0 1 1-12.73 0"></path><line x1="12" y1="2" x2="12" y2="12"></line></svg>
-                                    ${user.is_active !== false ? 'Deactivate User' : 'Activate User'}
+                                    ${user.is_active !== false ? 'Deactivate' : 'Activate'} User
                                 </button>
                             </div>
                         </td>
