@@ -17,58 +17,54 @@ document.addEventListener('DOMContentLoaded', () => {
             button.style.opacity = '0.7';
             button.disabled = true;
 
-            const checkAndLogin = async () => {
-                // 1. Pre-check deactivation
-                const { data: preData } = await supabaseClient
-                    .from('Access')
-                    .select('is_active')
-                    .ilike('email_id', email)
-                    .single();
+            const handleLogin = async () => {
+                try {
+                    // 1. Auth Login
+                    const { data, error } = await window.supabaseClient.auth.signInWithPassword({
+                        email: email.trim(),
+                        password: password
+                    });
 
-                if (preData && preData.is_active === false) {
-                    alert('Your account has been deactivated. Send an email to care@dbmci.one in case of any queries');
-                    button.textContent = originalText;
-                    button.style.opacity = '1';
-                    button.disabled = false;
-                    return;
-                }
-
-                // 2. Auth Login
-                const { data, error } = await supabaseClient.auth.signInWithPassword({
-                    email,
-                    password
-                });
-
-                if (error) {
-                    alert(error.message);
-                    button.textContent = originalText;
-                    button.style.opacity = '1';
-                    button.disabled = false;
-                } else {
-                    // Final confirmation check
-                    const { data: finalData } = await supabaseClient
-                        .from('Access')
-                        .select('is_active')
-                        .ilike('email_id', data.user.email)
-                        .single();
-
-                    if (finalData && finalData.is_active === false) {
-                        alert('Your account has been deactivated. Send an email to care@dbmci.one in case of any queries');
-                        await supabaseClient.auth.signOut();
+                    if (error) {
+                        alert(error.message);
                         button.textContent = originalText;
                         button.style.opacity = '1';
                         button.disabled = false;
                         return;
                     }
 
+                    // 2. Check deactivation status strictly
+                    const { data: userData } = await window.supabaseClient
+                        .from('Access')
+                        .select('is_active')
+                        .ilike('email_id', data.user.email)
+                        .single();
+
+                    if (userData && userData.is_active === false) {
+                        alert('Your account has been deactivated. Send an email to care@dbmci.one in case of any queries');
+                        await window.supabaseClient.auth.signOut();
+                        button.textContent = originalText;
+                        button.style.opacity = '1';
+                        button.disabled = false;
+                        return;
+                    }
+
+                    // 3. Successmodal - ONLY if active
                     const modal = document.getElementById('success-modal');
                     if (modal) modal.classList.add('active');
-                    setTimeout(() => { window.location.href = 'dashboard.html'; }, 2000);
+
+                    setTimeout(() => {
+                        window.location.href = 'dashboard.html';
+                    }, 2000);
+                } catch (err) {
+                    console.error('Login error:', err);
+                    alert('An error occurred. Please try again.');
+                    button.textContent = originalText;
+                    button.style.opacity = '1';
+                    button.disabled = false;
                 }
             };
-            checkAndLogin();
+            handleLogin();
         });
     }
-
-
 });
