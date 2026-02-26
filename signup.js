@@ -40,7 +40,8 @@ document.addEventListener('DOMContentLoaded', () => {
                         phone_number: phone,
                         password: password,
                         role: 'Students',
-                        is_first_login: false
+                        is_first_login: false,
+                        is_active: true
                     }
                 ]);
 
