@@ -817,8 +817,14 @@
                     return;
                 }
 
-                // 1. Create Auth Account
-                const { data: authData, error: authError } = await supabaseClient.auth.signUp({
+                // 1. Create Auth Account using a "Ghost Client" (Prevents session hijacking)
+                const ghostSupabase = supabase.createClient(
+                    'https://aobwkcjfhbruihkandlg.supabase.co',
+                    'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImFvYndrY2pmaGJydWloa2FuZGxnIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzIwMjE1MjAsImV4cCI6MjA4NzU5NzUyMH0.V7OdMoiiDuXIMOdoUDLlUMjdavSjObHpajb2gHh0E38',
+                    { auth: { persistSession: false } }
+                );
+
+                const { data: authData, error: authError } = await ghostSupabase.auth.signUp({
                     email: newUser.email_id,
                     password: newUser.password,
                 });
