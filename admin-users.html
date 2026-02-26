@@ -790,12 +790,26 @@
                     return;
                 }
 
-                const { error } = await supabaseClient.from('Access').insert([newUser]);
+                // 1. Create Auth Account
+                const { error: authError } = await supabaseClient.auth.signUp({
+                    email: newUser.email_id,
+                    password: newUser.password,
+                });
 
-                if (error) {
-                    alert('Error: ' + error.message);
+                if (authError) {
+                    alert('Authentication Error: ' + authError.message);
+                    btn.disabled = false;
+                    btn.textContent = 'Save User';
+                    return;
+                }
+
+                // 2. Insert into Access Table
+                const { error: dbError } = await supabaseClient.from('Access').insert([newUser]);
+
+                if (dbError) {
+                    alert('Database Error: ' + dbError.message);
                 } else {
-                    alert('User added to Access table successfully!');
+                    alert('User created successfully in both Auth and Database!');
                     document.getElementById('add-user-modal').style.display = 'none';
                     addForm.reset();
                     await fetchUsers();
@@ -886,14 +900,41 @@
                 processBtn.disabled = true;
                 processBtn.textContent = 'Processing...';
 
-                const { data, error } = await supabaseClient
-                    .from('Access')
-                    .insert(parsedUsers);
+                let successCount = 0;
+                let errorCount = 0;
 
-                if (error) {
-                    alert('Error importing CSV: ' + error.message);
-                } else {
-                    alert(`Successfully imported ${parsedUsers.length} users!`);
+                // For bulk upload, we must create Auth accounts for all.
+                // We do this sequentially to avoid rate limits and session issues.
+                for (const user of parsedUsers) {
+                    try {
+                        // Create Auth Account
+                        const { error: authErr } = await supabaseClient.auth.signUp({
+                            email: user.email_id,
+                            password: user.password
+                        });
+
+                        if (authErr) {
+                            console.error(`Auth failed for ${user.email_id}:`, authErr.message);
+                            errorCount++;
+                            continue;
+                        }
+
+                        // Create Access Record
+                        const { error: dbErr } = await supabaseClient.from('Access').insert([user]);
+                        if (dbErr) {
+                            console.error(`DB failed for ${user.email_id}:`, dbErr.message);
+                            errorCount++;
+                        } else {
+                            successCount++;
+                        }
+                    } catch (err) {
+                        errorCount++;
+                    }
+                }
+
+                alert(`Process Finished!\nSuccess: ${successCount}\nErrors: ${errorCount}`);
+
+                if (successCount > 0) {
                     document.getElementById('add-user-modal').style.display = 'none';
                     fileInput.value = '';
                     fileNameDisplay.textContent = '';
@@ -901,7 +942,9 @@
                     processBtn.style.opacity = '0.5';
                     await fetchUsers();
                 }
+
                 processBtn.textContent = 'Upload & Process';
+                processBtn.disabled = errorCount === 0;
             });
 
             // Profile Dropdown Toggle

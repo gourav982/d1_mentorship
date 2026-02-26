@@ -29,15 +29,30 @@ document.addEventListener('DOMContentLoaded', () => {
                     button.style.opacity = '1';
                     button.disabled = false;
                 } else {
+                    // Check if user is active in the Access table
+                    const { data: userData } = await supabaseClient
+                        .from('Access')
+                        .select('is_active')
+                        .eq('email_id', data.user.email)
+                        .single();
+
+                    if (userData && userData.is_active === false) {
+                        alert('Your account is inactive. Please contact the administrator.');
+                        await supabaseClient.auth.signOut();
+                        button.textContent = originalText;
+                        button.style.opacity = '1';
+                        button.disabled = false;
+                        return;
+                    }
+
                     const modal = document.getElementById('success-modal');
                     if (modal) {
                         modal.classList.add('active');
                     }
 
-                    // Redirect after 3 seconds
                     setTimeout(() => {
                         window.location.href = 'dashboard.html';
-                    }, 3000);
+                    }, 2000);
                 }
             }, 500);
         });
