@@ -33,7 +33,7 @@ document.addEventListener('DOMContentLoaded', () => {
                     const { data: userData } = await supabaseClient
                         .from('Access')
                         .select('is_active')
-                        .eq('email_id', data.user.email)
+                        .ilike('email_id', data.user.email)
                         .single();
 
                     if (userData && userData.is_active === false) {

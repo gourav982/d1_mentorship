@@ -12,11 +12,17 @@ document.addEventListener('DOMContentLoaded', async () => {
     const userNameElement = document.querySelector('.profile-info .name');
     const { data: userData } = await supabaseClient
         .from('Access')
-        .select('name, role, is_first_login, phone_number, email_id')
-        .eq('email_id', session.user.email)
+        .select('name, role, is_first_login, phone_number, email_id, is_active')
+        .ilike('email_id', session.user.email)
         .single();
 
     if (userData) {
+        // Double check status - kick out if inactive
+        if (userData.is_active === false) {
+            await supabaseClient.auth.signOut();
+            window.location.replace('index.html?error=inactive');
+            return;
+        }
         if (userData.name) userNameElement.textContent = userData.name;
 
         const roleElement = document.querySelector('.profile-info .role');
