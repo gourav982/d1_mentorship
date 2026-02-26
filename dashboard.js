@@ -8,29 +8,28 @@ document.addEventListener('DOMContentLoaded', async () => {
         return;
     }
 
-    // Fetch profile with a robust fallback
-    const userNameElement = document.querySelector('.profile-info .name');
-    const roleElement = document.querySelector('.profile-info .role');
+    // Fetch profile elements
+    const nameDisplay = document.getElementById('display-name');
+    const roleDisplay = document.getElementById('display-role');
+    const avatarCircle = document.getElementById('avatar-circle');
 
-    // First try: UUID Match (Fastest/Safest)
+    // 1. Fetch record by EMAIL (The most reliable source of truth currently)
     let { data: userData, error: fetchError } = await supabaseClient
         .from('Access')
-        .select('name, role, is_first_login, phone_number, email_id, User_Status(is_active)')
-        .eq('user_id', session.user.id)
+        .select('*, User_Status(is_active)')
+        .ilike('email_id', session.user.email)
         .single();
 
-    // Second try: Email Match (Fallback if UUID not linked yet)
-    if (!userData || fetchError) {
-        console.warn('UUID match failed, falling back to Email search...');
-        const emailSearch = await supabaseClient
-            .from('Access')
-            .select('name, role, is_first_login, phone_number, email_id, User_Status(is_active)')
-            .ilike('email_id', session.user.email)
-            .single();
-        userData = emailSearch.data;
-    }
-
     if (userData) {
+        // CORE FIX: Synchronize UUID if it's missing in the DB
+        if (!userData.user_id) {
+            console.log('🔄 Core Sync: Linking UUID to profile...');
+            await supabaseClient
+                .from('Access')
+                .update({ user_id: session.user.id })
+                .eq('email_id', userData.email_id);
+        }
+
         // Status check
         const isActive = (userData.User_Status && userData.User_Status.is_active !== undefined)
             ? userData.User_Status.is_active : true;
@@ -42,17 +41,24 @@ document.addEventListener('DOMContentLoaded', async () => {
             return;
         }
 
-        // Update UI
-        if (userData.name) userNameElement.textContent = userData.name;
-        if (roleElement && userData.role) roleElement.textContent = userData.role;
-
-        // Save to global for profile modal
-        window.currentUserProfile = userData;
+        // Update UI robustly
+        if (userData.name) {
+            nameDisplay.textContent = userData.name;
+            avatarCircle.textContent = userData.name.charAt(0).toUpperCase();
+        }
+        if (userData.role) {
+            roleDisplay.textContent = userData.role;
+        } else {
+            roleDisplay.textContent = 'User'; // Generic fallback, not 'Student'
+        }
 
         if (userData.role === 'Super admin') {
             const adminSection = document.getElementById('admin-section');
             if (adminSection) adminSection.style.display = 'block';
         }
+
+        // Initialize profile modal data
+        window.currentUserProfile = userData;
 
         const newPwdInput = document.getElementById('new-password');
         const confirmPwdInput = document.getElementById('confirm-password');
@@ -69,7 +75,6 @@ document.addEventListener('DOMContentLoaded', async () => {
         newPwdInput?.addEventListener('input', updateSubmitState);
         confirmPwdInput?.addEventListener('input', updateSubmitState);
 
-        // Pre-fill profile data for the modal
         const fillProfileData = () => {
             document.getElementById('profile-name').value = userData.name || 'Not Found';
             document.getElementById('profile-email').value = userData.email_id || session.user.email;
