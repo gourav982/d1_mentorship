@@ -194,6 +194,7 @@ input::placeholder {
 
 .form-footer span {
     color: var(--text-secondary);
+    white-space: nowrap;
 }
 
 /* Dashboard Layout Refactored */
