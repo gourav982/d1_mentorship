@@ -50,8 +50,8 @@
             background: var(--glass-bg);
             border: 1px solid var(--glass-border);
             border-radius: 1.5rem;
-            overflow: hidden;
             backdrop-filter: blur(10px);
+            /* Removed overflow: hidden to allow dropdown menus to show */
         }
 
         table {
@@ -157,6 +157,7 @@
             display: flex;
             align-items: center;
             justify-content: center;
+            z-index: 5;
         }
 
         .three-dots-btn:hover {
@@ -172,9 +173,10 @@
             border: 1px solid var(--glass-border);
             border-radius: 0.75rem;
             padding: 0.5rem;
-            box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.5);
+            box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.8);
             display: none;
-            z-index: 100;
+            z-index: 1000;
+            /* Higher priority */
             width: 180px;
             text-align: left;
         }
@@ -562,7 +564,7 @@
                         <td style="color: var(--text-secondary);">${user.centre_name || '-'}</td>
                         <td class="action-cell">
                             <button class="three-dots-btn" onclick="toggleActionMenu(event, '${user.email_id}')">
-                                <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="1"></circle><circle cx="12" cy="5" r="1"></circle><circle cx="12" cy="19" r="1"></circle></svg>
+                                <svg style="pointer-events: none;" xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="1"></circle><circle cx="12" cy="5" r="1"></circle><circle cx="12" cy="19" r="1"></circle></svg>
                             </button>
                             <div class="action-menu" id="menu-${user.email_id.replace(/[@.]/g, '-')}">
                                 <button class="action-menu-item" onclick="editRole('${user.email_id}')">
