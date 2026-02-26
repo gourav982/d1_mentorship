@@ -764,15 +764,18 @@
 
                 if (error) {
                     console.error('Fetch Error:', error);
+                    alert('Database Error: ' + error.message);
                     return;
                 }
 
                 if (data) {
+                    // Mapping with fallback to 'true' if status is missing
                     allUsers = data.map(u => ({
                         ...u,
-                        is_active: u.User_Status ? u.User_Status.is_active : true
+                        is_active: (u.User_Status && u.User_Status.is_active !== undefined) ? u.User_Status.is_active : true
                     }));
                     renderUsers(allUsers);
+                    console.log('Users loaded:', allUsers.length);
                 }
             };
 
@@ -828,20 +831,27 @@
                 }
 
                 const authId = authData.user.id;
-                newUser.user_id = authId; // Attach the UUID
+                newUser.user_id = authId;
 
-                // 2. Insert into Access Table
+                // 2. Initialize Status in the new Secure table using UUID (REQUIRED FIRST)
+                const { error: statusError } = await supabaseClient.from('User_Status').insert([{
+                    user_id: authId,
+                    is_active: true
+                }]);
+
+                if (statusError) {
+                    alert('Security Status Error: ' + statusError.message);
+                    btn.disabled = false;
+                    btn.textContent = 'Save User';
+                    return;
+                }
+
+                // 3. Insert into Access Table (Now safe because User_Status exists)
                 const { error: dbError } = await supabaseClient.from('Access').insert([newUser]);
 
                 if (dbError) {
                     alert('Database Error: ' + dbError.message);
                 } else {
-                    // 3. Initialize Status in the new Secure table using UUID
-                    await supabaseClient.from('User_Status').insert([{
-                        user_id: authId,
-                        is_active: true
-                    }]);
-
                     alert('User created successfully!');
                     document.getElementById('add-user-modal').style.display = 'none';
                     addForm.reset();
