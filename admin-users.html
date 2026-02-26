@@ -832,26 +832,31 @@
 
                 const authId = authData.user.id;
                 newUser.user_id = authId;
+                console.log('✅ Auth Account Created. ID:', authId);
 
-                // 2. Initialize Status in the new Secure table using UUID (REQUIRED FIRST)
+                // 2. Initialize Status in the new Secure table using UUID
                 const { error: statusError } = await supabaseClient.from('User_Status').insert([{
                     user_id: authId,
                     is_active: true
                 }]);
 
                 if (statusError) {
-                    alert('Security Status Error: ' + statusError.message);
+                    console.error('❌ Status Insert Failed:', statusError);
+                    alert('Security Status Error: ' + statusError.message + '\n\nPlease ensure you ran the latest RLS SQL script.');
                     btn.disabled = false;
                     btn.textContent = 'Save User';
                     return;
                 }
+                console.log('✅ Security Status Initialized.');
 
-                // 3. Insert into Access Table (Now safe because User_Status exists)
+                // 3. Insert into Access Table
                 const { error: dbError } = await supabaseClient.from('Access').insert([newUser]);
 
                 if (dbError) {
+                    console.error('❌ Profile Insert Failed:', dbError);
                     alert('Database Error: ' + dbError.message);
                 } else {
+                    console.log('✅ User Profile Created.');
                     alert('User created successfully!');
                     document.getElementById('add-user-modal').style.display = 'none';
                     addForm.reset();
