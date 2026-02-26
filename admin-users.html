@@ -597,8 +597,18 @@
         };
 
         window.resetPassword = async (email) => {
-            if (confirm(`Send password reset instruction to ${email}?`)) {
-                alert('Reset password feature coming soon!');
+            if (confirm(`Are you sure you want to reset password for ${email}? This will force the user to set a new password on their next login.`)) {
+                const { error } = await supabaseClient
+                    .from('Access')
+                    .update({ is_first_login: true })
+                    .eq('email_id', email);
+
+                if (error) {
+                    alert('Error resetting password: ' + error.message);
+                } else {
+                    alert('Password reset successfully! User will be prompted to create a new password on login.');
+                    await window.refreshUsers();
+                }
             }
         };
 
@@ -710,7 +720,8 @@
                     phone_number: document.getElementById('add-phone').value,
                     role: document.getElementById('add-role').value,
                     password: document.getElementById('add-password').value,
-                    centre_name: document.getElementById('add-centre').value
+                    centre_name: document.getElementById('add-centre').value,
+                    is_first_login: true
                 };
 
                 if (newUser.role === 'Students' && !newUser.centre_name) {
@@ -796,7 +807,8 @@
                                     phone_number: phone,
                                     role,
                                     password,
-                                    centre_name: centre
+                                    centre_name: centre,
+                                    is_first_login: true
                                 };
                             });
 

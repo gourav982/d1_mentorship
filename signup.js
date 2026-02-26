@@ -39,7 +39,8 @@ document.addEventListener('DOMContentLoaded', () => {
                         email_id: email,
                         phone_number: phone,
                         password: password,
-                        role: 'Students'
+                        role: 'Students',
+                        is_first_login: false
                     }
                 ]);
 
