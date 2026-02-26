@@ -8,17 +8,19 @@ document.addEventListener('DOMContentLoaded', async () => {
         return;
     }
 
-    // Fetch full user data including first login flag and bio info
+    // Fetch full user data including security status join
     const userNameElement = document.querySelector('.profile-info .name');
     const { data: userData } = await supabaseClient
         .from('Access')
-        .select('name, role, is_first_login, phone_number, email_id, is_active')
+        .select('name, role, is_first_login, phone_number, email_id, User_Status(is_active)')
         .ilike('email_id', session.user.email)
         .single();
 
     if (userData) {
-        // Double check status - kick out if inactive
-        if (userData.is_active === false) {
+        // Double check status from the NEW secure join
+        const isActive = userData.User_Status ? userData.User_Status.is_active : true;
+
+        if (isActive === false) {
             await supabaseClient.auth.signOut();
             alert('Your account has been deactivated. Send an email to care@dbmci.one in case of any queries');
             window.location.replace('index.html');

@@ -628,9 +628,9 @@
 
             if (confirm(`Are you sure you want to ${action} ${emailToUse}?`)) {
                 try {
-                    // 1. Perform Update with casing robustness
+                    // Update the status in the dedicated User_Status table
                     const { data, error } = await window.supabaseClient
-                        .from('Access')
+                        .from('User_Status')
                         .update({ is_active: newStatus })
                         .ilike('email_id', emailToUse)
                         .select();
@@ -638,10 +638,10 @@
                     if (error) throw error;
 
                     if (!data || data.length === 0) {
-                        throw new Error('User record not found or update blocked by permissions.');
+                        throw new Error('Verification failed: User status record not found in Secure table.');
                     }
 
-                    alert(`User ${action}d successfully!`);
+                    alert(`User status changed successfully!`);
                     if (window.refreshUsers) await window.refreshUsers();
                     else window.location.reload();
 
@@ -756,13 +756,23 @@
             };
 
             const fetchUsers = async () => {
-                const { data } = await supabaseClient
+                // Fetch joined data: Access + User_Status
+                const { data, error } = await supabaseClient
                     .from('Access')
-                    .select('*')
+                    .select('*, User_Status(is_active)')
                     .order('created_at', { ascending: false });
 
+                if (error) {
+                    console.error('Fetch Error:', error);
+                    return;
+                }
+
                 if (data) {
-                    allUsers = data;
+                    // Flatten the joined data for the UI
+                    allUsers = data.map(u => ({
+                        ...u,
+                        is_active: u.User_Status ? u.User_Status.is_active : true
+                    }));
                     renderUsers(allUsers);
                 }
             };
@@ -829,6 +839,12 @@
                 if (dbError) {
                     alert('Database Error: ' + dbError.message);
                 } else {
+                    // 3. Initialize Status in the new Secure table
+                    await supabaseClient.from('User_Status').insert([{
+                        email_id: newUser.email_id,
+                        is_active: true
+                    }]);
+
                     alert('User created successfully!');
                     document.getElementById('add-user-modal').style.display = 'none';
                     addForm.reset();

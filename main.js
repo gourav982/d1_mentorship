@@ -33,14 +33,16 @@ document.addEventListener('DOMContentLoaded', () => {
                         return;
                     }
 
-                    // 2. Check deactivation status strictly
-                    const { data: userData } = await window.supabaseClient
-                        .from('Access')
+                    // 2. Strict Status Check from NEW table
+                    const userEmail = data.user.email;
+                    const { data: statusData, error: dbError } = await window.supabaseClient
+                        .from('User_Status')
                         .select('is_active')
-                        .ilike('email_id', data.user.email)
+                        .ilike('email_id', userEmail)
                         .single();
 
-                    if (userData && userData.is_active === false) {
+                    // If user is deactivated
+                    if (statusData && statusData.is_active === false) {
                         alert('Your account has been deactivated. Send an email to care@dbmci.one in case of any queries');
                         await window.supabaseClient.auth.signOut();
                         button.textContent = originalText;
