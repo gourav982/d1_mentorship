@@ -466,7 +466,8 @@
                     </select>
                 </div>
                 <div style="display: flex; gap: 1rem; margin-top: 2rem;">
-                    <button type="submit" class="login-button" style="flex: 1;">Update Role</button>
+                    <button type="submit" id="edit-submit-btn" class="login-button" style="flex: 1;">Update
+                        Role</button>
                 </div>
             </form>
         </div>
@@ -601,6 +602,19 @@
             }
         };
 
+        window.updateEditSubmitState = () => {
+            const role = document.getElementById('edit-role-select')?.value;
+            const centre = document.getElementById('edit-centre-select')?.value;
+            const btn = document.getElementById('edit-submit-btn');
+
+            if (btn) {
+                const isDisabled = role === 'Students' && !centre;
+                btn.disabled = isDisabled;
+                btn.style.opacity = isDisabled ? '0.5' : '1';
+                btn.style.cursor = isDisabled ? 'not-allowed' : 'pointer';
+            }
+        };
+
         window.editRole = async (email) => {
             const user = allUsers.find(u => u.email_id === email);
             if (!user) return;
@@ -611,6 +625,7 @@
             document.getElementById('edit-centre-select').value = user.centre_name || '';
 
             toggleCentreField();
+            window.updateEditSubmitState(); // Initial button state
             document.getElementById('edit-role-modal').classList.add('active');
         };
 
@@ -894,6 +909,13 @@
                     btn.textContent = 'Update Password';
                 });
             }
+
+            // Edit Role Form Listeners for Button state
+            const editRoleSelect = document.getElementById('edit-role-select');
+            const editCentreSelect = document.getElementById('edit-centre-select');
+
+            editRoleSelect?.addEventListener('change', window.updateEditSubmitState);
+            editCentreSelect?.addEventListener('change', window.updateEditSubmitState);
 
             // Handle Role Update
             const editRoleForm = document.getElementById('edit-role-form');
