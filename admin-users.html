@@ -624,22 +624,43 @@
         window.deactivateUser = async (email, currentIsActive) => {
             const newStatus = !currentIsActive;
             const action = newStatus ? 'activate' : 'deactivate';
+            const emailToUse = (email || '').trim();
 
-            if (confirm(`Are you sure you want to ${action} ${email}?`)) {
-                const { error } = await supabaseClient
-                    .from('Access')
-                    .update({ is_active: newStatus })
-                    .ilike('email_id', email);
+            if (confirm(`Are you sure you want to ${action} ${emailToUse}?`)) {
+                try {
+                    // 1. Try updating with exact match
+                    const { data: updated, error } = await window.supabaseClient
+                        .from('Access')
+                        .update({ is_active: newStatus })
+                        .eq('email_id', emailToUse)
+                        .select();
 
-                if (error) {
-                    alert('Error: ' + error.message);
-                } else {
+                    if (error) throw error;
+
+                    // 2. If no rows updated, try case-insensitive
+                    if (!updated || updated.length === 0) {
+                        const { data: retryData, error: retryError } = await window.supabaseClient
+                            .from('Access')
+                            .update({ is_active: newStatus })
+                            .ilike('email_id', emailToUse)
+                            .select();
+
+                        if (retryError) throw retryError;
+
+                        if (!retryData || retryData.length === 0) {
+                            throw new Error('User not found in database.');
+                        }
+                    }
+
                     alert(`User ${action}d successfully!`);
                     if (window.refreshUsers) {
                         await window.refreshUsers();
                     } else {
-                        location.reload(); // Fallback
+                        window.location.reload();
                     }
+                } catch (err) {
+                    console.error('Update Error:', err);
+                    alert('Error: ' + err.message);
                 }
             }
         };
