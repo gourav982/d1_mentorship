@@ -628,16 +628,23 @@
 
             if (confirm(`Are you sure you want to ${action} ${emailToUse}?`)) {
                 try {
-                    const { error } = await window.supabaseClient
+                    // Update and Request data back to verify it actually happened
+                    const { data, error } = await window.supabaseClient
                         .from('Access')
                         .update({ is_active: newStatus })
-                        .ilike('email_id', emailToUse);
+                        .ilike('email_id', emailToUse)
+                        .select();
 
                     if (error) throw error;
 
-                    alert(`Request to ${action} user processed successfully.`);
+                    if (!data || data.length === 0) {
+                        throw new Error('Verification failed: Status was not updated. This usually happens if the email is not found or RLS policies are blocking the update.');
+                    }
+
+                    alert(`User ${action}d successfully. (Verified with DB)`);
                     if (window.refreshUsers) await window.refreshUsers();
                     else window.location.reload();
+
                 } catch (err) {
                     console.error('Update Error:', err);
                     alert('Error: ' + err.message);
