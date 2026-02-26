@@ -181,6 +181,7 @@
                                 <th>Email</th>
                                 <th>Role</th>
                                 <th>Phone</th>
+                                <th>Centre Name</th>
                             </tr>
                         </thead>
                         <tbody id="users-body">
@@ -227,7 +228,7 @@
                     </div>
                     <div class="input-group">
                         <label>Role</label>
-                        <select id="add-role"
+                        <select id="add-role" onchange="toggleCentreField()"
                             style="background: rgba(15, 23, 42, 0.6); border: 1px solid var(--glass-border); border-radius: 0.75rem; padding: 0.875rem 1rem; color: var(--text-primary); width: 100%;">
                             <option value="Students">Students</option>
                             <option value="Mentor">Mentor</option>
@@ -235,6 +236,10 @@
                             <option value="Academics">Academics</option>
                             <option value="Super admin">Super admin</option>
                         </select>
+                    </div>
+                    <div class="input-group" id="centre-group">
+                        <label id="centre-label">Centre Name</label>
+                        <input type="text" id="add-centre" placeholder="e.g. South Delhi">
                     </div>
                 </div>
                 <div class="input-group" style="margin-top: 1rem;">
@@ -273,7 +278,7 @@
                     </svg>
                     <h3 style="margin-bottom: 0.5rem;">Upload CSV File</h3>
                     <p style="color: var(--text-secondary); font-size: 0.9rem; margin-bottom: 1.5rem;">Format: Name,
-                        Email, Phone, Role, Password</p>
+                        Email, Phone, Role, Password, Centre</p>
 
                     <input type="file" id="csv-file-input" accept=".csv" style="display: none;">
                     <button class="btn-add" onclick="document.getElementById('csv-file-input').click()">Select
@@ -373,7 +378,18 @@
 
     <script src="supabase-init.js"></script>
     <script>
+        window.toggleCentreField = () => {
+            const role = document.getElementById('add-role').value;
+            const label = document.getElementById('centre-label');
+            if (role === 'Students') {
+                label.innerHTML = 'Centre Name <span style="color: #ef4444;">*</span>';
+            } else {
+                label.innerHTML = 'Centre Name';
+            }
+        };
+
         document.addEventListener('DOMContentLoaded', async () => {
+            toggleCentreField(); // Initial state
             const usersBody = document.getElementById('users-body');
 
             // Initial load
@@ -390,6 +406,7 @@
                             <td>${user.email_id}</td>
                             <td><span class="role-badge">${user.role}</span></td>
                             <td style="color: var(--text-secondary);">${user.phone_number}</td>
+                            <td style="color: var(--text-secondary);">${user.centre_name || '-'}</td>
                         </tr>
                     `).join('');
                 }
@@ -410,8 +427,16 @@
                     email_id: document.getElementById('add-email').value,
                     phone_number: document.getElementById('add-phone').value,
                     role: document.getElementById('add-role').value,
-                    password: document.getElementById('add-password').value
+                    password: document.getElementById('add-password').value,
+                    centre_name: document.getElementById('add-centre').value
                 };
+
+                if (newUser.role === 'Students' && !newUser.centre_name) {
+                    alert('Centre Name is mandatory for Students');
+                    btn.disabled = false;
+                    btn.textContent = 'Save User';
+                    return;
+                }
 
                 const { error } = await supabaseClient.from('Access').insert([newUser]);
 
@@ -482,13 +507,14 @@
                         parsedUsers = lines.slice(1) // Skip header
                             .filter(line => line.trim() !== '')
                             .map(line => {
-                                const [name, email, phone, role, password] = line.split(',').map(s => s.trim());
+                                const [name, email, phone, role, password, centre] = line.split(',').map(s => s.trim());
                                 return {
                                     name,
                                     email_id: email,
                                     phone_number: phone,
                                     role,
-                                    password
+                                    password,
+                                    centre_name: centre
                                 };
                             });
 
