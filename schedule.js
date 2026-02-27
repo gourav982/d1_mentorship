@@ -135,16 +135,86 @@ document.addEventListener('DOMContentLoaded', async () => {
         currentUser = userData;
         document.body.style.display = 'block';
 
+        // 1. Success UI Update
         nameDisplay.textContent = userData.name || 'User';
         roleDisplay.textContent = userData.role || 'Member';
         avatarCircle.textContent = (userData.name || 'U').charAt(0).toUpperCase();
 
         const adminRoles = ['Super admin', 'Admin', 'Mentor', 'Academics'];
+        if (adminRoles.includes(userData.role) && adminMenuSec) {
+            adminMenuSec.style.display = 'block';
+        }
+
+        // 2. Modal Logic
+        const openModal = () => {
+            const nameInput = document.getElementById('profile-name');
+            const emailInput = document.getElementById('profile-email');
+            if (nameInput) nameInput.value = userData.name || '';
+            if (emailInput) emailInput.value = userData.email_id || '';
+            document.getElementById('password-modal') ? document.getElementById('password-modal').classList.add('active') : null;
+        };
+
+        document.getElementById('open-profile-btn')?.addEventListener('click', (e) => {
+            e.preventDefault();
+            openModal();
+        });
+
+        // 3. Force Reset if first login
+        if (userData.is_first_login) {
+            openModal();
+            const closeBtn = document.querySelector('.modal-close-btn');
+            if (closeBtn) closeBtn.style.display = 'none';
+        }
+
+        // 4. Handle Password Update
+        const updatePwdForm = document.getElementById('update-password-form');
+        const newPwdInput = document.getElementById('new-password');
+        const confirmPwdInput = document.getElementById('confirm-password');
+        const submitBtn = document.getElementById('update-pwd-submit');
+
+        const updateSubmitState = () => {
+            const hasContent = newPwdInput?.value.trim() !== '' && confirmPwdInput?.value.trim() !== '';
+            if (submitBtn) {
+                submitBtn.disabled = !hasContent;
+                submitBtn.style.opacity = hasContent ? '1' : '0.5';
+            }
+        };
+
+        newPwdInput?.addEventListener('input', updateSubmitState);
+        confirmPwdInput?.addEventListener('input', updateSubmitState);
+
+        if (updatePwdForm) {
+            updatePwdForm.addEventListener('submit', async (e) => {
+                e.preventDefault();
+                const newPwd = newPwdInput.value;
+                const confirmPwd = confirmPwdInput.value;
+
+                if (newPwd !== confirmPwd) {
+                    alert("Passwords do not match!");
+                    return;
+                }
+
+                if (submitBtn) {
+                    submitBtn.disabled = true;
+                    submitBtn.textContent = 'Updating...';
+                }
+
+                const result = await window.updatePasswordWithBio(newPwd, userData.email_id);
+
+                if (result.success) {
+                    alert('Password updated successfully! Please login again.');
+                    await supabaseClient.auth.signOut();
+                    window.location.replace('index.html');
+                } else {
+                    alert('Error: ' + result.message);
+                    btn.disabled = false;
+                    btn.textContent = 'Update Password';
+                }
+            });
+        }
+
+        // 5. Setup Filtering
         const isAdmin = adminRoles.includes(userData.role);
-
-        if (isAdmin && adminMenuSec) adminMenuSec.style.display = 'block';
-
-        // Setup Filtering
         if (isAdmin) {
             filterContainer.innerHTML = `
                 <select id="centre-filter-select" class="centre-selector">

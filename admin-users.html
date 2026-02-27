@@ -1066,20 +1066,41 @@
                     btn.disabled = true;
                     btn.textContent = 'Updating...';
 
-                    const { data: { session } } = await supabaseClient.auth.getSession();
-                    const result = await window.updatePasswordWithBio(newPwd, session.user.email);
+                    const { data: { session: currentSession } } = await supabaseClient.auth.getSession();
+                    const result = await window.updatePasswordWithBio(newPwd, currentSession.user.email);
 
                     if (result.success) {
-                        alert('Password updated successfully!');
-                        document.getElementById('password-modal').classList.remove('active');
-                        updatePwdForm.reset();
+                        alert('Password updated successfully! Please login with your new password.');
+                        await supabaseClient.auth.signOut();
+                        window.location.replace('index.html');
                     } else {
                         alert('Error: ' + result.message);
+                        btn.disabled = false;
+                        btn.textContent = 'Update Password';
                     }
-                    btn.disabled = false;
-                    btn.textContent = 'Update Password';
                 });
             }
+
+            // Detect if first login is needed on page load
+            const checkFirstLogin = async () => {
+                const { data: { session } } = await supabaseClient.auth.getSession();
+                if (session) {
+                    const { data: userData } = await supabaseClient
+                        .from('Access')
+                        .select('is_first_login')
+                        .eq('email_id', session.user.email)
+                        .single();
+
+                    if (userData?.is_first_login) {
+                        // Trigger modal open
+                        document.getElementById('open-profile-btn')?.click();
+                        // Disable close for force
+                        const closeBtn = document.querySelector('.modal-close-btn');
+                        if (closeBtn) closeBtn.style.display = 'none';
+                    }
+                }
+            };
+            checkFirstLogin();
 
             // Edit Role Form Listeners for Button state
             const editRoleSelect = document.getElementById('edit-role-select');

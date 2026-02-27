@@ -18,6 +18,12 @@ document.addEventListener('DOMContentLoaded', async () => {
         return;
     }
 
+    // Force redirection to dashboard if first login/reset is needed (since that's where the modal is)
+    if (userData.is_first_login) {
+        window.location.replace('dashboard.html');
+        return;
+    }
+
     // 2. UI Elements
     document.body.style.display = 'block';
     document.getElementById('display-name').textContent = userData.name || 'Admin';

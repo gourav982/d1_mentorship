@@ -273,10 +273,39 @@
                 </div>
                 <div class="input-group">
                     <label>New Password</label>
-                    <input type="password" id="new-password" required placeholder="••••••••">
+                    <div class="password-wrapper">
+                        <input type="password" id="new-password" required placeholder="••••••••">
+                        <button type="button" class="toggle-btn"
+                            onclick="togglePasswordVisibility('new-password', this)">
+                            <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24"
+                                fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"
+                                stroke-linejoin="round" class="eye-icon">
+                                <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"></path>
+                                <circle cx="12" cy="12" r="3"></circle>
+                            </svg>
+                        </button>
+                    </div>
                 </div>
-                <button type="submit" class="login-button" style="width: 100%; margin-top: 2rem;">Update
-                    Password</button>
+                <div class="input-group">
+                    <label>Confirm Password</label>
+                    <div class="password-wrapper">
+                        <input type="password" id="confirm-password" required placeholder="••••••••">
+                        <button type="button" class="toggle-btn"
+                            onclick="togglePasswordVisibility('confirm-password', this)">
+                            <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24"
+                                fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"
+                                stroke-linejoin="round" class="eye-icon">
+                                <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"></path>
+                                <circle cx="12" cy="12" r="3"></circle>
+                            </svg>
+                        </button>
+                    </div>
+                </div>
+
+                <div style="display: flex; gap: 1rem; margin-top: 2rem;">
+                    <button type="submit" id="update-pwd-submit" class="login-button" style="flex: 1;">Update
+                        Password</button>
+                </div>
             </form>
         </div>
     </div>

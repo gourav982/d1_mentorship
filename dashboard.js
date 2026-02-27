@@ -68,13 +68,72 @@ document.addEventListener('DOMContentLoaded', async () => {
         }
 
         // 6. Modal Fill Logic
-        document.getElementById('open-profile-btn')?.addEventListener('click', (e) => {
-            e.preventDefault();
+        const openModal = () => {
             document.getElementById('profile-name').value = userData.name || '';
             document.getElementById('profile-email').value = userData.email_id || '';
-            document.getElementById('profile-phone').value = userData.phone_number || '';
+            document.getElementById('profile-phone') ? document.getElementById('profile-phone').value = userData.phone_number || '' : null;
             document.getElementById('password-modal').classList.add('active');
+        };
+
+        document.getElementById('open-profile-btn')?.addEventListener('click', (e) => {
+            e.preventDefault();
+            openModal();
         });
+
+        // 7. Force Password Reset if is_first_login is TRUE
+        if (userData.is_first_login) {
+            openModal();
+            // Optional: Hide close button to force reset
+            const closeBtn = document.querySelector('.modal-close-btn');
+            if (closeBtn) closeBtn.style.display = 'none';
+        }
+
+        // 8. Handle Password Update Form
+        const updatePwdForm = document.getElementById('update-password-form');
+        const newPwdInput = document.getElementById('new-password');
+        const confirmPwdInput = document.getElementById('confirm-password');
+        const submitBtn = document.getElementById('update-pwd-submit');
+
+        const updateSubmitState = () => {
+            const hasContent = newPwdInput?.value.trim() !== '' && confirmPwdInput?.value.trim() !== '';
+            if (submitBtn) {
+                submitBtn.disabled = !hasContent;
+                submitBtn.style.opacity = hasContent ? '1' : '0.5';
+            }
+        };
+
+        newPwdInput?.addEventListener('input', updateSubmitState);
+        confirmPwdInput?.addEventListener('input', updateSubmitState);
+
+        if (updatePwdForm) {
+            updatePwdForm.addEventListener('submit', async (e) => {
+                e.preventDefault();
+                const newPwd = newPwdInput.value;
+                const confirmPwd = confirmPwdInput.value;
+
+                if (newPwd !== confirmPwd) {
+                    alert("Passwords do not match!");
+                    return;
+                }
+
+                if (submitBtn) {
+                    submitBtn.disabled = true;
+                    submitBtn.textContent = 'Updating...';
+                }
+
+                const result = await window.updatePasswordWithBio(newPwd, userData.email_id);
+
+                if (result.success) {
+                    alert('Password updated successfully! Please login again with your new password.');
+                    await supabaseClient.auth.signOut();
+                    window.location.replace('index.html');
+                } else {
+                    alert('Error: ' + result.message);
+                    btn.disabled = false;
+                    btn.textContent = 'Update Password';
+                }
+            });
+        }
 
     } catch (err) {
         console.error('Data Load Error:', err);
