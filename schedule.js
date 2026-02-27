@@ -177,8 +177,8 @@ document.addEventListener('DOMContentLoaded', async () => {
                 : '';
 
             const timing = `
-                <div style="font-weight: 600;">${formatTime(item.start_datetime)}</div>
-                <div class="timing-info">to ${formatTime(item.end_datetime)}</div>
+                <div style="font-weight: 600; color: var(--text-primary);">${formatTime(item.start_datetime)}</div>
+                <div style="font-weight: 500; color: var(--text-secondary); margin-top: 0.1rem;">to ${formatTime(item.end_datetime)}</div>
             `;
 
             return `

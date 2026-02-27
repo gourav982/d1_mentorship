@@ -76,7 +76,7 @@ document.addEventListener('DOMContentLoaded', async () => {
             fileNameDisplay.style.color = 'var(--accent-color)';
             processBtn.disabled = false;
         } else {
-            fileNameDisplay.textContent = 'Click to browse files (Date, Subject, Topic, Module, Start, End, Qs)';
+            fileNameDisplay.textContent = 'Click to browse files (Date, Subject, Topic, Custom Module Code, Start, End, Qs)';
             processBtn.disabled = true;
         }
     });
@@ -87,7 +87,7 @@ document.addEventListener('DOMContentLoaded', async () => {
         const reader = new FileReader();
 
         processBtn.disabled = true;
-        processBtn.textContent = 'Syncing to Supabase...';
+        processBtn.textContent = 'Uploading...';
         statusDiv.style.display = 'none';
 
         reader.onload = async (event) => {
@@ -151,7 +151,7 @@ document.addEventListener('DOMContentLoaded', async () => {
                 statusDiv.textContent = `Successfully synced ${payload.length} rows for ${centreSelect.value} centre!`;
 
                 fileInput.value = '';
-                fileNameDisplay.textContent = 'Click to browse files (Date, Topic, Module, Start, End, Qs)';
+                fileNameDisplay.textContent = 'Click to browse files (Date, Subject, Topic, Custom Module Code, Start, End, Qs)';
                 fileNameDisplay.style.color = 'var(--text-secondary)';
 
             } catch (err) {
@@ -163,7 +163,7 @@ document.addEventListener('DOMContentLoaded', async () => {
                 statusDiv.textContent = 'Error: ' + err.message;
             } finally {
                 processBtn.disabled = true;
-                processBtn.textContent = 'Sync to Database';
+                processBtn.textContent = 'Upload Schedule';
             }
         };
 
