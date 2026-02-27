@@ -67,17 +67,42 @@ document.addEventListener('DOMContentLoaded', async () => {
 
     const renderSchedule = (schedules, progressMap) => {
         if (!schedules || schedules.length === 0) {
-            scheduleBody.innerHTML = `<tr><td colspan="5" style="text-align:center; padding: 3rem; color: var(--text-secondary);">No sessions scheduled for ${selectedCentre}.</td></tr>`;
+            scheduleBody.innerHTML = `<tr><td colspan="6" style="text-align:center; padding: 3rem; color: var(--text-secondary);">No sessions scheduled for ${selectedCentre}.</td></tr>`;
             return;
         }
 
-        scheduleBody.innerHTML = schedules.map(item => {
+        // Calculate Rowspan for Subjects
+        const subjectRowspans = [];
+        let currentSubject = null;
+        let count = 0;
+        let startIndex = 0;
+
+        schedules.forEach((item, index) => {
+            if (item.subject === currentSubject) {
+                count++;
+            } else {
+                if (currentSubject !== null) {
+                    subjectRowspans[startIndex] = count;
+                }
+                currentSubject = item.subject;
+                count = 1;
+                startIndex = index;
+            }
+        });
+        subjectRowspans[startIndex] = count;
+
+        scheduleBody.innerHTML = schedules.map((item, index) => {
             const userProg = progressMap[item.id] || { is_done: false, remarks: '' };
             const tooltip = `Starts: ${formatDate(item.start_datetime)} ${formatTime(item.start_datetime)}\nEnds: ${formatDate(item.end_datetime)} ${formatTime(item.end_datetime)}\nQuestions: ${item.num_questions}`;
+
+            const subjectCell = subjectRowspans[index]
+                ? `<td rowspan="${subjectRowspans[index]}" style="vertical-align: middle; border-right: 1px solid var(--glass-border); background: rgba(255,255,255,0.02); font-weight:700; color:var(--accent-color); text-transform:uppercase; font-size:0.8rem; letter-spacing:0.05em;">${item.subject || '-'}</td>`
+                : '';
 
             return `
                 <tr>
                     <td style="white-space: nowrap;">${formatDate(item.date)}</td>
+                    ${subjectCell}
                     <td><span style="font-weight: 600;">${item.topic}</span></td>
                     <td>
                         <code style="background: rgba(255,255,255,0.05); padding: 0.2rem 0.5rem; border-radius: 0.4rem; font-family: monospace;">${item.custom_module_code}</code>

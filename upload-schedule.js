@@ -58,8 +58,8 @@ document.addEventListener('DOMContentLoaded', async () => {
     // 3. Sample CSV Functionality
     downloadBtn.addEventListener('click', (e) => {
         e.preventDefault();
-        const headers = "Date, Topic, Custom Module Code, Start Date & Time, End Date & Time, Number of Questions\n";
-        const sampleRow = "2026-03-01, Anatomy: Lower Limb, ANA-LL-01, 2026-03-01 10:00:00, 2026-03-01 12:00:00, 50\n";
+        const headers = "Date, Subject, Topic, Custom Module Code, Start Date & Time, End Date & Time, Number of Questions\n";
+        const sampleRow = "2026-03-01, Anatomy, Lower Limb, ANA-LL-01, 2026-03-01 10:00:00, 2026-03-01 12:00:00, 50\n";
 
         const blob = new Blob([headers + sampleRow], { type: 'text/csv' });
         const url = window.URL.createObjectURL(blob);
@@ -76,7 +76,7 @@ document.addEventListener('DOMContentLoaded', async () => {
             fileNameDisplay.style.color = 'var(--accent-color)';
             processBtn.disabled = false;
         } else {
-            fileNameDisplay.textContent = 'Click to browse files (Date, Topic, Module, Start, End, Qs)';
+            fileNameDisplay.textContent = 'Click to browse files (Date, Subject, Topic, Module, Start, End, Qs)';
             processBtn.disabled = true;
         }
     });
@@ -95,19 +95,20 @@ document.addEventListener('DOMContentLoaded', async () => {
                 const text = event.target.result;
                 const rows = text.split('\n').filter(row => row.trim() !== "");
 
-                // Skip header: Date, Topic, Code, Start, End, Qs
+                // Skip header: Date, Subject, Topic, Code, Start, End, Qs
                 const payload = rows.slice(1).map((row, index) => {
                     const cols = row.split(',').map(c => c.trim());
-                    if (cols.length < 6) return null;
+                    if (cols.length < 7) return null;
 
                     return {
                         centre_name: centreSelect.value,
                         date: cols[0],
-                        topic: cols[1],
-                        custom_module_code: cols[2],
-                        start_datetime: cols[3],
-                        end_datetime: cols[4],
-                        num_questions: parseInt(cols[5]) || 0
+                        subject: cols[1],
+                        topic: cols[2],
+                        custom_module_code: cols[3],
+                        start_datetime: cols[4],
+                        end_datetime: cols[5],
+                        num_questions: parseInt(cols[6]) || 0
                     };
                 }).filter(p => p !== null);
 
