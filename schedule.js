@@ -44,10 +44,20 @@ document.addEventListener('DOMContentLoaded', async () => {
 
     // Helper: Safe Date/Time (Avoids timezone shifts by treating as local)
     const getLocalDate = (str) => {
-        if (!str) return null;
-        // If it's just a date 'YYYY-MM-DD', append a dummy time to avoid UTC shift in some browsers
-        const normalized = str.includes(' ') ? str.replace(' ', 'T') : `${str}T00:00:00`;
-        return new Date(normalized);
+        if (!str || str === 'null' || str === 'undefined') return null;
+
+        // Handle common formats
+        let normalized = str;
+        if (str.includes(' ')) {
+            normalized = str.replace(' ', 'T');
+        } else if (!str.includes('T') && /^\d{4}-\d{2}-\d{2}$/.test(str)) {
+            normalized = `${str}T00:00:00`;
+        }
+
+        const d = new Date(normalized);
+        // Check if date is valid
+        if (isNaN(d.getTime())) return null;
+        return d;
     };
 
     const formatDate = (dateStr) => {
