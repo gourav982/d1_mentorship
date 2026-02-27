@@ -95,14 +95,39 @@ document.addEventListener('DOMContentLoaded', async () => {
                 const text = event.target.result;
                 const rows = text.split('\n').filter(row => row.trim() !== "");
 
+                // Helper to parse date string (handles DD/MM/YYYY, DD/MM/YY, and YYYY-MM-DD)
+                const parseDate = (d) => {
+                    if (!d) return null;
+                    // If already YYYY-MM-DD
+                    if (/^\d{4}-\d{2}-\d{2}$/.test(d)) return d;
+
+                    // Handle DD/MM/YYYY or DD-MM-YYYY
+                    const parts = d.split(/[/-]/);
+                    if (parts.length === 3) {
+                        let day = parts[0].padStart(2, '0');
+                        let month = parts[1].padStart(2, '0');
+                        let year = parts[2];
+                        if (year.length === 2) year = '20' + year;
+
+                        // If the first part is 4 digits, it's likely YYYY-MM-DD already but split
+                        if (day.length === 4) return `${day}-${month}-${parts[0].padStart(2, '0')}`;
+
+                        return `${year}-${month}-${day}`;
+                    }
+                    return d;
+                };
+
                 // Skip header: Date, Subject, Topic, Code, Start, End, Qs
                 const payload = rows.slice(1).map((row, index) => {
                     const cols = row.split(',').map(c => c.trim());
                     if (cols.length < 7) return null;
 
+                    const rawDate = cols[0];
+                    const standardDate = parseDate(rawDate);
+
                     return {
                         centre_name: centreSelect.value,
-                        date: cols[0],
+                        date: standardDate,
                         subject: cols[1],
                         topic: cols[2],
                         custom_module_code: cols[3],

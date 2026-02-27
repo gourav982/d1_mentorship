@@ -32,9 +32,18 @@ document.addEventListener('DOMContentLoaded', async () => {
         window.location.replace('index.html');
     });
 
-    // Helper: Format Date/Time
-    const formatDate = (dateStr) => new Date(dateStr).toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric' });
-    const formatTime = (dateStr) => new Date(dateStr).toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit' });
+    // Helper: Format Date/Time (Safe local handling)
+    const formatDate = (dateStr) => {
+        if (!dateStr) return '-';
+        const d = new Date(dateStr.includes('T') ? dateStr : dateStr.replace(' ', 'T'));
+        return d.toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric' });
+    };
+
+    const formatTime = (dateStr) => {
+        if (!dateStr) return '-';
+        const d = new Date(dateStr.includes('T') ? dateStr : dateStr.replace(' ', 'T'));
+        return d.toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit', hour12: true });
+    };
 
     const fetchSchedule = async () => {
         try {
