@@ -28,7 +28,13 @@ document.addEventListener('DOMContentLoaded', async () => {
     const topicSearch = document.getElementById('topic-search');
     const clearBtn = document.getElementById('clear-filters');
 
-    // Dropdown Logic
+    const sidebar = document.querySelector('.sidebar');
+    const sidebarToggle = document.getElementById('sidebar-toggle-btn');
+    sidebarToggle?.addEventListener('click', () => {
+        sidebar?.classList.toggle('collapsed');
+    });
+
+    // Toggle Logic
     profileBtn?.addEventListener('click', (e) => {
         e.stopPropagation();
         profileBtn.classList.toggle('active');
@@ -173,10 +179,10 @@ document.addEventListener('DOMContentLoaded', async () => {
             const userProg = progressMap[item.id] || { is_done: false, remarks: '' };
 
             const subjectCell = subjectRowspans[index]
-                ? `<td rowspan="${subjectRowspans[index]}" style="vertical-align: middle; border-right: 1px solid var(--glass-border); background: rgba(255,255,255,0.02); font-weight:700; color:var(--accent-color); text-transform:uppercase; font-size:0.8rem; letter-spacing:0.05em;">${item.subject || '-'}</td>`
+                ? `<td rowspan="${subjectRowspans[index]}" style="vertical-align: top; border-right: 1px solid var(--glass-border); background: rgba(255,255,255,0.02); font-weight:700; color:var(--accent-color); text-transform:uppercase; font-size:0.8rem; letter-spacing:0.05em;">${item.subject || '-'}</td>`
                 : '';
 
-            const timing = `<span style="font-weight: 500; color: var(--text-primary); white-space: nowrap;">${formatTime(item.start_datetime)} to ${formatTime(item.end_datetime)}</span>`;
+            const timing = `<span style="font-weight: 500; color: var(--text-primary);">${formatTime(item.start_datetime)} to ${formatTime(item.end_datetime)}</span>`;
 
             return `
                 <tr>
@@ -186,7 +192,7 @@ document.addEventListener('DOMContentLoaded', async () => {
                     <td>
                         <code style="background: rgba(255,255,255,0.05); padding: 0.2rem 0.6rem; border-radius: 0.4rem; font-family: monospace; font-size: 0.85rem;">${item.custom_module_code || '-'}</code>
                     </td>
-                    <td style="white-space: nowrap;">${timing}</td>
+                    <td>${timing}</td>
                     <td style="text-align: center;"><span class="qs-badge">${item.num_questions || 0}</span></td>
                     <td style="text-align: center;">
                         <input type="checkbox" class="checkbox-custom" 

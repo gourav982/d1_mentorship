@@ -12,6 +12,13 @@ document.addEventListener('DOMContentLoaded', async () => {
     const roleDisplay = document.getElementById('display-role');
     const avatarCircle = document.getElementById('avatar-circle');
 
+    // Sidebar Toggle
+    const sidebar = document.querySelector('.sidebar');
+    const sidebarToggle = document.getElementById('sidebar-toggle-btn');
+    sidebarToggle?.addEventListener('click', () => {
+        sidebar?.classList.toggle('collapsed');
+    });
+
     // Make dropdown work immediately
     profileBtn?.addEventListener('click', (e) => {
         e.stopPropagation();

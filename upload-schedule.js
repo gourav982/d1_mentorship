@@ -30,6 +30,13 @@ document.addEventListener('DOMContentLoaded', async () => {
     document.getElementById('display-role').textContent = userData.role;
     document.getElementById('avatar-circle').textContent = (userData.name || 'A').charAt(0).toUpperCase();
 
+    // Sidebar Toggle
+    const sidebar = document.querySelector('.sidebar');
+    const toggleBtn = document.getElementById('sidebar-toggle-btn');
+    toggleBtn?.addEventListener('click', () => {
+        sidebar?.classList.toggle('collapsed');
+    });
+
     const fileInput = document.getElementById('csv-file-input');
     const fileNameDisplay = document.getElementById('file-name-display');
     const processBtn = document.getElementById('process-upload-btn');

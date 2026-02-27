@@ -15,6 +15,13 @@ document.addEventListener('DOMContentLoaded', async () => {
         return;
     }
 
+    // Sidebar Toggle
+    const sidebar = document.querySelector('.sidebar');
+    const toggleBtn = document.getElementById('sidebar-toggle-btn');
+    toggleBtn?.addEventListener('click', () => {
+        sidebar?.classList.toggle('collapsed');
+    });
+
     // 2. UI Init
     document.body.style.display = 'block';
     document.getElementById('display-name').textContent = userData.name || 'Admin';
