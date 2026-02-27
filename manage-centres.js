@@ -21,49 +21,47 @@ document.addEventListener('DOMContentLoaded', async () => {
     document.getElementById('display-role').textContent = userData.role;
     document.getElementById('avatar-circle').textContent = (userData.name || 'A').charAt(0).toUpperCase();
 
-    const centresContainer = document.getElementById('centres-container');
+    const centresBody = document.getElementById('centres-body');
+    const addModal = document.getElementById('add-centre-modal');
     const addForm = document.getElementById('add-centre-form');
     const editModal = document.getElementById('edit-centre-modal');
     const editForm = document.getElementById('edit-centre-form');
 
     // 3. Fetch & Render
     const fetchCentres = async () => {
-        const { data, error } = await supabaseClient
-            .from('Centres')
-            .select('*')
-            .order('name', { ascending: true });
+        try {
+            const { data, error } = await supabaseClient
+                .from('Centres')
+                .select('*')
+                .order('name', { ascending: true });
 
-        if (error) {
-            console.error('Error fetching centres:', error);
-            return;
+            if (error) throw error;
+            renderCentres(data);
+        } catch (err) {
+            console.error('Fetch Error:', err);
+            centresBody.innerHTML = `<tr><td colspan="3" style="text-align:center; color:#ef4444; padding:2rem;">Error: ${err.message}</td></tr>`;
         }
-
-        renderCentres(data);
     };
 
     const renderCentres = (centres) => {
         if (!centres || centres.length === 0) {
-            centresContainer.innerHTML = '<div style="grid-column: 1/-1; text-align: center; padding: 3rem; color: var(--text-secondary);">No centres found. Add your first centre above.</div>';
+            centresBody.innerHTML = '<tr><td colspan="3" style="text-align: center; padding: 3rem; color: var(--text-secondary);">No centres found. Click "+ Add New Centre" to begin.</td></tr>';
             return;
         }
 
-        centresContainer.innerHTML = centres.map(c => `
-            <div class="centre-card">
-                <div class="centre-info">
-                    <h3>${c.name}</h3>
-                    <p>${c.location || 'No location set'}</p>
-                </div>
-                <div class="centre-actions">
-                    <button class="action-btn btn-edit" onclick="window.openEditModal('${c.id}', '${c.name}', '${c.location}')">
-                        <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"></path><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"></path></svg>
-                        Edit
-                    </button>
-                    <button class="action-btn btn-delete" onclick="window.deleteCentre('${c.id}', '${c.name}')">
-                        <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="3 6 5 6 21 6"></polyline><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path><line x1="10" y1="11" x2="10" y2="17"></line><line x1="14" y1="11" x2="14" y2="17"></line></svg>
-                        Delete
-                    </button>
-                </div>
-            </div>
+        centresBody.innerHTML = centres.map(c => `
+            <tr style="border-bottom: 1px solid var(--glass-border);">
+                <td style="padding: 1rem 1.25rem;">
+                    <div style="font-weight: 600; color: var(--text-primary);">${c.name}</div>
+                </td>
+                <td style="padding: 1rem 1.25rem; color: var(--text-secondary);">${c.location || '-'}</td>
+                <td style="padding: 1rem 1.25rem; text-align: center;">
+                    <div style="display: flex; gap: 0.5rem; justify-content: center;">
+                        <button class="action-btn" onclick="window.openEditModal('${c.id}', '${c.name}', '${c.location}')" style="background: rgba(56, 189, 248, 0.1); color: var(--accent-color); padding: 0.4rem 0.8rem; border-radius: 0.5rem; border: none; cursor: pointer; font-size: 0.8rem;">Edit</button>
+                        <button class="action-btn" onclick="window.deleteCentre('${c.id}', '${c.name}')" style="background: rgba(239, 68, 68, 0.1); color: #ef4444; padding: 0.4rem 0.8rem; border-radius: 0.5rem; border: none; cursor: pointer; font-size: 0.8rem;">Delete</button>
+                    </div>
+                </td>
+            </tr>
         `).join('');
     };
 
@@ -72,10 +70,10 @@ document.addEventListener('DOMContentLoaded', async () => {
         e.preventDefault();
         const name = document.getElementById('centre-name').value.trim();
         const location = document.getElementById('centre-location').value.trim();
-        const btn = addForm.querySelector('button');
+        const btn = addForm.querySelector('button[type="submit"]');
 
         btn.disabled = true;
-        btn.textContent = 'Adding...';
+        btn.textContent = 'Saving...';
 
         const { error } = await supabaseClient.from('Centres').insert([{ name, location }]);
 
@@ -83,10 +81,11 @@ document.addEventListener('DOMContentLoaded', async () => {
             alert('Error adding centre: ' + error.message);
         } else {
             addForm.reset();
+            addModal.classList.remove('active');
             fetchCentres();
         }
         btn.disabled = false;
-        btn.textContent = 'Add Centre';
+        btn.textContent = 'Save Centre';
     });
 
     window.openEditModal = (id, name, location) => {
