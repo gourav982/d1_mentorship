@@ -216,15 +216,17 @@ document.addEventListener('DOMContentLoaded', async () => {
         // 5. Setup Filtering
         const isAdmin = adminRoles.includes(userData.role);
         if (isAdmin) {
+            // Fetch Centres for dropdown
+            const { data: centres } = await supabaseClient.from('Centres').select('name').order('name');
+            const options = centres?.map(c => `<option value="${c.name}">${c.name}</option>`).join('') || '';
+
             filterContainer.innerHTML = `
                 <select id="centre-filter-select" class="centre-selector">
-                    <option value="Delhi">Delhi</option>
-                    <option value="Kolkata">Kolkata</option>
-                    <option value="Bhubaneswar">Bhubaneswar</option>
+                    ${options}
                 </select>
             `;
             const sel = document.getElementById('centre-filter-select');
-            selectedCentre = "Delhi"; // Default for admin view
+            selectedCentre = centres && centres.length > 0 ? centres[0].name : "Delhi";
             sel.value = selectedCentre;
             sel.addEventListener('change', (e) => {
                 selectedCentre = e.target.value;

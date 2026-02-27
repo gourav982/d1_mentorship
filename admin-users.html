@@ -296,6 +296,7 @@
                         <div class="nav-group">Admin Corner</div>
                         <a href="admin-users.html" class="nav-item active">Users & Roles</a>
                         <a href="upload-schedule.html" class="nav-item">Upload Schedule</a>
+                        <a href="manage-centres.html" class="nav-item">Manage Centres</a>
                     </div>
                 </nav>
             </aside>
@@ -387,12 +388,9 @@
                     </div>
                     <div class="input-group" id="centre-group">
                         <label id="centre-label">Centre Name</label>
-                        <select id="add-centre"
+                        <select id="add-centre" class="centre-selector"
                             style="background: rgba(15, 23, 42, 0.6); border: 1px solid var(--glass-border); border-radius: 0.75rem; padding: 0.875rem 1rem; color: var(--text-primary); width: 100%;">
                             <option value="">Select Centre</option>
-                            <option value="Delhi">Delhi</option>
-                            <option value="Kolkata">Kolkata</option>
-                            <option value="Bhubaneswar">Bhubaneswar</option>
                         </select>
                     </div>
                 </div>
@@ -489,12 +487,9 @@
                 </div>
                 <div class="input-group" id="edit-centre-group" style="margin-top: 1.5rem;">
                     <label id="edit-centre-label">Centre Name</label>
-                    <select id="edit-centre-select"
+                    <select id="edit-centre-select" class="centre-selector"
                         style="background: rgba(15, 23, 42, 0.6); border: 1px solid var(--glass-border); border-radius: 0.75rem; padding: 0.875rem 1rem; color: var(--text-primary); width: 100%;">
                         <option value="">Select Centre</option>
-                        <option value="Delhi">Delhi</option>
-                        <option value="Kolkata">Kolkata</option>
-                        <option value="Bhubaneswar">Bhubaneswar</option>
                     </select>
                 </div>
                 <div style="display: flex; gap: 1rem; margin-top: 2rem;">
@@ -585,7 +580,19 @@
 
     <script src="supabase-init.js"></script>
     <script>
-        const supabaseClient = window.supabaseClient;
+        // Initialize Dynamic Centres
+        const populateCentres = async () => {
+            const { data: centres } = await supabaseClient.from('Centres').select('name').order('name');
+            if (centres) {
+                const addSel = document.getElementById('add-centre');
+                const editSel = document.getElementById('edit-centre-select');
+                const options = '<option value="">Select Centre</option>' + centres.map(c => `<option value="${c.name}">${c.name}</option>`).join('');
+                if (addSel) addSel.innerHTML = options;
+                if (editSel) editSel.innerHTML = options;
+            }
+        };
+        populateCentres();
+
         window.toggleCentreField = () => {
             // For Add Modal
             const addRole = document.getElementById('add-role')?.value;

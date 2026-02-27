@@ -37,6 +37,15 @@ document.addEventListener('DOMContentLoaded', async () => {
     const centreSelect = document.getElementById('upload-centre');
     const downloadBtn = document.getElementById('download-sample-btn');
 
+    // 2.5 Fetch Centres
+    const fetchCentres = async () => {
+        const { data: centres } = await supabaseClient.from('Centres').select('name').order('name');
+        if (centres) {
+            centreSelect.innerHTML = centres.map(c => `<option value="${c.name}">${c.name}</option>`).join('');
+        }
+    };
+    fetchCentres();
+
     // 3. Sample CSV Functionality
     downloadBtn.addEventListener('click', (e) => {
         e.preventDefault();

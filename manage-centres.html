@@ -1,0 +1,217 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Manage Centres | Admin Corner</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link
+        href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600&family=Outfit:wght@300;400;700&display=swap"
+        rel="stylesheet">
+    <link rel="stylesheet" href="style.css">
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <style>
+        body {
+            display: none;
+        }
+
+        /* Hidden until auth */
+
+        .centres-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+            gap: 1.5rem;
+            margin-top: 2rem;
+        }
+
+        .centre-card {
+            background: var(--glass-bg);
+            border: 1px solid var(--glass-border);
+            border-radius: 1.25rem;
+            padding: 1.5rem;
+            backdrop-filter: blur(10px);
+            display: flex;
+            flex-direction: column;
+            justify-content: space-between;
+            transition: all 0.3s ease;
+        }
+
+        .centre-card:hover {
+            transform: translateY(-5px);
+            border-color: var(--accent-color);
+            box-shadow: 0 10px 20px -5px rgba(0, 0, 0, 0.2);
+        }
+
+        .centre-info h3 {
+            font-family: 'Outfit', sans-serif;
+            font-size: 1.25rem;
+            color: var(--text-primary);
+            margin-bottom: 0.5rem;
+        }
+
+        .centre-info p {
+            color: var(--text-secondary);
+            font-size: 0.9rem;
+        }
+
+        .centre-actions {
+            display: flex;
+            gap: 0.75rem;
+            margin-top: 1.5rem;
+        }
+
+        .action-btn {
+            flex: 1;
+            padding: 0.6rem;
+            border-radius: 0.5rem;
+            font-size: 0.85rem;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.2s;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 0.4rem;
+        }
+
+        .btn-edit {
+            background: rgba(56, 189, 248, 0.1);
+            border: 1px solid rgba(56, 189, 248, 0.2);
+            color: var(--accent-color);
+        }
+
+        .btn-edit:hover {
+            background: var(--accent-color);
+            color: #000;
+        }
+
+        .btn-delete {
+            background: rgba(239, 68, 68, 0.1);
+            border: 1px solid rgba(239, 68, 68, 0.2);
+            color: #ef4444;
+        }
+
+        .btn-delete:hover {
+            background: #ef4444;
+            color: #fff;
+        }
+
+        .add-centre-bar {
+            background: var(--glass-bg);
+            border: 1px solid var(--glass-border);
+            border-radius: 1.25rem;
+            padding: 1.5rem;
+            margin-bottom: 2rem;
+            display: flex;
+            gap: 1rem;
+            align-items: flex-end;
+            backdrop-filter: blur(10px);
+            flex-wrap: wrap;
+        }
+
+        .input-mini {
+            flex: 1;
+            min-width: 200px;
+        }
+    </style>
+</head>
+
+<body>
+    <div class="dashboard-wrapper">
+        <header class="top-header">
+            <div class="header-left">
+                <div class="sidebar-logo">DBMCI One Mentorship</div>
+            </div>
+            <div class="header-actions">
+                <div class="user-profile" id="user-profile-btn">
+                    <div class="avatar" id="avatar-circle">?</div>
+                    <div class="profile-info">
+                        <span class="name" id="display-name">Loading...</span>
+                        <span class="role" id="display-role">Verifying...</span>
+                    </div>
+                </div>
+            </div>
+        </header>
+
+        <div class="dashboard-container">
+            <aside class="sidebar">
+                <nav class="sidebar-nav">
+                    <div class="nav-group">Main Menu</div>
+                    <a href="dashboard.html" class="nav-item">Homepage</a>
+                    <a href="schedule.html" class="nav-item">Schedule</a>
+                    <a href="#" class="nav-item">Book a Session</a>
+                    <a href="#" class="nav-item">History</a>
+
+                    <div class="admin-only" id="admin-section" style="display: block;">
+                        <div class="nav-group">Admin Corner</div>
+                        <a href="admin-users.html" class="nav-item">Users & Roles</a>
+                        <a href="upload-schedule.html" class="nav-item">Upload Schedule</a>
+                        <a href="manage-centres.html" class="nav-item active">Manage Centres</a>
+                    </div>
+                </nav>
+            </aside>
+
+            <main class="dashboard-main">
+                <div class="header-flex"
+                    style="display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 2rem;">
+                    <div>
+                        <h1>Manage Centres</h1>
+                        <p style="color: var(--text-secondary);">Add, edit, or remove mentorship centres.</p>
+                    </div>
+                </div>
+
+                <form id="add-centre-form" class="add-centre-bar">
+                    <div class="input-group input-mini" style="margin: 0;">
+                        <label>Centre Name</label>
+                        <input type="text" id="centre-name" placeholder="e.g. Mumbai" required style="padding: 0.8rem;">
+                    </div>
+                    <div class="input-group input-mini" style="margin: 0;">
+                        <label>Location</label>
+                        <input type="text" id="centre-location" placeholder="e.g. Maharashtra" required
+                            style="padding: 0.8rem;">
+                    </div>
+                    <button type="submit" class="login-button"
+                        style="padding: 0.8rem 2rem; margin: 0; height: 50px;">Add Centre</button>
+                </form>
+
+                <div id="centres-container" class="centres-grid">
+                    <!-- Dynamic Cards -->
+                </div>
+            </main>
+        </div>
+    </div>
+
+    <!-- Edit Centre Modal -->
+    <div id="edit-centre-modal" class="modal-overlay">
+        <div class="login-card" style="max-width: 500px;">
+            <div class="header">
+                <h2>Edit Centre</h2>
+                <p>Update centre details.</p>
+            </div>
+            <form id="edit-centre-form">
+                <input type="hidden" id="edit-centre-id">
+                <div class="input-group">
+                    <label>Centre Name</label>
+                    <input type="text" id="edit-centre-name" required>
+                </div>
+                <div class="input-group">
+                    <label>Location</label>
+                    <input type="text" id="edit-centre-location" required>
+                </div>
+                <div style="display: flex; gap: 1rem; margin-top: 2rem;">
+                    <button type="button" class="login-button"
+                        style="background: rgba(255,255,255,0.05); color: #fff; flex: 1;"
+                        onclick="document.getElementById('edit-centre-modal').classList.remove('active')">Cancel</button>
+                    <button type="submit" class="login-button" style="flex: 2;">Save Changes</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <script src="supabase-init.js"></script>
+    <script src="manage-centres.js"></script>
+</body>
+
+</html>
