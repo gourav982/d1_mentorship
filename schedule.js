@@ -176,10 +176,7 @@ document.addEventListener('DOMContentLoaded', async () => {
                 ? `<td rowspan="${subjectRowspans[index]}" style="vertical-align: middle; border-right: 1px solid var(--glass-border); background: rgba(255,255,255,0.02); font-weight:700; color:var(--accent-color); text-transform:uppercase; font-size:0.8rem; letter-spacing:0.05em;">${item.subject || '-'}</td>`
                 : '';
 
-            const timing = `
-                <div style="font-weight: 600; color: var(--text-primary);">${formatTime(item.start_datetime)}</div>
-                <div style="font-weight: 500; color: var(--text-secondary); margin-top: 0.1rem;">to ${formatTime(item.end_datetime)}</div>
-            `;
+            const timing = `<span style="font-weight: 500; color: var(--text-primary); white-space: nowrap;">${formatTime(item.start_datetime)} to ${formatTime(item.end_datetime)}</span>`;
 
             return `
                 <tr>
