@@ -42,20 +42,20 @@ document.addEventListener('DOMContentLoaded', async () => {
         window.location.replace('index.html');
     });
 
-    // Helper: Safe Date/Time (Avoids timezone shifts by treating as local)
+    // Helper: Safe Date/Time (Treats everything as LOCAL literal time to prevent shifts)
     const getLocalDate = (str) => {
         if (!str || str === 'null' || str === 'undefined') return null;
 
-        // Handle common formats
-        let normalized = str;
-        if (str.includes(' ')) {
-            normalized = str.replace(' ', 'T');
-        } else if (!str.includes('T') && /^\d{4}-\d{2}-\d{2}$/.test(str)) {
-            normalized = `${str}T00:00:00`;
+        // Strip out 'Z' or '+00' or any timezone offset to force local interpretation of the literal string
+        let normalized = str.toString().replace(/Z$|\+\d{2}(:?\d{2})?$/, '');
+
+        if (normalized.includes(' ')) {
+            normalized = normalized.replace(' ', 'T');
+        } else if (!normalized.includes('T') && /^\d{4}-\d{2}-\d{2}$/.test(normalized)) {
+            normalized = `${normalized}T00:00:00`;
         }
 
         const d = new Date(normalized);
-        // Check if date is valid
         if (isNaN(d.getTime())) return null;
         return d;
     };
