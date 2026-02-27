@@ -217,7 +217,17 @@ document.addEventListener('DOMContentLoaded', async () => {
         const isAdmin = adminRoles.includes(userData.role);
         if (isAdmin) {
             // Fetch Centres for dropdown
-            const { data: centres } = await supabaseClient.from('Centres').select('name').order('name');
+            let { data: centres, error } = await supabaseClient.from('Centres').select('name').order('name');
+
+            // Fallback to Access table
+            if (error || !centres || centres.length === 0) {
+                const { data: accessData } = await supabaseClient.from('Access').select('centre_name');
+                if (accessData) {
+                    const unique = [...new Set(accessData.map(u => u.centre_name).filter(Boolean))];
+                    centres = unique.sort().map(name => ({ name }));
+                }
+            }
+
             const options = centres?.map(c => `<option value="${c.name}">${c.name}</option>`).join('') || '';
 
             filterContainer.innerHTML = `

@@ -30,17 +30,44 @@ document.addEventListener('DOMContentLoaded', async () => {
     // 3. Fetch & Render
     const fetchCentres = async () => {
         try {
-            const { data, error } = await supabaseClient
+            let { data, error } = await supabaseClient
                 .from('Centres')
                 .select('*')
                 .order('name', { ascending: true });
 
-            if (error) throw error;
+            if (error) {
+                if (error.code === 'PGRST116' || error.message.includes('schema cache')) {
+                    // Table doesn't exist yet, fallback to Access
+                    const { data: accessData } = await supabaseClient.from('Access').select('centre_name');
+                    if (accessData) {
+                        const unique = [...new Set(accessData.map(u => u.centre_name).filter(Boolean))];
+                        data = unique.map((name, i) => ({ id: `fallback-${i}`, name, location: 'Synced from Users' }));
+                    }
+                    showSetupNotice();
+                } else {
+                    throw error;
+                }
+            }
             renderCentres(data);
         } catch (err) {
             console.error('Fetch Error:', err);
             centresBody.innerHTML = `<tr><td colspan="3" style="text-align:center; color:#ef4444; padding:2rem;">Error: ${err.message}</td></tr>`;
         }
+    };
+
+    const showSetupNotice = () => {
+        const notice = document.createElement('div');
+        notice.style.background = 'rgba(234, 179, 8, 0.1)';
+        notice.style.border = '1px solid #eab308';
+        notice.style.color = '#eab308';
+        notice.style.padding = '1rem';
+        notice.style.borderRadius = '0.75rem';
+        notice.style.marginBottom = '1.5rem';
+        notice.style.fontSize = '0.9rem';
+        notice.innerHTML = `
+            <strong>Schema Setup Required:</strong> To enable full management (location editing, etc.), please run the <strong>centres_migration.sql</strong> script in your Supabase SQL Editor. Currently showing centres from your User list.
+        `;
+        document.querySelector('.admin-page-header').after(notice);
     };
 
     const renderCentres = (centres) => {

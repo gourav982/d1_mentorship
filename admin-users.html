@@ -582,13 +582,31 @@
     <script>
         // Initialize Dynamic Centres
         const populateCentres = async () => {
-            const { data: centres } = await supabaseClient.from('Centres').select('name').order('name');
-            if (centres) {
-                const addSel = document.getElementById('add-centre');
-                const editSel = document.getElementById('edit-centre-select');
-                const options = '<option value="">Select Centre</option>' + centres.map(c => `<option value="${c.name}">${c.name}</option>`).join('');
-                if (addSel) addSel.innerHTML = options;
-                if (editSel) editSel.innerHTML = options;
+            try {
+                // 1. Try to get from the new Centres table
+                let { data: centres, error } = await supabaseClient.from('Centres').select('name').order('name');
+
+                // 2. Fallback to Access table if Centres table doesn't exist yet
+                if (error || !centres || centres.length === 0) {
+                    console.warn('Centres table not found, falling back to Access table unique values.');
+                    const { data: accessData } = await supabaseClient.from('Access').select('centre_name');
+                    if (accessData) {
+                        const unique = [...new Set(accessData.map(u => u.centre_name).filter(Boolean))];
+                        // Also include defaults if empty
+                        if (unique.length === 0) unique.push('Delhi', 'Kolkata', 'Bhubaneswar');
+                        centres = unique.sort().map(name => ({ name }));
+                    }
+                }
+
+                if (centres) {
+                    const addSel = document.getElementById('add-centre');
+                    const editSel = document.getElementById('edit-centre-select');
+                    const options = '<option value="">Select Centre</option>' + centres.map(c => `<option value="${c.name}">${c.name}</option>`).join('');
+                    if (addSel) addSel.innerHTML = options;
+                    if (editSel) editSel.innerHTML = options;
+                }
+            } catch (e) {
+                console.error('Centre Population Error:', e);
             }
         };
         populateCentres();

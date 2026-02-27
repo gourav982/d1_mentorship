@@ -39,7 +39,16 @@ document.addEventListener('DOMContentLoaded', async () => {
 
     // 2.5 Fetch Centres
     const fetchCentres = async () => {
-        const { data: centres } = await supabaseClient.from('Centres').select('name').order('name');
+        let { data: centres, error } = await supabaseClient.from('Centres').select('name').order('name');
+
+        if (error || !centres || centres.length === 0) {
+            const { data: accessData } = await supabaseClient.from('Access').select('centre_name');
+            if (accessData) {
+                const unique = [...new Set(accessData.map(u => u.centre_name).filter(Boolean))];
+                centres = unique.sort().map(name => ({ name }));
+            }
+        }
+
         if (centres) {
             centreSelect.innerHTML = centres.map(c => `<option value="${c.name}">${c.name}</option>`).join('');
         }
