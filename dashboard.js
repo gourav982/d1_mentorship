@@ -61,7 +61,8 @@ document.addEventListener('DOMContentLoaded', async () => {
         roleDisplay.textContent = userData.role || 'Member';
         avatarCircle.textContent = (userData.name || 'U').charAt(0).toUpperCase();
 
-        if (userData.role === 'Super admin') {
+        const adminRoles = ['Super admin', 'Admin', 'Mentor', 'Academics'];
+        if (adminRoles.includes(userData.role)) {
             const adminSec = document.getElementById('admin-section');
             if (adminSec) adminSec.style.display = 'block';
         }

@@ -4,7 +4,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Dashboard | Welcome</title>
+    <title>View Schedule | DBMCI One Mentorship</title>
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link
@@ -12,44 +12,132 @@
         rel="stylesheet">
     <link rel="stylesheet" href="style.css">
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-    <script>
-        // Premium Auth Guard
-        const checkAuth = async () => {
-            // This URL and Key should match supabase-init.js (redundant here for immediate execution)
-            const SUPABASE_URL = 'https://aobwkcjfhbruihkandlg.supabase.co';
-            const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImFvYndrY2pmaGJydWloa2FuZGxnIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzIwMjE1MjAsImV4cCI6MjA4NzU5NzUyMH0.V7OdMoiiDuXIMOdoUDLlUMjdavSjObHpajb2gHh0E38';
-            // Use a temporary client for immediate auth check before the main client is initialized
-            const tempSupabase = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
-
-            const { data: { session } } = await tempSupabase.auth.getSession();
-            if (!session) {
-                window.location.replace('index.html');
-            } else {
-                document.body.style.display = 'block';
-            }
-        };
-        checkAuth();
-    </script>
     <style>
         body {
             display: none;
         }
 
-        /* Hide until auth confirmed */
-        .dashboard-content {
-            text-align: center;
-            animation: fadeIn 1s ease-out;
+        /* Hidden until auth */
+
+        .schedule-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 2rem;
+            flex-wrap: wrap;
+            gap: 1rem;
         }
 
-        .user-badge {
-            display: inline-block;
-            padding: 0.5rem 1.5rem;
+        .schedule-table-container {
+            background: var(--glass-bg);
+            border: 1px solid var(--glass-border);
+            border-radius: 1.5rem;
+            backdrop-filter: blur(10px);
+            overflow-x: auto;
+        }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            text-align: left;
+        }
+
+        th {
+            background: rgba(255, 255, 255, 0.02);
+            padding: 1.25rem 1.5rem;
+            font-size: 0.8rem;
+            font-weight: 700;
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+            color: var(--text-secondary);
+            border-bottom: 1px solid var(--glass-border);
+        }
+
+        td {
+            padding: 1.25rem 1.5rem;
+            font-size: 0.95rem;
+            color: var(--text-primary);
+            border-bottom: 1px solid var(--glass-border);
+            vertical-align: middle;
+        }
+
+        .info-btn {
             background: rgba(56, 189, 248, 0.1);
             border: 1px solid var(--accent-color);
-            border-radius: 2rem;
             color: var(--accent-color);
-            font-size: 0.875rem;
-            margin-bottom: 1.5rem;
+            width: 24px;
+            height: 24px;
+            border-radius: 50%;
+            cursor: help;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 0.75rem;
+            margin-left: 0.5rem;
+            position: relative;
+        }
+
+        /* Tooltip */
+        .info-btn:hover::after {
+            content: attr(data-tooltip);
+            position: absolute;
+            bottom: 125%;
+            left: 50%;
+            transform: translateX(-50%);
+            background: #1e293b;
+            color: #fff;
+            padding: 0.75rem;
+            border-radius: 0.5rem;
+            font-size: 0.8rem;
+            white-space: pre-line;
+            width: 200px;
+            z-index: 100;
+            box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.3);
+            border: 1px solid var(--glass-border);
+        }
+
+        .checkbox-custom {
+            width: 20px;
+            height: 20px;
+            accent-color: var(--accent-color);
+            cursor: pointer;
+        }
+
+        .remarks-input {
+            background: rgba(15, 23, 42, 0.6);
+            border: 1px solid var(--glass-border);
+            border-radius: 0.5rem;
+            padding: 0.5rem 0.75rem;
+            color: var(--text-primary);
+            font-size: 0.85rem;
+            width: 100%;
+            transition: all 0.2s;
+        }
+
+        .remarks-input:focus {
+            border-color: var(--accent-color);
+            outline: none;
+        }
+
+        .centre-selector {
+            background: rgba(15, 23, 42, 0.6);
+            border: 1px solid var(--glass-border);
+            border-radius: 0.75rem;
+            padding: 0.5rem 1rem;
+            color: var(--text-primary);
+            font-family: 'Inter', sans-serif;
+            font-size: 0.9rem;
+            outline: none;
+        }
+
+        .locked-centre {
+            padding: 0.5rem 1rem;
+            background: rgba(56, 189, 248, 0.1);
+            border: 1px solid rgba(56, 189, 248, 0.2);
+            border-radius: 0.75rem;
+            font-size: 0.9rem;
+            color: var(--accent-color);
+            font-weight: 600;
         }
     </style>
 </head>
@@ -61,13 +149,6 @@
                 <div class="sidebar-logo">DBMCI One Mentorship</div>
             </div>
             <div class="header-actions">
-                <button class="action-btn" title="Notifications">
-                    <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none"
-                        stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                        <path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"></path>
-                        <path d="M13.73 21a2 2 0 0 1-3.46 0"></path>
-                    </svg>
-                </button>
                 <div class="user-profile" id="user-profile-btn">
                     <div class="avatar" id="avatar-circle">?</div>
                     <div class="profile-info">
@@ -99,12 +180,13 @@
                 </div>
             </div>
         </header>
+
         <div class="dashboard-container">
             <aside class="sidebar">
                 <nav class="sidebar-nav">
                     <div class="nav-group">Main Menu</div>
-                    <a href="dashboard.html" class="nav-item active">Homepage</a>
-                    <a href="schedule.html" class="nav-item">Schedule</a>
+                    <a href="dashboard.html" class="nav-item">Homepage</a>
+                    <a href="schedule.html" class="nav-item active">Schedule</a>
                     <a href="#" class="nav-item">Book a Session</a>
                     <a href="#" class="nav-item">History</a>
 
@@ -115,22 +197,43 @@
                     </div>
                 </nav>
             </aside>
+
             <main class="dashboard-main">
-                <div class="app-container">
-                    <div class="dashboard-content">
-                        <div class="user-badge">Logged in as gourav@marrowmed.com</div>
-                        <h1>Workspace</h1>
-                        <p>Your minimalist workspace is ready.</p>
+                <div class="schedule-header">
+                    <div>
+                        <h1>Weekly Schedule</h1>
+                        <p style="color: var(--text-secondary);">Track your sessions and stay ahead.</p>
                     </div>
+                    <div id="filter-container">
+                        <!-- Populated via JS: Selector for Admins, Text for Students -->
+                    </div>
+                </div>
+
+                <div class="schedule-table-container">
+                    <table>
+                        <thead>
+                            <tr>
+                                <th>Date</th>
+                                <th>Topics</th>
+                                <th>Module Code</th>
+                                <th style="text-align: center;">Done</th>
+                                <th>My Remarks</th>
+                            </tr>
+                        </thead>
+                        <tbody id="schedule-body">
+                            <!-- Populated via JS -->
+                        </tbody>
+                    </table>
                 </div>
             </main>
         </div>
     </div>
+
     <!-- Profile & Password Modal -->
     <div id="password-modal" class="modal-overlay">
         <div class="login-card" style="max-width: 500px; position: relative;">
             <button class="modal-close-btn"
-                onclick="document.getElementById('password-modal').classList.remove('active')" aria-label="Close modal">
+                onclick="document.getElementById('password-modal').classList.remove('active')">
                 <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none"
                     stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
                     <line x1="18" y1="6" x2="6" y2="18"></line>
@@ -138,8 +241,8 @@
                 </svg>
             </button>
             <div class="header">
-                <h2 id="pwd-modal-title">My Profile</h2>
-                <p id="pwd-modal-desc">View your details and update your security settings.</p>
+                <h2>My Profile</h2>
+                <p>View your details and update security settings.</p>
             </div>
             <form id="update-password-form">
                 <div class="profile-details-stack"
@@ -154,59 +257,19 @@
                         <input type="email" id="profile-email" readonly
                             style="opacity: 0.8; cursor: not-allowed; background: rgba(255,255,255,0.03); border: none;">
                     </div>
-                    <div class="input-group">
-                        <label>Phone Number</label>
-                        <input type="text" id="profile-phone" readonly
-                            style="opacity: 0.8; cursor: not-allowed; background: rgba(255,255,255,0.03); border: none;">
-                    </div>
                 </div>
-
-                <div class="header" style="margin: 1.5rem 0 1rem 0; text-align: left; padding: 0;">
-                    <h3 style="font-size: 1rem; color: var(--accent-color);">Change Password</h3>
-                </div>
-
                 <div class="input-group">
                     <label>New Password</label>
-                    <div class="password-wrapper">
-                        <input type="password" id="new-password" required placeholder="••••••••">
-                        <button type="button" class="toggle-btn"
-                            onclick="togglePasswordVisibility('new-password', this)">
-                            <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24"
-                                fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"
-                                stroke-linejoin="round" class="eye-icon">
-                                <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"></path>
-                                <circle cx="12" cy="12" r="3"></circle>
-                            </svg>
-                        </button>
-                    </div>
+                    <input type="password" id="new-password" required placeholder="••••••••">
                 </div>
-                <div class="input-group">
-                    <label>Confirm Password</label>
-                    <div class="password-wrapper">
-                        <input type="password" id="confirm-password" required placeholder="••••••••">
-                        <button type="button" class="toggle-btn"
-                            onclick="togglePasswordVisibility('confirm-password', this)">
-                            <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24"
-                                fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"
-                                stroke-linejoin="round" class="eye-icon">
-                                <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"></path>
-                                <circle cx="12" cy="12" r="3"></circle>
-                            </svg>
-                        </button>
-                    </div>
-                </div>
-
-                <div style="display: flex; gap: 1rem; margin-top: 2rem;">
-                    <button type="submit" id="update-pwd-submit" class="login-button" style="flex: 1; opacity: 0.5;"
-                        disabled>Update Password</button>
-                </div>
+                <button type="submit" class="login-button" style="width: 100%; margin-top: 2rem;">Update
+                    Password</button>
             </form>
         </div>
     </div>
 
-    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <script src="supabase-init.js"></script>
-    <script src="dashboard.js"></script>
+    <script src="schedule.js"></script>
 </body>
 
 </html>
