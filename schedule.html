@@ -20,12 +20,33 @@
         /* Hidden until auth */
 
         .schedule-header {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
             margin-bottom: 2rem;
+        }
+
+        .filter-section {
+            display: flex;
             flex-wrap: wrap;
             gap: 1rem;
+            margin-bottom: 1.5rem;
+            padding: 1.5rem;
+            background: rgba(255, 255, 255, 0.02);
+            border: 1px solid var(--glass-border);
+            border-radius: 1rem;
+            align-items: flex-end;
+        }
+
+        .filter-group {
+            display: flex;
+            flex-direction: column;
+            gap: 0.5rem;
+        }
+
+        .filter-group label {
+            font-size: 0.75rem;
+            font-weight: 600;
+            color: var(--text-secondary);
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
         }
 
         .schedule-table-container {
@@ -44,62 +65,29 @@
 
         th {
             background: rgba(255, 255, 255, 0.02);
-            padding: 1.25rem 1.5rem;
-            font-size: 0.8rem;
+            padding: 1.25rem 1rem;
+            font-size: 0.75rem;
             font-weight: 700;
             text-transform: uppercase;
             letter-spacing: 0.05em;
             color: var(--text-secondary);
             border-bottom: 1px solid var(--glass-border);
+            white-space: nowrap;
         }
 
         td {
-            padding: 1.25rem 1.5rem;
-            font-size: 0.95rem;
+            padding: 1rem;
+            font-size: 0.9rem;
             color: var(--text-primary);
             border-bottom: 1px solid var(--glass-border);
             vertical-align: middle;
         }
 
-        .info-btn {
-            background: rgba(56, 189, 248, 0.1);
-            border: 1px solid var(--accent-color);
-            color: var(--accent-color);
-            width: 24px;
-            height: 24px;
-            border-radius: 50%;
-            cursor: help;
-            display: inline-flex;
-            align-items: center;
-            justify-content: center;
-            font-size: 0.75rem;
-            margin-left: 0.5rem;
-            position: relative;
-        }
-
-        /* Tooltip */
-        .info-btn:hover::after {
-            content: attr(data-tooltip);
-            position: absolute;
-            bottom: 125%;
-            left: 50%;
-            transform: translateX(-50%);
-            background: #1e293b;
-            color: #fff;
-            padding: 0.75rem;
-            border-radius: 0.5rem;
-            font-size: 0.8rem;
-            white-space: pre-line;
-            width: 200px;
-            z-index: 100;
-            box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.3);
-            border: 1px solid var(--glass-border);
-        }
-
         .checkbox-custom {
-            width: 20px;
-            height: 20px;
-            accent-color: var(--accent-color);
+            width: 22px;
+            height: 22px;
+            accent-color: #22c55e;
+            /* Green tick */
             cursor: pointer;
         }
 
@@ -107,50 +95,73 @@
             background: rgba(15, 23, 42, 0.6);
             border: 1px solid var(--glass-border);
             border-radius: 0.5rem;
-            padding: 0.5rem 0.75rem;
+            padding: 0.6rem 0.8rem;
             color: var(--text-primary);
             font-size: 0.85rem;
             width: 100%;
+            min-width: 200px;
             transition: all 0.2s;
         }
 
         .remarks-input:focus {
             border-color: var(--accent-color);
             outline: none;
+            background: rgba(15, 23, 42, 0.8);
         }
 
-        .centre-selector {
-            -webkit-appearance: none;
-            -moz-appearance: none;
-            appearance: none;
+        .centre-selector,
+        .filter-select,
+        .filter-input {
             background: rgba(15, 23, 42, 0.6);
-            background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='16' height='16' viewBox='0 0 24 24' fill='none' stroke='%2338bdf8' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpolyline points='6 9 12 15 18 9'%3E%3C/polyline%3E%3C/svg%3E");
-            background-repeat: no-repeat;
-            background-position: right 1rem center;
             border: 1px solid var(--glass-border);
             border-radius: 0.75rem;
-            padding: 0.5rem 2.5rem 0.5rem 1rem;
+            padding: 0.6rem 1rem;
             color: var(--text-primary);
             font-family: 'Inter', sans-serif;
             font-size: 0.9rem;
             outline: none;
-            cursor: pointer;
             transition: all 0.2s;
         }
 
-        .centre-selector:focus {
+        select.filter-select {
+            padding-right: 2.5rem;
+            -webkit-appearance: none;
+            background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='16' height='16' viewBox='0 0 24 24' fill='none' stroke='%2338bdf8' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpolyline points='6 9 12 15 18 9'%3E%3C/polyline%3E%3C/svg%3E");
+            background-repeat: no-repeat;
+            background-position: right 1rem center;
+        }
+
+        .filter-select:focus,
+        .filter-input:focus {
             border-color: var(--accent-color);
             box-shadow: 0 0 0 4px rgba(56, 189, 248, 0.1);
         }
 
         .locked-centre {
-            padding: 0.5rem 1rem;
+            padding: 0.6rem 1.25rem;
             background: rgba(56, 189, 248, 0.1);
             border: 1px solid rgba(56, 189, 248, 0.2);
             border-radius: 0.75rem;
             font-size: 0.9rem;
             color: var(--accent-color);
             font-weight: 600;
+        }
+
+        .timing-info {
+            font-size: 0.75rem;
+            color: var(--text-secondary);
+            margin-top: 0.25rem;
+            display: block;
+        }
+
+        .qs-badge {
+            background: rgba(255, 255, 255, 0.05);
+            padding: 0.2rem 0.6rem;
+            border-radius: 2rem;
+            font-size: 0.75rem;
+            font-weight: 600;
+            color: var(--accent-color);
+            border: 1px solid var(--glass-border);
         }
     </style>
 </head>
@@ -214,12 +225,54 @@
 
             <main class="dashboard-main">
                 <div class="schedule-header">
-                    <div>
-                        <h1>Weekly Schedule</h1>
-                        <p style="color: var(--text-secondary);">Track your sessions and stay ahead.</p>
+                    <div
+                        style="display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 2rem;">
+                        <div>
+                            <h1>Weekly Schedule</h1>
+                            <p style="color: var(--text-secondary);">Track your sessions and stay ahead.</p>
+                        </div>
+                        <div id="filter-container">
+                            <!-- Centre Selector (Admin) or Locked Label (Student) -->
+                        </div>
                     </div>
-                    <div id="filter-container">
-                        <!-- Populated via JS: Selector for Admins, Text for Students -->
+
+                    <div class="filter-section">
+                        <!-- Date Filter -->
+                        <div class="filter-group">
+                            <label>Date Filter</label>
+                            <div style="display: flex; gap: 0.5rem;">
+                                <select id="date-condition" class="filter-select"
+                                    style="min-width: 120px; appearance: none;">
+                                    <option value="all">All Dates</option>
+                                    <option value="on">On</option>
+                                    <option value="before">Before</option>
+                                    <option value="after">After</option>
+                                    <option value="between">Between</option>
+                                    <option value="since">Since</option>
+                                </select>
+                                <input type="date" id="date-val-1" class="filter-input" style="display: none;">
+                                <input type="date" id="date-val-2" class="filter-input" style="display: none;">
+                            </div>
+                        </div>
+
+                        <!-- Subject Filter -->
+                        <div class="filter-group">
+                            <label>Subject</label>
+                            <select id="subject-filter" class="filter-select"
+                                style="min-width: 180px; appearance: none;">
+                                <option value="all">All Subjects</option>
+                            </select>
+                        </div>
+
+                        <!-- Search Topics -->
+                        <div class="filter-group" style="flex: 1; min-width: 250px;">
+                            <label>Search Topics</label>
+                            <input type="text" id="topic-search" class="filter-input"
+                                placeholder="Search by topic name..." style="width: 100%;">
+                        </div>
+
+                        <button id="clear-filters" class="login-button"
+                            style="margin: 0; padding: 0.6rem 1.25rem; font-size: 0.85rem; background: rgba(255,255,255,0.05); color: #fff;">Clear</button>
                     </div>
                 </div>
 
@@ -230,7 +283,9 @@
                                 <th>Date</th>
                                 <th>Subject</th>
                                 <th>Topics</th>
-                                <th>Module Code</th>
+                                <th>Custom Module Code</th>
+                                <th>Timing</th>
+                                <th style="text-align: center;">Qs</th>
                                 <th style="text-align: center;">Done</th>
                                 <th>My Remarks</th>
                             </tr>

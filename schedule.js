@@ -17,6 +17,16 @@ document.addEventListener('DOMContentLoaded', async () => {
     // UI State
     let currentUser = null;
     let selectedCentre = null;
+    let allSchedules = [];
+    let currentProgressMap = {};
+
+    // UI Elements for Filtering
+    const dateCondition = document.getElementById('date-condition');
+    const dateVal1 = document.getElementById('date-val-1');
+    const dateVal2 = document.getElementById('date-val-2');
+    const subjectFilter = document.getElementById('subject-filter');
+    const topicSearch = document.getElementById('topic-search');
+    const clearBtn = document.getElementById('clear-filters');
 
     // Dropdown Logic
     profileBtn?.addEventListener('click', (e) => {
@@ -32,17 +42,60 @@ document.addEventListener('DOMContentLoaded', async () => {
         window.location.replace('index.html');
     });
 
-    // Helper: Format Date/Time (Safe local handling)
+    // Helper: Safe Date/Time (Avoids timezone shifts by treating as local)
+    const getLocalDate = (str) => {
+        if (!str) return null;
+        // If it's just a date 'YYYY-MM-DD', append a dummy time to avoid UTC shift in some browsers
+        const normalized = str.includes(' ') ? str.replace(' ', 'T') : `${str}T00:00:00`;
+        return new Date(normalized);
+    };
+
     const formatDate = (dateStr) => {
-        if (!dateStr) return '-';
-        const d = new Date(dateStr.includes('T') ? dateStr : dateStr.replace(' ', 'T'));
-        return d.toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric' });
+        const d = getLocalDate(dateStr);
+        return d ? d.toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric' }) : '-';
     };
 
     const formatTime = (dateStr) => {
-        if (!dateStr) return '-';
-        const d = new Date(dateStr.includes('T') ? dateStr : dateStr.replace(' ', 'T'));
-        return d.toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit', hour12: true });
+        const d = getLocalDate(dateStr);
+        return d ? d.toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit', hour12: true }) : '-';
+    };
+
+    const applyFilters = () => {
+        let filtered = allSchedules;
+
+        // 1. Date Filter
+        const cond = dateCondition.value;
+        const v1 = dateVal1.value;
+        const v2 = dateVal2.value;
+
+        if (cond !== 'all' && v1) {
+            filtered = filtered.filter(item => {
+                const itemDate = item.date; // YYYY-MM-DD
+                if (cond === 'on') return itemDate === v1;
+                if (cond === 'before') return itemDate < v1;
+                if (cond === 'after') return itemDate > v1;
+                if (cond === 'since') return itemDate >= v1;
+                if (cond === 'between' && v2) return itemDate >= v1 && itemDate <= v2;
+                return true;
+            });
+        }
+
+        // 2. Subject Filter
+        const sub = subjectFilter.value;
+        if (sub !== 'all') {
+            filtered = filtered.filter(item => item.subject === sub);
+        }
+
+        // 3. Topic Search
+        const search = topicSearch.value.toLowerCase().trim();
+        if (search) {
+            filtered = filtered.filter(item =>
+                (item.topic || '').toLowerCase().includes(search) ||
+                (item.subject || '').toLowerCase().includes(search)
+            );
+        }
+
+        renderSchedule(filtered, currentProgressMap);
     };
 
     const fetchSchedule = async () => {
@@ -64,23 +117,29 @@ document.addEventListener('DOMContentLoaded', async () => {
 
             if (progError) throw progError;
 
-            const progressMap = {};
-            progress?.forEach(p => progressMap[p.schedule_id] = p);
+            allSchedules = schedules || [];
+            currentProgressMap = {};
+            progress?.forEach(p => currentProgressMap[p.schedule_id] = p);
 
-            renderSchedule(schedules, progressMap);
+            // Populate Subject Dropdown
+            const subjects = [...new Set(allSchedules.map(s => s.subject).filter(Boolean))].sort();
+            subjectFilter.innerHTML = '<option value="all">All Subjects</option>' +
+                subjects.map(s => `<option value="${s}">${s}</option>`).join('');
+
+            applyFilters();
         } catch (err) {
             console.error('Fetch Error:', err);
-            scheduleBody.innerHTML = `<tr><td colspan="5" style="text-align:center; color:#ef4444;">Error loading schedule.</td></tr>`;
+            scheduleBody.innerHTML = `<tr><td colspan="8" style="text-align:center; color:#ef4444;">Error loading schedule.</td></tr>`;
         }
     };
 
     const renderSchedule = (schedules, progressMap) => {
         if (!schedules || schedules.length === 0) {
-            scheduleBody.innerHTML = `<tr><td colspan="6" style="text-align:center; padding: 3rem; color: var(--text-secondary);">No sessions scheduled for ${selectedCentre}.</td></tr>`;
+            scheduleBody.innerHTML = `<tr><td colspan="8" style="text-align:center; padding: 3rem; color: var(--text-secondary);">No sessions match your filters.</td></tr>`;
             return;
         }
 
-        // Calculate Rowspan for Subjects
+        // Calculate Rowspan for Subjects (only when not searching/filtering heavily to maintain UI sanity)
         const subjectRowspans = [];
         let currentSubject = null;
         let count = 0;
@@ -102,11 +161,15 @@ document.addEventListener('DOMContentLoaded', async () => {
 
         scheduleBody.innerHTML = schedules.map((item, index) => {
             const userProg = progressMap[item.id] || { is_done: false, remarks: '' };
-            const tooltip = `Starts: ${formatDate(item.start_datetime)} ${formatTime(item.start_datetime)}\nEnds: ${formatDate(item.end_datetime)} ${formatTime(item.end_datetime)}\nQuestions: ${item.num_questions}`;
 
             const subjectCell = subjectRowspans[index]
                 ? `<td rowspan="${subjectRowspans[index]}" style="vertical-align: middle; border-right: 1px solid var(--glass-border); background: rgba(255,255,255,0.02); font-weight:700; color:var(--accent-color); text-transform:uppercase; font-size:0.8rem; letter-spacing:0.05em;">${item.subject || '-'}</td>`
                 : '';
+
+            const timing = `
+                <div style="font-weight: 600;">${formatTime(item.start_datetime)}</div>
+                <div class="timing-info">to ${formatTime(item.end_datetime)}</div>
+            `;
 
             return `
                 <tr>
@@ -114,24 +177,46 @@ document.addEventListener('DOMContentLoaded', async () => {
                     ${subjectCell}
                     <td><span style="font-weight: 600;">${item.topic}</span></td>
                     <td>
-                        <code style="background: rgba(255,255,255,0.05); padding: 0.2rem 0.5rem; border-radius: 0.4rem; font-family: monospace;">${item.custom_module_code}</code>
-                        <div class="info-btn" data-tooltip="${tooltip}">i</div>
+                        <code style="background: rgba(255,255,255,0.05); padding: 0.2rem 0.6rem; border-radius: 0.4rem; font-family: monospace; font-size: 0.85rem;">${item.custom_module_code || '-'}</code>
                     </td>
+                    <td style="white-space: nowrap;">${timing}</td>
+                    <td style="text-align: center;"><span class="qs-badge">${item.num_questions || 0}</span></td>
                     <td style="text-align: center;">
                         <input type="checkbox" class="checkbox-custom" 
                             ${userProg.is_done ? 'checked' : ''} 
                             onchange="window.updateProgress('${item.id}', this.checked)">
                     </td>
                     <td>
-                        <input type="text" class="remarks-input" 
+                        <textarea class="remarks-input" 
                             placeholder="Add remarks..." 
-                            value="${userProg.remarks || ''}"
-                            onblur="window.updateRemarks('${item.id}', this.value)">
+                            rows="1"
+                            onblur="window.updateRemarks('${item.id}', this.value)"
+                            style="resize: vertical; min-height: 38px;">${userProg.remarks || ''}</textarea>
                     </td>
                 </tr>
             `;
         }).join('');
     };
+
+    // Filter Event Listeners
+    dateCondition?.addEventListener('change', () => {
+        const val = dateCondition.value;
+        dateVal1.style.display = (val !== 'all') ? 'block' : 'none';
+        dateVal2.style.display = (val === 'between') ? 'block' : 'none';
+        applyFilters();
+    });
+    [dateVal1, dateVal2, subjectFilter].forEach(el => el?.addEventListener('change', applyFilters));
+    topicSearch?.addEventListener('input', applyFilters);
+    clearBtn?.addEventListener('click', () => {
+        dateCondition.value = 'all';
+        dateVal1.value = '';
+        dateVal2.value = '';
+        dateVal1.style.display = 'none';
+        dateVal2.style.display = 'none';
+        subjectFilter.value = 'all';
+        topicSearch.value = '';
+        applyFilters();
+    });
 
     // Global Handlers for Row Interactivity
     window.updateProgress = async (scheduleId, isDone) => {
