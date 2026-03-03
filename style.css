@@ -339,98 +339,79 @@ input::placeholder {
     /* Increased to accommodate more columns */
 }
 
-/* Specific column control */
-th:nth-child(1),
-td:nth-child(1) {
+/* Table column control using classes */
+.col-date {
     width: 110px;
+    min-width: 110px;
 }
 
-/* Date */
-th:nth-child(2),
-td:nth-child(2) {
+.col-subject {
     width: 130px;
+    min-width: 130px;
 }
 
-/* Subject */
-th:nth-child(3),
-td:nth-child(3) {
-    width: 120px;
+.col-type {
+    width: 100px;
+    min-width: 100px;
 }
 
-/* Type */
-th:nth-child(4),
-td:nth-child(4) {
+.col-topic {
     width: auto;
-    min-width: 200px;
-    max-width: 300px;
+    min-width: 250px;
 }
 
-/* Topics */
-th:nth-child(5),
-td:nth-child(5) {
+.col-gt {
     width: 130px;
+    min-width: 130px;
 }
 
-/* Marrow GT */
-th:nth-child(6),
-td:nth-child(6) {
+.col-module {
     width: 150px;
+    min-width: 150px;
 }
 
-/* Module Code */
-th:nth-child(7),
-td:nth-child(7) {
+.col-timing {
     width: 160px;
+    min-width: 160px;
 }
 
-/* Timing */
-th:nth-child(8),
-td:nth-child(8) {
+.col-mcqs {
     width: 70px;
+    min-width: 70px;
 }
 
-/* MCQs */
-th:nth-child(9),
-td:nth-child(9) {
+.col-score {
     width: 80px;
+    min-width: 80px;
 }
 
-/* Score */
-th:nth-child(10),
-td:nth-child(10) {
+.col-percentile {
     width: 90px;
+    min-width: 90px;
 }
 
-/* Percentile */
-th:nth-child(11),
-td:nth-child(11) {
+.col-complete {
     width: 130px;
+    min-width: 130px;
 }
 
-/* Mark Complete */
-th:nth-child(12),
-td:nth-child(12) {
-    width: 200px;
-}
-
-/* Remarks */
-th:nth-child(13),
-td:nth-child(13) {
+.col-remarks {
     width: 250px;
+    min-width: 250px;
+    max-width: 250px;
 }
 
 .schedule-table-container th {
     position: sticky;
-    top: -2rem;
-    /* Offset the 2rem padding of dashboard-main */
+    top: -2.05rem;
+    /* Slightly more than padding to hide border gap */
     background: #0f172a;
-    /* Match body bg for seamless look */
-    z-index: 10;
+    z-index: 100;
     white-space: normal;
     word-wrap: break-word;
     vertical-align: middle;
     line-height: 1.2;
-    box-shadow: 0 1px 0 var(--glass-border), 0 10px 15px -10px rgba(0, 0, 0, 0.5);
+    box-shadow: 0 1px 0 var(--glass-border), 0 10px 15px -10px rgba(0, 0, 0, 0.8);
 }
 
 .schedule-table-container td {
