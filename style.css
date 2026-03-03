@@ -426,6 +426,7 @@ td:nth-child(13) {
     background: #0f172a;
     /* Match body bg for seamless look */
     z-index: 10;
+    padding: 1.25rem 1rem;
     white-space: normal;
     word-wrap: break-word;
     vertical-align: middle;
@@ -434,6 +435,7 @@ td:nth-child(13) {
 }
 
 .schedule-table-container td {
+    padding: 1rem;
     word-wrap: break-word;
     overflow-wrap: break-word;
     white-space: normal;
@@ -442,6 +444,7 @@ td:nth-child(13) {
 }
 
 .remarks-input {
+    display: block;
     width: 100%;
     max-width: 100%;
     box-sizing: border-box;
