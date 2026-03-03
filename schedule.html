@@ -99,7 +99,6 @@
             color: var(--text-primary);
             font-size: 0.85rem;
             width: 100%;
-            min-width: 200px;
             transition: all 0.2s;
         }
 
@@ -187,7 +186,10 @@
             text-align: center;
         }
 
-        /* Column style handled in style.css */
+        /* Cap widths for table labels/headers */
+        .schedule-table-container th {
+            max-width: 150px;
+        }
     </style>
 </head>
 
@@ -296,6 +298,17 @@
                             <select id="subject-filter" class="filter-select"
                                 style="min-width: 180px; appearance: none;">
                                 <option value="all">All Subjects</option>
+                            </select>
+                        </div>
+
+                        <!-- Status Filter -->
+                        <div class="filter-group">
+                            <label>Show/Hide</label>
+                            <select id="status-filter" class="filter-select"
+                                style="min-width: 160px; appearance: none;">
+                                <option value="all">All Topics</option>
+                                <option value="pending">Hide Completed</option>
+                                <option value="completed">Only Completed</option>
                             </select>
                         </div>
 

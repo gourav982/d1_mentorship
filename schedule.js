@@ -27,6 +27,7 @@ document.addEventListener('DOMContentLoaded', async () => {
     const dateVal2 = document.getElementById('date-val-2');
     const subjectFilter = document.getElementById('subject-filter');
     const topicSearch = document.getElementById('topic-search');
+    const statusFilter = document.getElementById('status-filter');
     const clearBtn = document.getElementById('clear-filters');
 
     const sidebar = document.querySelector('.sidebar');
@@ -110,6 +111,17 @@ document.addEventListener('DOMContentLoaded', async () => {
                 (item.topic || '').toLowerCase().includes(search) ||
                 (item.subject || '').toLowerCase().includes(search)
             );
+        }
+
+        // 4. Status Filter
+        const status = statusFilter.value;
+        if (status !== 'all') {
+            filtered = filtered.filter(item => {
+                const userProg = currentProgressMap[item.id] || { is_done: false };
+                if (status === 'pending') return !userProg.is_done;
+                if (status === 'completed') return userProg.is_done;
+                return true;
+            });
         }
 
         renderSchedule(filtered, currentProgressMap);
@@ -238,8 +250,9 @@ document.addEventListener('DOMContentLoaded', async () => {
                     <td>
                         <textarea class="remarks-input" 
                             placeholder="Add remarks..." 
-                            rows="1"
-                            onblur="window.updateRemarks('${item.id}', this.value)">${userProg.remarks || ''}</textarea>
+                            rows="2"
+                            onblur="window.updateRemarks('${item.id}', this.value)"
+                            style="resize: vertical; min-height: 38px;">${userProg.remarks || ''}</textarea>
                     </td>
                 </tr>
             `;
@@ -255,6 +268,7 @@ document.addEventListener('DOMContentLoaded', async () => {
     });
     [dateVal1, dateVal2, subjectFilter].forEach(el => el?.addEventListener('change', applyFilters));
     topicSearch?.addEventListener('input', applyFilters);
+    statusFilter?.addEventListener('change', applyFilters);
     clearBtn?.addEventListener('click', () => {
         dateCondition.value = 'all';
         dateVal1.value = '';
@@ -263,6 +277,7 @@ document.addEventListener('DOMContentLoaded', async () => {
         dateVal2.style.display = 'none';
         subjectFilter.value = 'all';
         topicSearch.value = '';
+        statusFilter.value = 'all';
         applyFilters();
     });
 

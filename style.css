@@ -339,79 +339,86 @@ input::placeholder {
     /* Increased to accommodate more columns */
 }
 
-/* 1. Date */
+/* Specific column control */
 th:nth-child(1),
 td:nth-child(1) {
-    width: 140px;
+    width: 110px;
 }
 
-/* 2. Subject */
+/* Date */
 th:nth-child(2),
 td:nth-child(2) {
     width: 130px;
 }
 
-/* 3. Type */
+/* Subject */
 th:nth-child(3),
 td:nth-child(3) {
-    width: 100px;
-}
-
-/* 4. Topics */
-th:nth-child(4),
-td:nth-child(4) {
-    width: auto;
-    min-width: 300px;
-}
-
-/* 5. Marrow GT */
-th:nth-child(5),
-td:nth-child(5) {
     width: 120px;
 }
 
-/* 6. Module Code */
-th:nth-child(6),
-td:nth-child(6) {
+/* Type */
+th:nth-child(4),
+td:nth-child(4) {
+    width: auto;
+    min-width: 200px;
+    max-width: 300px;
+}
+
+/* Topics */
+th:nth-child(5),
+td:nth-child(5) {
     width: 130px;
 }
 
-/* 7. Timing */
+/* Marrow GT */
+th:nth-child(6),
+td:nth-child(6) {
+    width: 150px;
+}
+
+/* Module Code */
 th:nth-child(7),
 td:nth-child(7) {
     width: 160px;
 }
 
-/* 8. MCQs */
+/* Timing */
 th:nth-child(8),
 td:nth-child(8) {
     width: 70px;
 }
 
-/* 9. Score */
+/* MCQs */
 th:nth-child(9),
 td:nth-child(9) {
     width: 80px;
 }
 
-/* 10. Percentile */
+/* Score */
 th:nth-child(10),
 td:nth-child(10) {
-    width: 110px;
+    width: 90px;
 }
 
-/* 11. Mark Complete */
+/* Percentile */
 th:nth-child(11),
 td:nth-child(11) {
-    width: 140px;
+    width: 130px;
 }
 
-/* 12. Remarks */
+/* Mark Complete */
 th:nth-child(12),
 td:nth-child(12) {
-    width: 300px !important;
-    padding: 0.75rem !important;
-    overflow: hidden;
+    width: 200px;
+}
+
+/* Remarks */
+th:nth-child(13),
+td:nth-child(13) {
+    width: 240px;
+    padding-right: 1.5rem !important;
+    /* Increase space at the end */
 }
 
 .schedule-table-container th {
@@ -442,17 +449,18 @@ td:nth-child(12) {
     display: block;
     width: 100%;
     min-height: 48px;
+    max-width: 210px;
+    /* Force it to be smaller than the 240px column */
     box-sizing: border-box;
     background: rgba(255, 255, 255, 0.05);
     border: 1px solid var(--glass-border);
     border-radius: 0.6rem;
-    padding: 0.75rem;
+    padding: 0.6rem;
     color: var(--text-primary);
     font-size: 0.85rem;
-    resize: vertical;
-    /* Drags down only, not sideways */
+    resize: none;
     transition: all 0.2s;
-    max-width: 100%;
+    margin-right: 0.5rem;
 }
 
 .remarks-input:focus {
