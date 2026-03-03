@@ -195,15 +195,13 @@ document.addEventListener('DOMContentLoaded', async () => {
         scheduleBody.innerHTML = schedules.map((item, index) => {
             const userProg = progressMap[item.id] || { is_done: false, remarks: '' };
 
-            const subjectRowspanVal = subjectRowspans[index];
-            const subjectCell = subjectRowspanVal
-                ? `<td class="col-subject" rowspan="${subjectRowspanVal}" style="vertical-align: middle; border-right: 1px solid var(--glass-border); background: rgba(255,255,255,0.02); font-weight:700; color:var(--accent-color); text-transform:uppercase; font-size:0.8rem; letter-spacing:0.05em; text-align: center;">${item.subject || '-'}</td>`
+            const subjectCell = subjectRowspans[index]
+                ? `<td rowspan="${subjectRowspans[index]}" style="vertical-align: middle; border-right: 1px solid var(--glass-border); background: rgba(255,255,255,0.02); font-weight:700; color:var(--accent-color); text-transform:uppercase; font-size:0.8rem; letter-spacing:0.05em; text-align: center;">${item.subject || '-'}</td>`
                 : '';
 
-            const gtRowspanVal = gtRowspans[index];
-            const gtCell = gtRowspanVal
-                ? `<td class="col-gt" rowspan="${gtRowspanVal}" style="vertical-align: middle; background: rgba(34, 197, 94, 0.05); color: #22c55e; font-weight: 600; text-align: center; border-right: 1px solid var(--glass-border);">${item.marrow_gt}</td>`
-                : (item.marrow_gt && item.marrow_gt !== '-' ? '' : '<td class="col-gt">-</td>');
+            const gtCell = gtRowspans[index]
+                ? `<td rowspan="${gtRowspans[index]}" style="vertical-align: middle; background: rgba(34, 197, 94, 0.05); color: #22c55e; font-weight: 600; text-align: center; border-right: 1px solid var(--glass-border);">${item.marrow_gt}</td>`
+                : (item.marrow_gt && item.marrow_gt !== '-' ? '' : '<td>-</td>');
 
             let timing = '-';
             const startTime = formatTime(item.start_datetime);
@@ -216,28 +214,28 @@ document.addEventListener('DOMContentLoaded', async () => {
 
             return `
                 <tr>
-                    <td class="col-date" style="white-space: nowrap;">${formatDate(item.date)}</td>
+                    <td style="white-space: nowrap;">${formatDate(item.date)}</td>
                     ${subjectCell}
-                    <td class="col-type" style="text-align: center;"><span style="font-size: 0.8rem; padding: 0.2rem 0.5rem; border-radius: 4px; background: rgba(255,255,255,0.05);">${item.type || 'Study Day'}</span></td>
-                    <td class="col-topic"><span style="font-weight: 600;">${item.topic}</span></td>
+                    <td style="text-align: center;"><span style="font-size: 0.8rem; padding: 0.2rem 0.5rem; border-radius: 4px; background: rgba(255,255,255,0.05);">${item.type || 'Study Day'}</span></td>
+                    <td><span style="font-weight: 600;">${item.topic}</span></td>
                     ${gtCell}
-                    <td class="col-module">
+                    <td>
                         <code style="background: rgba(255,255,255,0.05); padding: 0.2rem 0.6rem; border-radius: 0.4rem; font-family: monospace; font-size: 0.85rem;">${item.custom_module_code || '-'}</code>
                     </td>
-                    <td class="col-timing">${timing}</td>
-                    <td class="col-mcqs" style="text-align: center;">
+                    <td>${timing}</td>
+                    <td style="text-align: center;">
                         <span class="qs-badge" style="${(!item.num_questions || item.num_questions === 0) ? 'background:none; border:none; opacity:0.5;' : ''}">
                             ${(item.num_questions && item.num_questions !== 0) ? item.num_questions : '-'}
                         </span>
                     </td>
-                    <td class="col-score" style="text-align: center;"><span style="color: var(--accent-color); font-weight: 600;">${result.score}</span></td>
-                    <td class="col-percentile" style="text-align: center;"><span style="color: var(--text-secondary);">${result.percentile}</span></td>
-                    <td class="col-complete" style="text-align: center;">
+                    <td style="text-align: center;"><span style="color: var(--accent-color); font-weight: 600;">${result.score}</span></td>
+                    <td style="text-align: center;"><span style="color: var(--text-secondary);">${result.percentile}</span></td>
+                    <td style="text-align: center;">
                         <input type="checkbox" class="checkbox-custom" 
                             ${userProg.is_done ? 'checked' : ''} 
                             onchange="window.updateProgress('${item.id}', this.checked)">
                     </td>
-                    <td class="col-remarks">
+                    <td>
                         <textarea class="remarks-input" 
                             placeholder="Add remarks..." 
                             rows="1"
@@ -418,6 +416,27 @@ document.addEventListener('DOMContentLoaded', async () => {
         }
 
         await fetchSchedule();
+
+        // Scroll to Top Logic
+        const mainContainer = document.querySelector('.dashboard-main');
+        const scrollTopBtn = document.getElementById('scroll-to-top');
+
+        if (mainContainer && scrollTopBtn) {
+            mainContainer.addEventListener('scroll', () => {
+                if (mainContainer.scrollTop > 400) {
+                    scrollTopBtn.classList.add('visible');
+                } else {
+                    scrollTopBtn.classList.remove('visible');
+                }
+            });
+
+            scrollTopBtn.addEventListener('click', () => {
+                mainContainer.scrollTo({
+                    top: 0,
+                    behavior: 'smooth'
+                });
+            });
+        }
 
     } catch (err) {
         console.error('Initial Load Error:', err);

@@ -327,13 +327,8 @@ input::placeholder {
     flex: 1;
     overflow-y: auto;
     position: relative;
-    padding: 0;
-    /* Remove top padding for cleaner stickiness */
+    padding: 2rem;
     transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
-}
-
-.schedule-header {
-    padding: 2rem 2rem 1rem 2rem;
 }
 
 .schedule-table-container table {
@@ -344,150 +339,98 @@ input::placeholder {
     /* Increased to accommodate more columns */
 }
 
-/* Table column control using classes - DOMINANT TOPICS */
-.col-date {
-    width: 90px;
-    min-width: 90px;
-}
-
-.col-subject {
-    width: 100px;
-    min-width: 100px;
-}
-
-.col-type {
-    width: 90px;
-    min-width: 90px;
-}
-
-.col-topic {
-    width: 800px;
-    min-width: 600px;
-}
-
-.col-gt {
+/* Specific column control */
+th:nth-child(1),
+td:nth-child(1) {
     width: 110px;
-    min-width: 110px;
 }
 
-.col-module {
-    width: 100px;
-    min-width: 100px;
-}
-
-.col-timing {
+/* Date */
+th:nth-child(2),
+td:nth-child(2) {
     width: 130px;
-    min-width: 130px;
 }
 
-.col-mcqs {
-    width: 60px;
-    min-width: 60px;
-}
-
-.col-score {
-    width: 70px;
-    min-width: 70px;
-}
-
-.col-percentile {
-    width: 80px;
-    min-width: 80px;
-}
-
-.col-complete {
+/* Subject */
+th:nth-child(3),
+td:nth-child(3) {
     width: 120px;
-    min-width: 120px;
 }
 
-.col-remarks {
-    width: 110px;
-    min-width: 110px;
-    max-width: 120px;
+/* Type */
+th:nth-child(4),
+td:nth-child(4) {
+    width: auto;
+    min-width: 200px;
+    max-width: 300px;
+}
+
+/* Topics */
+th:nth-child(5),
+td:nth-child(5) {
+    width: 130px;
+}
+
+/* Marrow GT */
+th:nth-child(6),
+td:nth-child(6) {
+    width: 150px;
+}
+
+/* Module Code */
+th:nth-child(7),
+td:nth-child(7) {
+    width: 160px;
+}
+
+/* Timing */
+th:nth-child(8),
+td:nth-child(8) {
+    width: 70px;
+}
+
+/* MCQs */
+th:nth-child(9),
+td:nth-child(9) {
+    width: 80px;
+}
+
+/* Score */
+th:nth-child(10),
+td:nth-child(10) {
+    width: 90px;
+}
+
+/* Percentile */
+th:nth-child(11),
+td:nth-child(11) {
+    width: 130px;
+}
+
+/* Mark Complete */
+th:nth-child(12),
+td:nth-child(12) {
+    width: 200px;
+}
+
+/* Remarks */
+th:nth-child(13),
+td:nth-child(13) {
+    width: 250px;
 }
 
 .schedule-table-container th {
     position: sticky;
-    top: 100px;
-    /* Perfectly aligns under sticky filter bar */
-    background: #1e293b;
-    /* Distinct background */
-    z-index: 99;
-    padding: 1rem;
-    font-size: 0.7rem;
-    font-weight: 800;
-    text-transform: uppercase;
-    letter-spacing: 0.1em;
-    color: var(--text-secondary);
-    border-bottom: 2px solid var(--glass-border);
-    box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.4);
-}
-
-.filter-section {
-    display: flex;
-    gap: 1.5rem;
-    padding: 1rem 2rem;
+    top: -2rem;
+    /* Offset the 2rem padding of dashboard-main */
     background: #0f172a;
-    border-bottom: 1px solid var(--glass-border);
-    margin: 0 0 1.5rem 0;
-    flex-wrap: wrap;
-    align-items: center;
-    position: sticky;
-    top: 0;
-    z-index: 101;
-    height: 100px;
-    /* Fixed height for stacking logic */
-    box-shadow: 0 10px 15px -10px rgba(0, 0, 0, 0.8);
-}
-
-.filter-group {
-    display: flex;
-    flex-direction: column;
-    gap: 0.5rem;
-}
-
-.filter-group label {
-    font-size: 0.75rem;
-    font-weight: 700;
-    text-transform: uppercase;
-    letter-spacing: 0.05em;
-    color: var(--text-secondary);
-}
-
-.filter-select,
-.filter-input {
-    background: rgba(255, 255, 255, 0.05);
-    border: 1px solid var(--glass-border);
-    border-radius: 0.75rem;
-    padding: 0.75rem 1rem;
-    color: var(--text-primary);
-    font-size: 0.9rem;
-    transition: all 0.2s;
-}
-
-.filter-select:focus,
-.filter-input:focus {
-    outline: none;
-    border-color: var(--accent-color);
-    background: rgba(255, 255, 255, 0.1);
-}
-
-.clear-btn {
-    padding: 0.75rem 1.5rem;
-    background: rgba(239, 68, 68, 0.1);
-    color: #ef4444;
-    border: 1px solid rgba(239, 68, 68, 0.2);
-    border-radius: 0.75rem;
-    font-weight: 600;
-    cursor: pointer;
-    transition: all 0.2s;
-    height: 48px;
-    /* Match filter input height */
-}
-
-.clear-btn:hover {
-    background: rgba(239, 68, 68, 0.2);
-    transform: translateY(-2px);
+    /* Match body bg for seamless look */
+    z-index: 10;
+    white-space: normal;
+    word-wrap: break-word;
+    vertical-align: middle;
+    line-height: 1.2;
+    box-shadow: 0 1px 0 var(--glass-border), 0 10px 15px -10px rgba(0, 0, 0, 0.5);
 }
 
 .schedule-table-container td {
@@ -835,4 +778,47 @@ input::placeholder {
 .modal-close-btn:hover {
     background: rgba(255, 255, 255, 0.05);
     color: #fff;
+}
+
+/* Scroll to Top Button */
+.scroll-top-btn {
+    position: fixed;
+    bottom: 2rem;
+    right: 2.5rem;
+    width: 3.5rem;
+    height: 3.5rem;
+    border-radius: 50%;
+    background: rgba(15, 23, 42, 0.6);
+    backdrop-filter: blur(12px);
+    -webkit-backdrop-filter: blur(12px);
+    border: 1px solid var(--glass-border);
+    color: var(--accent-color);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    box-shadow: 0 15px 35px -5px rgba(0, 0, 0, 0.5);
+    opacity: 0;
+    visibility: hidden;
+    transform: translateY(20px);
+    transition: all 0.4s cubic-bezier(0.16, 1, 0.3, 1);
+    z-index: 2000;
+}
+
+.scroll-top-btn.visible {
+    opacity: 1;
+    visibility: visible;
+    transform: translateY(0);
+}
+
+.scroll-top-btn:hover {
+    background: var(--accent-color);
+    color: #0d1117;
+    transform: translateY(-5px);
+    box-shadow: 0 20px 40px -10px rgba(56, 189, 248, 0.4);
+    border-color: var(--accent-color);
+}
+
+.scroll-top-btn:active {
+    transform: scale(0.95);
 }
