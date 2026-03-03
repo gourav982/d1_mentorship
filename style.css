@@ -232,7 +232,8 @@ input::placeholder {
 }
 
 .sidebar {
-    width: 240px; /* Reduced width */
+    width: 240px;
+    /* Reduced width */
     background: rgba(15, 23, 42, 0.3);
     backdrop-filter: blur(10px);
     -webkit-backdrop-filter: blur(10px);
@@ -256,7 +257,8 @@ input::placeholder {
 
 .sidebar-logo {
     font-family: 'Outfit', sans-serif;
-    font-size: 1.1rem; /* Slightly smaller */
+    font-size: 1.1rem;
+    /* Slightly smaller */
     font-weight: 700;
     white-space: nowrap;
     background: linear-gradient(to right, var(--accent-color), #fff);
@@ -325,31 +327,85 @@ input::placeholder {
     transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
 }
 
-/* Table Responsiveness & Wrapping */
-.schedule-table-container table {
-    table-layout: fixed;
-    border-collapse: collapse;
-    width: 100%;
-    min-width: 1000px; /* Minimum width to avoid squishing too much */
+/* Specific column control */
+th:nth-child(1),
+td:nth-child(1) {
+    width: 110px;
+}
+
+/* Date */
+th:nth-child(2),
+td:nth-child(2) {
+    width: 130px;
+}
+
+/* Subject */
+th:nth-child(3),
+td:nth-child(3) {
+    width: auto;
+    min-width: 200px;
+    max-width: 300px;
+}
+
+/* Topics */
+th:nth-child(4),
+td:nth-child(4) {
+    width: 150px;
+}
+
+/* Module Code */
+th:nth-child(5),
+td:nth-child(5) {
+    width: 160px;
+}
+
+/* Timing */
+th:nth-child(6),
+td:nth-child(6) {
+    width: 70px;
+}
+
+/* MCQs */
+th:nth-child(7),
+td:nth-child(7) {
+    width: 80px;
+}
+
+/* Score */
+th:nth-child(8),
+td:nth-child(8) {
+    width: 90px;
+}
+
+/* Percentile */
+th:nth-child(9),
+td:nth-child(9) {
+    width: 130px;
+}
+
+/* Mark Complete */
+th:nth-child(10),
+td:nth-child(10) {
+    width: 200px;
+}
+
+/* Remarks */
+
+.schedule-table-container th {
+    white-space: normal;
+    word-wrap: break-word;
+    vertical-align: middle;
+    line-height: 1.2;
 }
 
 .schedule-table-container td {
     word-wrap: break-word;
     overflow-wrap: break-word;
     white-space: normal;
-    vertical-align: top;
+    vertical-align: middle;
+    /* Set back to middle */
     line-height: 1.4;
 }
-
-/* Specific column control */
-th:nth-child(1), td:nth-child(1) { width: 110px; } /* Date */
-th:nth-child(2), td:nth-child(2) { width: 130px; } /* Subject */
-th:nth-child(3), td:nth-child(3) { width: auto; min-width: 250px; } /* Topics - Flex filler */
-th:nth-child(4), td:nth-child(4) { width: 150px; } /* Module Code */
-th:nth-child(5), td:nth-child(5) { width: 180px; } /* Timing */
-th:nth-child(6), td:nth-child(6) { width: 70px; }  /* MCQs */
-th:nth-child(7), td:nth-child(7) { width: 140px; } /* Mark Complete */
-th:nth-child(8), td:nth-child(8) { width: 220px; } /* Remarks */
 
 @media (max-width: 1200px) {
     .dashboard-main {

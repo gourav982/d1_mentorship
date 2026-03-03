@@ -4,7 +4,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Upload Schedule | Admin Corner</title>
+    <title>Upload Results | Admin Corner</title>
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link
@@ -16,8 +16,6 @@
         body {
             display: none;
         }
-
-        /* Hidden until auth */
 
         .upload-card {
             background: var(--glass-bg);
@@ -94,31 +92,6 @@
             border-radius: 0.75rem;
             display: none;
         }
-
-        .centre-selector {
-            -webkit-appearance: none;
-            -moz-appearance: none;
-            appearance: none;
-            background: rgba(15, 23, 42, 0.6);
-            background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='16' height='16' viewBox='0 0 24 24' fill='none' stroke='%2338bdf8' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpolyline points='6 9 12 15 18 9'%3E%3C/polyline%3E%3C/svg%3E");
-            background-repeat: no-repeat;
-            background-position: right 1rem center;
-            border: 1px solid var(--glass-border);
-            border-radius: 0.75rem;
-            padding: 1rem 2.5rem 1rem 1rem;
-            color: var(--text-primary);
-            font-family: 'Inter', sans-serif;
-            font-size: 1rem;
-            outline: none;
-            width: 100%;
-            cursor: pointer;
-            transition: all 0.2s;
-        }
-
-        .centre-selector:focus {
-            border-color: var(--accent-color);
-            box-shadow: 0 0 0 4px rgba(56, 189, 248, 0.1);
-        }
     </style>
 </head>
 
@@ -159,8 +132,8 @@
                     <div class="admin-only" id="admin-section" style="display: block;">
                         <div class="nav-group">Admin Corner</div>
                         <a href="admin-users.html" class="nav-item">Users & Roles</a>
-                        <a href="upload-schedule.html" class="nav-item active">Upload Schedule</a>
-                        <a href="upload-results.html" class="nav-item">Upload Results</a>
+                        <a href="upload-schedule.html" class="nav-item">Upload Schedule</a>
+                        <a href="upload-results.html" class="nav-item active">Upload Results</a>
                         <a href="manage-centres.html" class="nav-item">Manage Centres</a>
                     </div>
                 </nav>
@@ -169,8 +142,9 @@
             <main class="dashboard-main">
                 <div class="admin-page-header" style="margin-bottom: 2.5rem;">
                     <div>
-                        <h1>Upload Schedule</h1>
-                        <p style="color: var(--text-secondary);">Sync weekly schedules for your mentorship centres.</p>
+                        <h1>Upload Results</h1>
+                        <p style="color: var(--text-secondary);">Upload test scores and percentiles for student modules.
+                        </p>
                     </div>
                 </div>
 
@@ -185,18 +159,6 @@
                         Download Sample CSV
                     </a>
 
-                    <div class="input-grid"
-                        style="display: grid; grid-template-columns: 1fr; gap: 1.5rem; margin-bottom: 2rem;">
-                        <div class="input-group">
-                            <label>Target Centre</label>
-                            <select id="upload-centre" class="centre-selector">
-                                <option value="Delhi">Delhi</option>
-                                <option value="Kolkata">Kolkata</option>
-                                <option value="Bhubaneswar">Bhubaneswar</option>
-                            </select>
-                        </div>
-                    </div>
-
                     <div class="upload-zone" onclick="document.getElementById('csv-file-input').click()">
                         <svg xmlns="http://www.w3.org/2000/svg" width="48" height="48" viewBox="0 0 24 24" fill="none"
                             stroke="var(--accent-color)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"
@@ -206,12 +168,12 @@
                             <line x1="12" y1="3" x2="12" y2="15"></line>
                         </svg>
                         <h3 style="margin-bottom: 0.5rem;">Select CSV File</h3>
-                        <p id="file-name-display" style="color: var(--text-secondary);">Click to browse files (Date,
-                            Subject, Topic, Custom Module Code, Start, End, Qs)</p>
+                        <p id="file-name-display" style="color: var(--text-secondary);">Click to browse files (Student
+                            Email, Custom Module Code, Score, Percentile)</p>
                         <input type="file" id="csv-file-input" accept=".csv" style="display: none;">
                     </div>
 
-                    <button id="process-upload-btn" class="btn-sync" disabled>Upload Schedule</button>
+                    <button id="process-upload-btn" class="btn-sync" disabled>Upload Results</button>
 
                     <div id="upload-status"></div>
                 </div>
@@ -220,7 +182,7 @@
     </div>
 
     <script src="supabase-init.js"></script>
-    <script src="upload-schedule.js"></script>
+    <script src="upload-results.js"></script>
 </body>
 
 </html>

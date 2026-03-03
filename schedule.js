@@ -19,6 +19,7 @@ document.addEventListener('DOMContentLoaded', async () => {
     let selectedCentre = null;
     let allSchedules = [];
     let currentProgressMap = {};
+    let currentResultsMap = {};
 
     // UI Elements for Filtering
     const dateCondition = document.getElementById('date-condition');
@@ -137,6 +138,17 @@ document.addEventListener('DOMContentLoaded', async () => {
             currentProgressMap = {};
             progress?.forEach(p => currentProgressMap[p.schedule_id] = p);
 
+            // 3. Fetch Test Results for current user
+            const { data: resultsData } = await supabaseClient
+                .from('Test_Results')
+                .select('*')
+                .eq('user_email', session.user.email);
+
+            currentResultsMap = {};
+            resultsData?.forEach(r => {
+                currentResultsMap[r.custom_module_code] = r;
+            });
+
             // Populate Subject Dropdown
             const subjects = [...new Set(allSchedules.map(s => s.subject).filter(Boolean))].sort();
             subjectFilter.innerHTML = '<option value="all">All Subjects</option>' +
@@ -151,7 +163,7 @@ document.addEventListener('DOMContentLoaded', async () => {
 
     const renderSchedule = (schedules, progressMap) => {
         if (!schedules || schedules.length === 0) {
-            scheduleBody.innerHTML = `<tr><td colspan="8" style="text-align:center; padding: 3rem; color: var(--text-secondary);">No sessions match your filters.</td></tr>`;
+            scheduleBody.innerHTML = `<tr><td colspan="10" style="text-align:center; padding: 3rem; color: var(--text-secondary);">No sessions match your filters.</td></tr>`;
             return;
         }
 
@@ -179,10 +191,12 @@ document.addEventListener('DOMContentLoaded', async () => {
             const userProg = progressMap[item.id] || { is_done: false, remarks: '' };
 
             const subjectCell = subjectRowspans[index]
-                ? `<td rowspan="${subjectRowspans[index]}" style="vertical-align: top; border-right: 1px solid var(--glass-border); background: rgba(255,255,255,0.02); font-weight:700; color:var(--accent-color); text-transform:uppercase; font-size:0.8rem; letter-spacing:0.05em;">${item.subject || '-'}</td>`
+                ? `<td rowspan="${subjectRowspans[index]}" style="vertical-align: middle; border-right: 1px solid var(--glass-border); background: rgba(255,255,255,0.02); font-weight:700; color:var(--accent-color); text-transform:uppercase; font-size:0.8rem; letter-spacing:0.05em; text-align: center;">${item.subject || '-'}</td>`
                 : '';
 
             const timing = `<span style="font-weight: 500; color: var(--text-primary);">${formatTime(item.start_datetime)} to ${formatTime(item.end_datetime)}</span>`;
+
+            const result = currentResultsMap[item.custom_module_code] || { score: '-', percentile: '-' };
 
             return `
                 <tr>
@@ -194,6 +208,8 @@ document.addEventListener('DOMContentLoaded', async () => {
                     </td>
                     <td>${timing}</td>
                     <td style="text-align: center;"><span class="qs-badge">${item.num_questions || 0}</span></td>
+                    <td style="text-align: center;"><span style="color: var(--accent-color); font-weight: 600;">${result.score}</span></td>
+                    <td style="text-align: center;"><span style="color: var(--text-secondary);">${result.percentile}</span></td>
                     <td style="text-align: center;">
                         <input type="checkbox" class="checkbox-custom" 
                             ${userProg.is_done ? 'checked' : ''} 
