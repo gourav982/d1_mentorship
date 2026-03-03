@@ -72,35 +72,28 @@ document.addEventListener('DOMContentLoaded', async () => {
     const renderPerformance = (schedules, resultsMap) => {
         const body = document.getElementById('performance-body');
 
-        // Filter: Show only if it's a test-related day or has a module code
-        // User wants: "Study Day" (if score exists), "T&D", "GT"
-        const filtered = schedules.filter(s => {
-            const hasScore = s.custom_module_code && resultsMap[s.custom_module_code];
-            const isTestDay = s.type === 'T&D Day' || s.type === 'GT Day';
-            return hasScore || isTestDay;
-        });
-
-        if (filtered.length === 0) {
-            body.innerHTML = '<tr><td colspan="7" style="text-align: center; padding: 3rem; color: var(--text-secondary);">No performance records found yet. Keep studying!</td></tr>';
+        if (!schedules || schedules.length === 0) {
+            body.innerHTML = '<tr><td colspan="7" style="text-align: center; padding: 3rem; color: var(--text-secondary);">No roadmap data found for your centre.</td></tr>';
             return;
         }
 
-        body.innerHTML = filtered.map(s => {
+        body.innerHTML = schedules.map(s => {
             const result = (s.custom_module_code && resultsMap[s.custom_module_code]) || { score: '-', percentile: '-' };
             const typeClass = s.type === 'GT Day' ? 'badge-gt' : (s.type === 'T&D Day' ? 'badge-td' : 'badge-study');
 
-            // For T&D and GT, module code stays empty as per user request
+            // For T&D and GT, module code stays empty
             const displayModule = (s.type === 'T&D Day' || s.type === 'GT Day') ? '-' : (s.custom_module_code || '-');
 
-            // For GT, user mentioned "last date for that specific Marrow GT"
-            // If the schedule provides a range or if marrow_gt has info, we could show it.
-            // For now, use the date column.
+            // For GT, show Marrow GT window info in the topic or a suffix if available
+            const displayTopic = (s.type === 'GT Day' && s.marrow_gt && s.marrow_gt !== '-')
+                ? `${s.topic} <br><small style="color:var(--text-secondary)">Window: ${s.marrow_gt}</small>`
+                : (s.topic || '-');
 
             return `
                 <tr>
                     <td style="color: var(--text-secondary); font-size: 0.85rem;">${formatDate(s.date)}</td>
                     <td><span class="type-badge ${typeClass}">${s.type || 'Study Day'}</span></td>
-                    <td style="font-weight: 600;">${s.topic || '-'}</td>
+                    <td style="font-weight: 600;">${displayTopic}</td>
                     <td>${displayModule}</td>
                     <td style="text-align: center; color: var(--text-secondary);">${s.num_questions || '-'}</td>
                     <td class="score-val" style="text-align: center;">${result.score}</td>
