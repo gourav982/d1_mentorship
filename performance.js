@@ -35,6 +35,16 @@ document.addEventListener('DOMContentLoaded', async () => {
         sidebar?.classList.toggle('collapsed');
     });
 
+    // UI State for Performance
+    let allSchedules = [];
+    let currentResultsMap = {};
+
+    // Filter Elements
+    const topicSearch = document.getElementById('topic-search');
+    const typeFilter = document.getElementById('type-filter');
+    const dateFilter = document.getElementById('date-filter');
+    const clearBtn = document.getElementById('clear-perf-filters');
+
     // 2. Data Fetching
     const fetchPerformance = async () => {
         try {
@@ -51,16 +61,54 @@ document.addEventListener('DOMContentLoaded', async () => {
                 .select('*')
                 .eq('user_email', session.user.email);
 
-            const resultRows = schedules || [];
-            const resultsMap = {};
-            results?.forEach(r => resultsMap[r.custom_module_code] = r);
+            allSchedules = schedules || [];
+            currentResultsMap = {};
+            results?.forEach(r => currentResultsMap[r.custom_module_code] = r);
 
-            renderPerformance(resultRows, resultsMap);
-            renderStats(resultRows, resultsMap);
+            applyFilters();
         } catch (err) {
             console.error(err);
             document.getElementById('performance-body').innerHTML = `<tr><td colspan="7" style="text-align:center; color:#ef4444; padding:2rem;">Error loading data</td></tr>`;
         }
+    };
+
+    const applyFilters = () => {
+        let filtered = [...allSchedules];
+
+        const topicTerm = topicSearch.value.toLowerCase().trim();
+        const typeTerm = typeFilter.value;
+        const dateTerm = dateFilter.value;
+
+        // 1. Marrow GT Window Logic & Type Override
+        filtered = filtered.map(s => {
+            const item = { ...s };
+            // If it has a marrow_gt window, and it's a GT Day
+            // User: "Marrow GT 14 window is from 8th March to 13th March. So, the Marrow GT 14 to be listed on date 13th March with a Type as Marrow GT."
+            if (item.type === 'GT Day' && item.marrow_gt && item.marrow_gt !== '-') {
+                item.displayType = 'Marrow GT';
+            } else {
+                item.displayType = item.type || 'Study Day';
+            }
+            return item;
+        });
+
+        // 2. Filter by Search
+        if (topicTerm) {
+            filtered = filtered.filter(s => (s.topic || '').toLowerCase().includes(topicTerm));
+        }
+
+        // 3. Filter by Type
+        if (typeTerm !== 'all') {
+            filtered = filtered.filter(s => s.displayType === typeTerm);
+        }
+
+        // 4. Filter by Date
+        if (dateTerm) {
+            filtered = filtered.filter(s => s.date === dateTerm);
+        }
+
+        renderPerformance(filtered);
+        renderStats(allSchedules, currentResultsMap);
     };
 
     const formatDate = (dateStr) => {
@@ -69,30 +117,32 @@ document.addEventListener('DOMContentLoaded', async () => {
         return d.toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric' });
     };
 
-    const renderPerformance = (schedules, resultsMap) => {
+    const renderPerformance = (schedules) => {
         const body = document.getElementById('performance-body');
 
         if (!schedules || schedules.length === 0) {
-            body.innerHTML = '<tr><td colspan="7" style="text-align: center; padding: 3rem; color: var(--text-secondary);">No roadmap data found for your centre.</td></tr>';
+            body.innerHTML = '<tr><td colspan="7" style="text-align: center; padding: 3rem; color: var(--text-secondary);">No roadmap data found matching filters.</td></tr>';
             return;
         }
 
         body.innerHTML = schedules.map(s => {
-            const result = (s.custom_module_code && resultsMap[s.custom_module_code]) || { score: '-', percentile: '-' };
-            const typeClass = s.type === 'GT Day' ? 'badge-gt' : (s.type === 'T&D Day' ? 'badge-td' : 'badge-study');
+            const result = (s.custom_module_code && currentResultsMap[s.custom_module_code]) || { score: '-', percentile: '-' };
 
-            // For T&D and GT, module code stays empty
-            const displayModule = (s.type === 'T&D Day' || s.type === 'GT Day') ? '-' : (s.custom_module_code || '-');
+            let typeClass = 'badge-study';
+            if (s.displayType === 'Marrow GT') typeClass = 'badge-gt';
+            else if (s.displayType === 'GT Day') typeClass = 'badge-gt';
+            else if (s.displayType === 'T&D Day') typeClass = 'badge-td';
 
-            // For GT, show Marrow GT window info in the topic or a suffix if available
-            const displayTopic = (s.type === 'GT Day' && s.marrow_gt && s.marrow_gt !== '-')
+            const displayModule = (s.displayType === 'T&D Day' || s.displayType === 'GT Day' || s.displayType === 'Marrow GT') ? '-' : (s.custom_module_code || '-');
+
+            const displayTopic = (s.displayType === 'Marrow GT' && s.marrow_gt && s.marrow_gt !== '-')
                 ? `${s.topic} <br><small style="color:var(--text-secondary)">Window: ${s.marrow_gt}</small>`
                 : (s.topic || '-');
 
             return `
                 <tr>
                     <td style="color: var(--text-secondary); font-size: 0.85rem;">${formatDate(s.date)}</td>
-                    <td><span class="type-badge ${typeClass}">${s.type || 'Study Day'}</span></td>
+                    <td><span class="type-badge ${typeClass}">${s.displayType}</span></td>
                     <td style="font-weight: 600;">${displayTopic}</td>
                     <td>${displayModule}</td>
                     <td style="text-align: center; color: var(--text-secondary);">${s.num_questions || '-'}</td>
@@ -131,6 +181,17 @@ document.addEventListener('DOMContentLoaded', async () => {
             </div>
         `;
     };
+
+    // Event Listeners
+    topicSearch?.addEventListener('input', applyFilters);
+    typeFilter?.addEventListener('change', applyFilters);
+    dateFilter?.addEventListener('change', applyFilters);
+    clearBtn?.addEventListener('click', () => {
+        topicSearch.value = '';
+        typeFilter.value = 'all';
+        dateFilter.value = '';
+        applyFilters();
+    });
 
     fetchPerformance();
 });

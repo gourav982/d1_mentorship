@@ -174,8 +174,19 @@
                     <div
                         style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1.5rem;">
                         <h2 style="font-size: 1.25rem;">Scores & Results</h2>
-                        <div id="filter-box">
-                            <!-- Filters can go here -->
+                        <div id="filter-box" style="display: flex; gap: 1rem; flex-wrap: wrap;">
+                            <input type="text" id="topic-search" class="filter-input" placeholder="Search Topic..."
+                                style="width: 180px;">
+                            <select id="type-filter" class="filter-select" style="min-width: 140px; appearance: none;">
+                                <option value="all">All Types</option>
+                                <option value="Study Day">Study Day</option>
+                                <option value="T&D Day">T&D Day</option>
+                                <option value="GT Day">GT Day</option>
+                                <option value="Marrow GT">Marrow GT</option>
+                            </select>
+                            <input type="date" id="date-filter" class="filter-input">
+                            <button id="clear-perf-filters" class="login-button"
+                                style="margin: 0; padding: 0.5rem 1rem; font-size: 0.8rem; background: rgba(255,255,255,0.05);">Clear</button>
                         </div>
                     </div>
 
