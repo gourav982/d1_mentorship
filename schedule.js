@@ -239,8 +239,7 @@ document.addEventListener('DOMContentLoaded', async () => {
                         <textarea class="remarks-input" 
                             placeholder="Add remarks..." 
                             rows="1"
-                            onblur="window.updateRemarks('${item.id}', this.value)"
-                            style="resize: vertical; min-height: 38px;">${userProg.remarks || ''}</textarea>
+                            onblur="window.updateRemarks('${item.id}', this.value)">${userProg.remarks || ''}</textarea>
                     </td>
                 </tr>
             `;
