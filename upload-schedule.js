@@ -145,7 +145,7 @@ document.addEventListener('DOMContentLoaded', async () => {
                         custom_module_code: cols[5] || null,
                         start_datetime: cols[6] || null,
                         end_datetime: cols[7] || null,
-                        num_questions: (cols[8] && cols[8] !== '') ? parseInt(cols[8]) : 0
+                        num_questions: (cols[8] && cols[8] !== '') ? parseInt(cols[8]) : null
                     };
                 }).filter(p => p !== null);
 
