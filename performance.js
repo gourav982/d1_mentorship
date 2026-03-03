@@ -43,7 +43,7 @@ document.addEventListener('DOMContentLoaded', async () => {
                 .from('Schedule')
                 .select('*')
                 .eq('centre_name', userData.centre_name || 'Delhi')
-                .order('date', { ascending: false });
+                .order('date', { ascending: true }); // MANDATORY SEQUENCE
 
             // Get test results for user's email
             const { data: results } = await supabaseClient
@@ -106,21 +106,28 @@ document.addEventListener('DOMContentLoaded', async () => {
     const renderStats = (schedules, resultsMap) => {
         const container = document.getElementById('stats-summary');
 
-        const testCount = schedules.filter(s => s.custom_module_code && resultsMap[s.custom_module_code]).length;
-        const avgScore = 0; // Placeholder
+        // Today's date in YYYY-MM-DD
+        const todayStr = new Date().toISOString().split('T')[0];
+
+        // Total tests listed up to today
+        // A "test" is any entry that is T&D, GT, or has a custom module code
+        const potentialTests = schedules.filter(s => {
+            const isTestType = (s.type === 'T&D Day' || s.type === 'GT Day' || (s.custom_module_code && s.custom_module_code !== '-'));
+            return isTestType && s.date <= todayStr;
+        });
+
+        // Count of tests where there is an actual score/percentile
+        const testsWithData = potentialTests.filter(s => {
+            const res = s.custom_module_code && resultsMap[s.custom_module_code];
+            return res && res.score !== '-' && res.score !== null;
+        }).length;
+
+        const totalPool = potentialTests.length;
 
         container.innerHTML = `
-            <div class="stat-card">
-                <div class="stat-value">${testCount}</div>
-                <div class="stat-label">Tests Completed</div>
-            </div>
-            <div class="stat-card">
-                <div class="stat-value">Coming Soon</div>
-                <div class="stat-label">Average Accuracy</div>
-            </div>
-            <div class="stat-card">
-                <div class="stat-value">Coming Soon</div>
-                <div class="stat-label">Global Rank</div>
+            <div class="stat-card" style="max-width: 400px; margin: 0 auto;">
+                <div class="stat-value">${testsWithData} / ${totalPool}</div>
+                <div class="stat-label">Tests Completed (As of Today)</div>
             </div>
         `;
     };
