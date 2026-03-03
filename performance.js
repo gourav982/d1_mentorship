@@ -71,21 +71,54 @@ document.addEventListener('DOMContentLoaded', async () => {
                 .select('*')
                 .eq('user_email', session.user.email);
 
-            allSchedules = (schedules || []).map(s => {
-                const item = { ...s };
-                // Marrow GT logic: broad identification
-                const isMarrowTopic = (item.topic || '').toLowerCase().includes('marrow gt');
-                const hasMarrowWindow = (item.marrow_gt && item.marrow_gt !== '-');
-                const isGTType = item.type === 'GT Day';
+            const rawSchedules = schedules || [];
 
-                if (isMarrowTopic || hasMarrowWindow) {
-                    item.displayType = 'Marrow GT';
-                } else {
-                    item.displayType = item.type || 'Study Day';
+            // Process to add Marrow GT Virtual Rows
+            // 1. Map each schedule to displayType = original type
+            let processed = rawSchedules.map(s => ({ ...s, displayType: s.type || 'Study Day' }));
+
+            // 2. Group by Marrow GT window name to find the "Last Date"
+            const marrowWindows = {}; // { 'NEET PG Marrow GT 14': '2026-03-13' }
+            rawSchedules.forEach(s => {
+                if (s.marrow_gt && s.marrow_gt !== '-') {
+                    const name = s.marrow_gt.trim();
+                    if (!marrowWindows[name] || s.date > marrowWindows[name]) {
+                        marrowWindows[name] = s.date;
+                    }
                 }
-                return item;
             });
 
+            // 3. Inject virtual rows for the last day of each window
+            const finalProcessed = [];
+            processed.forEach(s => {
+                finalProcessed.push(s);
+
+                // If this is the last day of a marrow window, inject the GT entry
+                if (s.marrow_gt && s.marrow_gt !== '-' && s.date === marrowWindows[s.marrow_gt.trim()]) {
+                    // Check if we haven't already injected for this specific window date
+                    // (prevents double injection if multiple rows exist for the same last date)
+                    const alreadyInjected = finalProcessed.some(prev =>
+                        prev.isVirtual &&
+                        prev.date === s.date &&
+                        prev.topic === s.marrow_gt.trim()
+                    );
+
+                    if (!alreadyInjected) {
+                        finalProcessed.push({
+                            id: `virtual-${s.marrow_gt.trim()}-${s.date}`,
+                            date: s.date,
+                            displayType: 'Marrow GT',
+                            topic: s.marrow_gt.trim(),
+                            marrow_gt: s.marrow_gt,
+                            custom_module_code: s.marrow_gt.trim(), // Map to result via its name
+                            isVirtual: true,
+                            num_questions: null
+                        });
+                    }
+                }
+            });
+
+            allSchedules = finalProcessed;
             currentResultsMap = {};
             results?.forEach(r => currentResultsMap[r.custom_module_code] = r);
 
@@ -127,7 +160,8 @@ document.addEventListener('DOMContentLoaded', async () => {
         if (search) {
             filtered = filtered.filter(item =>
                 (item.topic || '').toLowerCase().includes(search) ||
-                (item.subject || '').toLowerCase().includes(search)
+                (item.subject || '').toLowerCase().includes(search) ||
+                (item.marrow_gt || '').toLowerCase().includes(search)
             );
         }
 
@@ -150,6 +184,7 @@ document.addEventListener('DOMContentLoaded', async () => {
         }
 
         body.innerHTML = schedules.map(s => {
+            // Virtual Marrow GT results are usually mapped by the GT Name in 'custom_module_code'
             const result = (s.custom_module_code && currentResultsMap[s.custom_module_code]) || { score: '-', percentile: '-' };
 
             let typeClass = 'badge-study';
@@ -157,17 +192,24 @@ document.addEventListener('DOMContentLoaded', async () => {
             else if (s.displayType === 'GT Day') typeClass = 'badge-gt';
             else if (s.displayType === 'T&D Day') typeClass = 'badge-td';
 
+            // Hide module code text for Tests (except Study Days)
             const displayModule = (s.displayType === 'T&D Day' || s.displayType === 'GT Day' || s.displayType === 'Marrow GT') ? '-' : (s.custom_module_code || '-');
 
-            const displayTopic = (s.displayType === 'Marrow GT' && s.marrow_gt && s.marrow_gt !== '-')
-                ? `${s.topic} <br><small style="color:var(--text-secondary)">Window: ${s.marrow_gt}</small>`
+            const isVirtualGT = s.displayType === 'Marrow GT';
+            const displayTopic = isVirtualGT
+                ? `<span style="color: var(--accent-color); font-weight: 700;">${s.topic}</span>`
                 : (s.topic || '-');
 
+            // Sub-info for regular days within a window
+            const subInfo = (!isVirtualGT && s.marrow_gt && s.marrow_gt !== '-')
+                ? `<br><small style="color:var(--text-secondary)">Window: ${s.marrow_gt}</small>`
+                : '';
+
             return `
-                <tr>
+                <tr class="${isVirtualGT ? 'virtual-test-row' : ''}">
                     <td style="color: var(--text-secondary); font-size: 0.85rem;">${formatDate(s.date)}</td>
                     <td><span class="type-badge ${typeClass}">${s.displayType}</span></td>
-                    <td style="font-weight: 600;">${displayTopic}</td>
+                    <td style="font-weight: 600;">${displayTopic}${subInfo}</td>
                     <td>${displayModule}</td>
                     <td style="text-align: center; color: var(--text-secondary);">${s.num_questions || '-'}</td>
                     <td class="score-val" style="text-align: center;">${result.score}</td>
@@ -181,11 +223,14 @@ document.addEventListener('DOMContentLoaded', async () => {
         const container = document.getElementById('stats-summary');
         const todayStr = new Date().toISOString().split('T')[0];
 
+        // Total tests listed up to today
+        // A "test" is any entry that is T&D, GT, Marrow GT, or has a custom module code
         const potentialTests = schedules.filter(s => {
-            const isTestType = (s.type === 'T&D Day' || s.type === 'GT Day' || (s.custom_module_code && s.custom_module_code !== '-'));
+            const isTestType = (s.displayType === 'T&D Day' || s.displayType === 'GT Day' || s.displayType === 'Marrow GT' || (s.custom_module_code && s.custom_module_code !== '-'));
             return isTestType && s.date <= todayStr;
         });
 
+        // Count of tests where there is an actual score/percentile
         const testsWithData = potentialTests.filter(s => {
             const res = s.custom_module_code && resultsMap[s.custom_module_code];
             return res && res.score !== '-' && res.score !== null;
