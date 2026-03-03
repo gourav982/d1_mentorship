@@ -161,14 +161,18 @@ document.addEventListener('DOMContentLoaded', async () => {
                     }
 
                     const standardDate = parseDate(rawDate);
-                    if (!standardDate) return null; // Skip rows where date is still missing
+                    if (!standardDate) return null; // Skip if no date at all
+
+                    // CRITICAL: Skip rows that have no topic content (e.g. empty lines with commas)
+                    const currentTopic = cols[3];
+                    if (!currentTopic || currentTopic.trim() === "") return null;
 
                     return {
                         centre_name: centreSelect.value,
                         date: standardDate,
                         subject: currentSubject || '-',
                         type: cols[2] || 'Study Day',
-                        topic: cols[3],
+                        topic: currentTopic,
                         marrow_gt: cols[4] || '-',
                         custom_module_code: cols[5] || null,
                         start_datetime: cols[6] || null,

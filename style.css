@@ -414,12 +414,23 @@ td:nth-child(12) {
 }
 
 /* Remarks */
+th:nth-child(13),
+td:nth-child(13) {
+    width: 250px;
+}
 
 .schedule-table-container th {
+    position: sticky;
+    top: -2rem;
+    /* Offset the 2rem padding of dashboard-main */
+    background: #0f172a;
+    /* Match body bg for seamless look */
+    z-index: 10;
     white-space: normal;
     word-wrap: break-word;
     vertical-align: middle;
     line-height: 1.2;
+    box-shadow: 0 1px 0 var(--glass-border), 0 10px 15px -10px rgba(0, 0, 0, 0.5);
 }
 
 .schedule-table-container td {
@@ -427,8 +438,26 @@ td:nth-child(12) {
     overflow-wrap: break-word;
     white-space: normal;
     vertical-align: middle;
-    /* Set back to middle */
     line-height: 1.4;
+}
+
+.remarks-input {
+    width: 100%;
+    max-width: 100%;
+    box-sizing: border-box;
+    background: rgba(255, 255, 255, 0.05);
+    border: 1px solid var(--glass-border);
+    border-radius: 0.5rem;
+    padding: 0.5rem;
+    color: var(--text-primary);
+    font-size: 0.85rem;
+    transition: all 0.2s;
+}
+
+.remarks-input:focus {
+    outline: none;
+    border-color: var(--accent-color);
+    background: rgba(255, 255, 255, 0.1);
 }
 
 @media (max-width: 1200px) {
