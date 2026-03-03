@@ -18,6 +18,10 @@ document.addEventListener('DOMContentLoaded', async () => {
         return;
     }
 
+    // Show Admin Section
+    const adminSec = document.getElementById('admin-section');
+    if (adminSec) adminSec.style.display = 'block';
+
     document.body.style.display = 'block';
     document.getElementById('display-name').textContent = userData.name || 'Admin';
     document.getElementById('display-role').textContent = userData.role;

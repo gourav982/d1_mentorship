@@ -15,6 +15,10 @@ document.addEventListener('DOMContentLoaded', async () => {
         return;
     }
 
+    // Show Admin Section
+    const adminSec = document.getElementById('admin-section');
+    if (adminSec) adminSec.style.display = 'block';
+
     // Sidebar Toggle
     const sidebar = document.querySelector('.sidebar');
     const toggleBtn = document.getElementById('sidebar-toggle-btn');

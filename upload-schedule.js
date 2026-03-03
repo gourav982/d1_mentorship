@@ -18,6 +18,10 @@ document.addEventListener('DOMContentLoaded', async () => {
         return;
     }
 
+    // Show Admin Section
+    const adminSec = document.getElementById('admin-section');
+    if (adminSec) adminSec.style.display = 'block';
+
     // Force redirection to dashboard if first login/reset is needed (since that's where the modal is)
     if (userData.is_first_login) {
         window.location.replace('dashboard.html');
