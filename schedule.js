@@ -167,25 +167,30 @@ document.addEventListener('DOMContentLoaded', async () => {
             return;
         }
 
-        // Calculate Rowspan for Subjects (only when not searching/filtering heavily to maintain UI sanity)
+        // Calculate Rowspan for Subjects
         const subjectRowspans = [];
-        let currentSubject = null;
-        let count = 0;
-        let startIndex = 0;
-
+        let curSub = null, subCount = 0, subStart = 0;
         schedules.forEach((item, index) => {
-            if (item.subject === currentSubject) {
-                count++;
-            } else {
-                if (currentSubject !== null) {
-                    subjectRowspans[startIndex] = count;
-                }
-                currentSubject = item.subject;
-                count = 1;
-                startIndex = index;
+            if (item.subject === curSub) { subCount++; }
+            else {
+                if (curSub !== null) subjectRowspans[subStart] = subCount;
+                curSub = item.subject; subCount = 1; subStart = index;
             }
         });
-        subjectRowspans[startIndex] = count;
+        subjectRowspans[subStart] = subCount;
+
+        // Calculate Rowspan for Marrow GT window
+        const gtRowspans = [];
+        let curGT = null, gtCount = 0, gtStart = 0;
+        schedules.forEach((item, index) => {
+            const val = (item.marrow_gt && item.marrow_gt !== '-') ? item.marrow_gt : null;
+            if (val && val === curGT) { gtCount++; }
+            else {
+                if (curGT !== null) gtRowspans[gtStart] = gtCount;
+                curGT = val; gtCount = 1; gtStart = index;
+            }
+        });
+        if (curGT !== null) gtRowspans[gtStart] = gtCount;
 
         scheduleBody.innerHTML = schedules.map((item, index) => {
             const userProg = progressMap[item.id] || { is_done: false, remarks: '' };
@@ -193,6 +198,10 @@ document.addEventListener('DOMContentLoaded', async () => {
             const subjectCell = subjectRowspans[index]
                 ? `<td rowspan="${subjectRowspans[index]}" style="vertical-align: middle; border-right: 1px solid var(--glass-border); background: rgba(255,255,255,0.02); font-weight:700; color:var(--accent-color); text-transform:uppercase; font-size:0.8rem; letter-spacing:0.05em; text-align: center;">${item.subject || '-'}</td>`
                 : '';
+
+            const gtCell = gtRowspans[index]
+                ? `<td rowspan="${gtRowspans[index]}" style="vertical-align: middle; background: rgba(34, 197, 94, 0.05); color: #22c55e; font-weight: 600; text-align: center; border-right: 1px solid var(--glass-border);">${item.marrow_gt}</td>`
+                : (item.marrow_gt && item.marrow_gt !== '-' ? '' : '<td>-</td>');
 
             const timing = `<span style="font-weight: 500; color: var(--text-primary);">${formatTime(item.start_datetime)} to ${formatTime(item.end_datetime)}</span>`;
 
@@ -202,7 +211,9 @@ document.addEventListener('DOMContentLoaded', async () => {
                 <tr>
                     <td style="white-space: nowrap;">${formatDate(item.date)}</td>
                     ${subjectCell}
+                    <td style="text-align: center;"><span style="font-size: 0.8rem; padding: 0.2rem 0.5rem; border-radius: 4px; background: rgba(255,255,255,0.05);">${item.type || 'Study Day'}</span></td>
                     <td><span style="font-weight: 600;">${item.topic}</span></td>
+                    ${gtCell}
                     <td>
                         <code style="background: rgba(255,255,255,0.05); padding: 0.2rem 0.6rem; border-radius: 0.4rem; font-family: monospace; font-size: 0.85rem;">${item.custom_module_code || '-'}</code>
                     </td>

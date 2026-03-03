@@ -65,10 +65,13 @@ document.addEventListener('DOMContentLoaded', async () => {
     // 3. Sample CSV Functionality
     downloadBtn.addEventListener('click', (e) => {
         e.preventDefault();
-        const headers = "Date, Subject, Topic, Custom Module Code, Start Date & Time, End Date & Time, Number of Questions\n";
-        const sampleRow = "2026-03-01, Anatomy, Lower Limb, ANA-LL-01, 2026-03-01 10:00:00, 2026-03-01 12:00:00, 50\n";
+        const headers = "Date, Subject, Type, Topic, Marrow GT, Custom Module Code, Start Date & Time, End Date & Time, MCQs\n";
+        const sampleRowArr = [
+            "2026-03-01, Anatomy, Study Day, Lower Limb, -, ANA-LL-01, 2026-03-01 10:00:00, 2026-03-01 12:00:00, 50\n",
+            "2026-03-05, Anatomy, GT Day, Upper Limb, NEET PG Marrow GT, ANA-LL-02, 2026-03-05 10:00:00, 2026-03-05 12:00:00, 50\n"
+        ];
 
-        const blob = new Blob([headers + sampleRow], { type: 'text/csv' });
+        const blob = new Blob([headers + sampleRowArr.join("")], { type: 'text/csv' });
         const url = window.URL.createObjectURL(blob);
         const a = document.createElement('a');
         a.setAttribute('href', url);
@@ -124,10 +127,10 @@ document.addEventListener('DOMContentLoaded', async () => {
                     return d;
                 };
 
-                // Skip header: Date, Subject, Topic, Code, Start, End, Qs
+                // Headers: Date, Subject, Type, Topic, Marrow GT, Code, Start, End, MCQs
                 const payload = rows.slice(1).map((row, index) => {
                     const cols = row.split(',').map(c => c.trim());
-                    if (cols.length < 7) return null;
+                    if (cols.length < 9) return null;
 
                     const rawDate = cols[0];
                     const standardDate = parseDate(rawDate);
@@ -136,11 +139,13 @@ document.addEventListener('DOMContentLoaded', async () => {
                         centre_name: centreSelect.value,
                         date: standardDate,
                         subject: cols[1],
-                        topic: cols[2],
-                        custom_module_code: cols[3],
-                        start_datetime: cols[4],
-                        end_datetime: cols[5],
-                        num_questions: parseInt(cols[6]) || 0
+                        type: cols[2] || 'Study Day',
+                        topic: cols[3],
+                        marrow_gt: cols[4] || '-',
+                        custom_module_code: cols[5],
+                        start_datetime: cols[6],
+                        end_datetime: cols[7],
+                        num_questions: parseInt(cols[8]) || 0
                     };
                 }).filter(p => p !== null);
 

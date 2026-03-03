@@ -327,6 +327,14 @@ input::placeholder {
     transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
 }
 
+.schedule-table-container table {
+    table-layout: fixed;
+    border-collapse: collapse;
+    width: 100%;
+    min-width: 1400px;
+    /* Increased to accommodate more columns */
+}
+
 /* Specific column control */
 th:nth-child(1),
 td:nth-child(1) {
@@ -342,50 +350,62 @@ td:nth-child(2) {
 /* Subject */
 th:nth-child(3),
 td:nth-child(3) {
+    width: 120px;
+}
+
+/* Type */
+th:nth-child(4),
+td:nth-child(4) {
     width: auto;
     min-width: 200px;
     max-width: 300px;
 }
 
 /* Topics */
-th:nth-child(4),
-td:nth-child(4) {
+th:nth-child(5),
+td:nth-child(5) {
+    width: 130px;
+}
+
+/* Marrow GT */
+th:nth-child(6),
+td:nth-child(6) {
     width: 150px;
 }
 
 /* Module Code */
-th:nth-child(5),
-td:nth-child(5) {
+th:nth-child(7),
+td:nth-child(7) {
     width: 160px;
 }
 
 /* Timing */
-th:nth-child(6),
-td:nth-child(6) {
+th:nth-child(8),
+td:nth-child(8) {
     width: 70px;
 }
 
 /* MCQs */
-th:nth-child(7),
-td:nth-child(7) {
+th:nth-child(9),
+td:nth-child(9) {
     width: 80px;
 }
 
 /* Score */
-th:nth-child(8),
-td:nth-child(8) {
+th:nth-child(10),
+td:nth-child(10) {
     width: 90px;
 }
 
 /* Percentile */
-th:nth-child(9),
-td:nth-child(9) {
+th:nth-child(11),
+td:nth-child(11) {
     width: 130px;
 }
 
 /* Mark Complete */
-th:nth-child(10),
-td:nth-child(10) {
+th:nth-child(12),
+td:nth-child(12) {
     width: 200px;
 }
 
