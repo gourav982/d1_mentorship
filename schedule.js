@@ -203,7 +203,12 @@ document.addEventListener('DOMContentLoaded', async () => {
                 ? `<td rowspan="${gtRowspans[index]}" style="vertical-align: middle; background: rgba(34, 197, 94, 0.05); color: #22c55e; font-weight: 600; text-align: center; border-right: 1px solid var(--glass-border);">${item.marrow_gt}</td>`
                 : (item.marrow_gt && item.marrow_gt !== '-' ? '' : '<td>-</td>');
 
-            const timing = `<span style="font-weight: 500; color: var(--text-primary);">${formatTime(item.start_datetime)} to ${formatTime(item.end_datetime)}</span>`;
+            let timing = '-';
+            const startTime = formatTime(item.start_datetime);
+            const endTime = formatTime(item.end_datetime);
+            if (startTime !== '-' || endTime !== '-') {
+                timing = `<span style="font-weight: 500; color: var(--text-primary);">${startTime} to ${endTime}</span>`;
+            }
 
             const result = currentResultsMap[item.custom_module_code] || { score: '-', percentile: '-' };
 
@@ -218,7 +223,11 @@ document.addEventListener('DOMContentLoaded', async () => {
                         <code style="background: rgba(255,255,255,0.05); padding: 0.2rem 0.6rem; border-radius: 0.4rem; font-family: monospace; font-size: 0.85rem;">${item.custom_module_code || '-'}</code>
                     </td>
                     <td>${timing}</td>
-                    <td style="text-align: center;"><span class="qs-badge">${item.num_questions || 0}</span></td>
+                    <td style="text-align: center;">
+                        <span class="qs-badge" style="${(!item.num_questions || item.num_questions === 0) ? 'background:none; border:none; opacity:0.5;' : ''}">
+                            ${(item.num_questions && item.num_questions !== 0) ? item.num_questions : '-'}
+                        </span>
+                    </td>
                     <td style="text-align: center;"><span style="color: var(--accent-color); font-weight: 600;">${result.score}</span></td>
                     <td style="text-align: center;"><span style="color: var(--text-secondary);">${result.percentile}</span></td>
                     <td style="text-align: center;">

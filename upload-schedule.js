@@ -142,10 +142,10 @@ document.addEventListener('DOMContentLoaded', async () => {
                         type: cols[2] || 'Study Day',
                         topic: cols[3],
                         marrow_gt: cols[4] || '-',
-                        custom_module_code: cols[5],
-                        start_datetime: cols[6],
-                        end_datetime: cols[7],
-                        num_questions: parseInt(cols[8]) || 0
+                        custom_module_code: cols[5] || null,
+                        start_datetime: cols[6] || null,
+                        end_datetime: cols[7] || null,
+                        num_questions: (cols[8] && cols[8] !== '') ? parseInt(cols[8]) : 0
                     };
                 }).filter(p => p !== null);
 
