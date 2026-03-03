@@ -112,6 +112,60 @@
         .percentile-val {
             color: var(--text-secondary);
         }
+
+        /* Sync Filter Styles from Schedule */
+        .filter-section {
+            display: flex;
+            gap: 1.5rem;
+            margin-bottom: 2rem;
+            flex-wrap: wrap;
+            align-items: flex-end;
+            background: rgba(255, 255, 255, 0.02);
+            padding: 1.5rem;
+            border-radius: 1rem;
+            border: 1px solid var(--glass-border);
+        }
+
+        .filter-group {
+            display: flex;
+            flex-direction: column;
+            gap: 0.5rem;
+        }
+
+        .filter-group label {
+            font-size: 0.75rem;
+            font-weight: 700;
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+            color: var(--text-secondary);
+        }
+
+        .filter-select,
+        .filter-input {
+            background: rgba(15, 23, 42, 0.6);
+            border: 1px solid var(--glass-border);
+            border-radius: 0.75rem;
+            padding: 0.6rem 1rem;
+            color: var(--text-primary);
+            font-family: 'Inter', sans-serif;
+            font-size: 0.9rem;
+            outline: none;
+            transition: all 0.2s;
+        }
+
+        .filter-select:focus,
+        .filter-input:focus {
+            border-color: var(--accent-color);
+            background: rgba(15, 23, 42, 0.8);
+        }
+
+        select.filter-select {
+            padding-right: 2.5rem;
+            -webkit-appearance: none;
+            background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='16' height='16' viewBox='0 0 24 24' fill='none' stroke='%2338bdf8' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpolyline points='6 9 12 15 18 9'%3E%3C/polyline%3E%3C/svg%3E");
+            background-repeat: no-repeat;
+            background-position: right 0.75rem center;
+        }
     </style>
 </head>
 
@@ -170,24 +224,52 @@
                     <!-- Summary cards will be injected here -->
                 </div>
 
+                <div class="filter-section">
+                    <!-- Date Filter -->
+                    <div class="filter-group">
+                        <label>Date Filter</label>
+                        <div style="display: flex; gap: 0.5rem;">
+                            <select id="date-condition" class="filter-select"
+                                style="min-width: 120px; appearance: none;">
+                                <option value="all">All Dates</option>
+                                <option value="on">On</option>
+                                <option value="before">Before</option>
+                                <option value="after">After</option>
+                                <option value="between">Between</option>
+                                <option value="since">Since</option>
+                            </select>
+                            <input type="date" id="date-val-1" class="filter-input" style="display: none;">
+                            <input type="date" id="date-val-2" class="filter-input" style="display: none;">
+                        </div>
+                    </div>
+
+                    <!-- Type Filter -->
+                    <div class="filter-group">
+                        <label>Type Filter</label>
+                        <select id="type-filter" class="filter-select" style="min-width: 160px; appearance: none;">
+                            <option value="all">All Types</option>
+                            <option value="Study Day">Study Day</option>
+                            <option value="T&D Day">T&D Day</option>
+                            <option value="GT Day">GT Day</option>
+                            <option value="Marrow GT">Marrow GT</option>
+                        </select>
+                    </div>
+
+                    <!-- Search Topics -->
+                    <div class="filter-group" style="flex: 1; min-width: 250px;">
+                        <label>Search Topics</label>
+                        <input type="text" id="topic-search" class="filter-input"
+                            placeholder="Search by topic or subject..." style="width: 100%;">
+                    </div>
+
+                    <button id="clear-perf-filters" class="login-button"
+                        style="margin: 0; padding: 0.6rem 1.25rem; font-size: 0.85rem; background: rgba(255,255,255,0.05); color: #fff;">Clear</button>
+                </div>
+
                 <div class="performance-card">
                     <div
                         style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1.5rem;">
-                        <h2 style="font-size: 1.25rem;">Scores & Results</h2>
-                        <div id="filter-box" style="display: flex; gap: 1rem; flex-wrap: wrap;">
-                            <input type="text" id="topic-search" class="filter-input" placeholder="Search Topic..."
-                                style="width: 180px;">
-                            <select id="type-filter" class="filter-select" style="min-width: 140px; appearance: none;">
-                                <option value="all">All Types</option>
-                                <option value="Study Day">Study Day</option>
-                                <option value="T&D Day">T&D Day</option>
-                                <option value="GT Day">GT Day</option>
-                                <option value="Marrow GT">Marrow GT</option>
-                            </select>
-                            <input type="date" id="date-filter" class="filter-input">
-                            <button id="clear-perf-filters" class="login-button"
-                                style="margin: 0; padding: 0.5rem 1rem; font-size: 0.8rem; background: rgba(255,255,255,0.05);">Clear</button>
-                        </div>
+                        <h2 style="font-size: 1.25rem;">Detailed Breakdown</h2>
                     </div>
 
                     <div class="perf-table-container">

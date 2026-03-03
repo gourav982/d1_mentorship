@@ -39,11 +39,21 @@ document.addEventListener('DOMContentLoaded', async () => {
     let allSchedules = [];
     let currentResultsMap = {};
 
-    // Filter Elements
-    const topicSearch = document.getElementById('topic-search');
+    // UI Elements for Filtering
+    const dateCondition = document.getElementById('date-condition');
+    const dateVal1 = document.getElementById('date-val-1');
+    const dateVal2 = document.getElementById('date-val-2');
     const typeFilter = document.getElementById('type-filter');
-    const dateFilter = document.getElementById('date-filter');
+    const topicSearch = document.getElementById('topic-search');
     const clearBtn = document.getElementById('clear-perf-filters');
+
+    // Show/Hide date inputs
+    dateCondition?.addEventListener('change', () => {
+        const cond = dateCondition.value;
+        dateVal1.style.display = cond === 'all' ? 'none' : 'block';
+        dateVal2.style.display = cond === 'between' ? 'block' : 'none';
+        applyFilters();
+    });
 
     // 2. Data Fetching
     const fetchPerformance = async () => {
@@ -61,7 +71,21 @@ document.addEventListener('DOMContentLoaded', async () => {
                 .select('*')
                 .eq('user_email', session.user.email);
 
-            allSchedules = schedules || [];
+            allSchedules = (schedules || []).map(s => {
+                const item = { ...s };
+                // Marrow GT logic: broad identification
+                const isMarrowTopic = (item.topic || '').toLowerCase().includes('marrow gt');
+                const hasMarrowWindow = (item.marrow_gt && item.marrow_gt !== '-');
+                const isGTType = item.type === 'GT Day';
+
+                if (isMarrowTopic || hasMarrowWindow) {
+                    item.displayType = 'Marrow GT';
+                } else {
+                    item.displayType = item.type || 'Study Day';
+                }
+                return item;
+            });
+
             currentResultsMap = {};
             results?.forEach(r => currentResultsMap[r.custom_module_code] = r);
 
@@ -75,36 +99,36 @@ document.addEventListener('DOMContentLoaded', async () => {
     const applyFilters = () => {
         let filtered = [...allSchedules];
 
-        const topicTerm = topicSearch.value.toLowerCase().trim();
+        // 1. Date Filter
+        const cond = dateCondition.value;
+        const v1 = dateVal1.value;
+        const v2 = dateVal2.value;
+
+        if (cond !== 'all' && v1) {
+            filtered = filtered.filter(item => {
+                const itemDate = item.date;
+                if (cond === 'on') return itemDate === v1;
+                if (cond === 'before') return itemDate < v1;
+                if (cond === 'after') return itemDate > v1;
+                if (cond === 'since') return itemDate >= v1;
+                if (cond === 'between' && v2) return itemDate >= v1 && itemDate <= v2;
+                return true;
+            });
+        }
+
+        // 2. Type Filter
         const typeTerm = typeFilter.value;
-        const dateTerm = dateFilter.value;
-
-        // 1. Marrow GT Window Logic & Type Override
-        filtered = filtered.map(s => {
-            const item = { ...s };
-            // If it has a marrow_gt window, and it's a GT Day
-            // User: "Marrow GT 14 window is from 8th March to 13th March. So, the Marrow GT 14 to be listed on date 13th March with a Type as Marrow GT."
-            if (item.type === 'GT Day' && item.marrow_gt && item.marrow_gt !== '-') {
-                item.displayType = 'Marrow GT';
-            } else {
-                item.displayType = item.type || 'Study Day';
-            }
-            return item;
-        });
-
-        // 2. Filter by Search
-        if (topicTerm) {
-            filtered = filtered.filter(s => (s.topic || '').toLowerCase().includes(topicTerm));
-        }
-
-        // 3. Filter by Type
         if (typeTerm !== 'all') {
-            filtered = filtered.filter(s => s.displayType === typeTerm);
+            filtered = filtered.filter(item => item.displayType === typeTerm);
         }
 
-        // 4. Filter by Date
-        if (dateTerm) {
-            filtered = filtered.filter(s => s.date === dateTerm);
+        // 3. Topic Search
+        const search = topicSearch.value.toLowerCase().trim();
+        if (search) {
+            filtered = filtered.filter(item =>
+                (item.topic || '').toLowerCase().includes(search) ||
+                (item.subject || '').toLowerCase().includes(search)
+            );
         }
 
         renderPerformance(filtered);
@@ -155,18 +179,13 @@ document.addEventListener('DOMContentLoaded', async () => {
 
     const renderStats = (schedules, resultsMap) => {
         const container = document.getElementById('stats-summary');
-
-        // Today's date in YYYY-MM-DD
         const todayStr = new Date().toISOString().split('T')[0];
 
-        // Total tests listed up to today
-        // A "test" is any entry that is T&D, GT, or has a custom module code
         const potentialTests = schedules.filter(s => {
             const isTestType = (s.type === 'T&D Day' || s.type === 'GT Day' || (s.custom_module_code && s.custom_module_code !== '-'));
             return isTestType && s.date <= todayStr;
         });
 
-        // Count of tests where there is an actual score/percentile
         const testsWithData = potentialTests.filter(s => {
             const res = s.custom_module_code && resultsMap[s.custom_module_code];
             return res && res.score !== '-' && res.score !== null;
@@ -183,13 +202,17 @@ document.addEventListener('DOMContentLoaded', async () => {
     };
 
     // Event Listeners
+    [dateVal1, dateVal2, typeFilter].forEach(el => el?.addEventListener('change', applyFilters));
     topicSearch?.addEventListener('input', applyFilters);
-    typeFilter?.addEventListener('change', applyFilters);
-    dateFilter?.addEventListener('change', applyFilters);
+
     clearBtn?.addEventListener('click', () => {
-        topicSearch.value = '';
+        dateCondition.value = 'all';
+        dateVal1.value = '';
+        dateVal2.value = '';
+        dateVal1.style.display = 'none';
+        dateVal2.style.display = 'none';
         typeFilter.value = 'all';
-        dateFilter.value = '';
+        topicSearch.value = '';
         applyFilters();
     });
 
