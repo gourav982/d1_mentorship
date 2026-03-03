@@ -271,37 +271,31 @@
                         style="margin: 0; padding: 0.6rem 1.25rem; font-size: 0.85rem; background: rgba(255,255,255,0.05); color: #fff;">Clear</button>
                 </div>
 
-                <div class="performance-card">
-                    <div
-                        style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1.5rem;">
-                        <h2 style="font-size: 1.25rem;">Detailed Breakdown</h2>
-                    </div>
-
-                    <div class="perf-table-container">
-                        <table>
-                            <thead>
-                                <tr>
-                                    <th>Date</th>
-                                    <th>Type</th>
-                                    <th>Topic</th>
-                                    <th>Module Code</th>
-                                    <th>MCQs</th>
-                                    <th>Score</th>
-                                    <th>Percentile</th>
-                                </tr>
-                            </thead>
-                            <tbody id="performance-body">
-                                <tr>
-                                    <td colspan="7"
-                                        style="text-align: center; padding: 3rem; color: var(--text-secondary);">Loading
-                                        records...</td>
-                                </tr>
-                            </tbody>
-                        </table>
-                    </div>
+                <div class="perf-table-container">
+                    <table>
+                        <thead>
+                            <tr>
+                                <th style="width: 120px;">Date</th>
+                                <th style="width: 120px;">Type</th>
+                                <th style="min-width: 450px;">Topic</th>
+                                <th style="width: 100px;">Module Code</th>
+                                <th style="width: 80px; text-align: center;">MCQs</th>
+                                <th style="width: 80px; text-align: center;">Score</th>
+                                <th style="width: 100px; text-align: center;">Percentile</th>
+                            </tr>
+                        </thead>
+                        <tbody id="performance-body">
+                            <tr>
+                                <td colspan="7"
+                                    style="text-align: center; padding: 3rem; color: var(--text-secondary);">Loading
+                                    records...</td>
+                            </tr>
+                        </tbody>
+                    </table>
                 </div>
-            </main>
         </div>
+        </main>
+    </div>
     </div>
 
     <script src="supabase-init.js"></script>
