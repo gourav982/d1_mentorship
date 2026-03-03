@@ -327,8 +327,13 @@ input::placeholder {
     flex: 1;
     overflow-y: auto;
     position: relative;
-    padding: 2rem;
+    padding: 0;
+    /* Remove top padding for cleaner stickiness */
     transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.schedule-header {
+    padding: 2rem 2rem 1rem 2rem;
 }
 
 .schedule-table-container table {
@@ -339,25 +344,25 @@ input::placeholder {
     /* Increased to accommodate more columns */
 }
 
-/* Table column control using classes */
+/* Table column control using classes - DOMINANT TOPICS */
 .col-date {
-    width: 110px;
-    min-width: 110px;
+    width: 90px;
+    min-width: 90px;
 }
 
 .col-subject {
-    width: 110px;
-    min-width: 110px;
-}
-
-.col-type {
     width: 100px;
     min-width: 100px;
 }
 
+.col-type {
+    width: 90px;
+    min-width: 90px;
+}
+
 .col-topic {
-    width: 600px;
-    min-width: 400px;
+    width: 800px;
+    min-width: 600px;
 }
 
 .col-gt {
@@ -366,71 +371,73 @@ input::placeholder {
 }
 
 .col-module {
-    width: 120px;
-    min-width: 120px;
+    width: 100px;
+    min-width: 100px;
 }
 
 .col-timing {
-    width: 140px;
-    min-width: 140px;
-}
-
-.col-mcqs {
-    width: 70px;
-    min-width: 70px;
-}
-
-.col-score {
-    width: 80px;
-    min-width: 80px;
-}
-
-.col-percentile {
-    width: 90px;
-    min-width: 90px;
-}
-
-.col-complete {
     width: 130px;
     min-width: 130px;
 }
 
+.col-mcqs {
+    width: 60px;
+    min-width: 60px;
+}
+
+.col-score {
+    width: 70px;
+    min-width: 70px;
+}
+
+.col-percentile {
+    width: 80px;
+    min-width: 80px;
+}
+
+.col-complete {
+    width: 120px;
+    min-width: 120px;
+}
+
 .col-remarks {
-    width: 150px;
-    min-width: 150px;
-    max-width: 150px;
+    width: 110px;
+    min-width: 110px;
+    max-width: 120px;
 }
 
 .schedule-table-container th {
     position: sticky;
-    top: 130px;
-    /* Aligns below the sticky filter section */
-    background: #0f172a;
+    top: 100px;
+    /* Perfectly aligns under sticky filter bar */
+    background: #1e293b;
+    /* Distinct background */
     z-index: 99;
-    white-space: normal;
-    word-wrap: break-word;
-    vertical-align: middle;
-    line-height: 1.2;
-    box-shadow: 0 1px 0 var(--glass-border);
+    padding: 1rem;
+    font-size: 0.7rem;
+    font-weight: 800;
+    text-transform: uppercase;
+    letter-spacing: 0.1em;
+    color: var(--text-secondary);
+    border-bottom: 2px solid var(--glass-border);
+    box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.4);
 }
 
 .filter-section {
     display: flex;
     gap: 1.5rem;
-    padding: 1.5rem;
+    padding: 1rem 2rem;
     background: #0f172a;
-    /* Solid background for solid sticky and blur */
-    backdrop-filter: blur(15px);
-    border: 1px solid var(--glass-border);
-    border-radius: 1.25rem;
-    margin-bottom: 2rem;
+    border-bottom: 1px solid var(--glass-border);
+    margin: 0 0 1.5rem 0;
     flex-wrap: wrap;
-    align-items: flex-end;
+    align-items: center;
     position: sticky;
     top: 0;
-    /* Align with dashboard-main viewport top */
     z-index: 101;
-    box-shadow: 0 15px 30px -10px rgba(0, 0, 0, 0.8);
+    height: 100px;
+    /* Fixed height for stacking logic */
+    box-shadow: 0 10px 15px -10px rgba(0, 0, 0, 0.8);
 }
 
 .filter-group {
