@@ -107,38 +107,62 @@ document.addEventListener('DOMContentLoaded', async () => {
 
                 // Helper to parse date string (handles DD/MM/YYYY, DD/MM/YY, and YYYY-MM-DD)
                 const parseDate = (d) => {
-                    if (!d) return null;
+                    if (!d || d.trim() === "") return null;
+                    d = d.trim();
+
                     // If already YYYY-MM-DD
                     if (/^\d{4}-\d{2}-\d{2}$/.test(d)) return d;
 
                     // Handle DD/MM/YYYY or DD-MM-YYYY
                     const parts = d.split(/[/-]/);
                     if (parts.length === 3) {
-                        let day = parts[0].padStart(2, '0');
-                        let month = parts[1].padStart(2, '0');
-                        let year = parts[2];
-                        if (year.length === 2) year = '20' + year;
+                        let p1 = parts[0].padStart(2, '0');
+                        let p2 = parts[1].padStart(2, '0');
+                        let p3 = parts[2];
 
-                        // If the first part is 4 digits, it's likely YYYY-MM-DD already but split
-                        if (day.length === 4) return `${day}-${month}-${parts[0].padStart(2, '0')}`;
+                        // If p1 is YYYY (length 4) -> YYYY-MM-DD
+                        if (p1.length === 4) {
+                            return `${p1}-${p2}-${p3.padStart(2, '0')}`;
+                        }
 
-                        return `${year}-${month}-${day}`;
+                        // Otherwise Assume DD/MM/YYYY
+                        if (p3.length === 2) p3 = '20' + p3;
+                        return `${p3}-${p2}-${p1}`;
                     }
                     return d;
                 };
 
+                let lastDate = null;
+                let lastSubject = null;
+
                 // Headers: Date, Subject, Type, Topic, Marrow GT, Code, Start, End, MCQs
-                const payload = rows.slice(1).map((row, index) => {
+                const payload = rows.slice(1).map((row) => {
                     const cols = row.split(',').map(c => c.trim());
                     if (cols.length < 9) return null;
 
-                    const rawDate = cols[0];
+                    let rawDate = cols[0];
+                    let currentSubject = cols[1];
+
+                    // Carry forward logic
+                    if (!rawDate || rawDate === "") {
+                        rawDate = lastDate;
+                    } else {
+                        lastDate = rawDate;
+                    }
+
+                    if (!currentSubject || currentSubject === "") {
+                        currentSubject = lastSubject;
+                    } else {
+                        lastSubject = currentSubject;
+                    }
+
                     const standardDate = parseDate(rawDate);
+                    if (!standardDate) return null; // Skip rows where date is still missing
 
                     return {
                         centre_name: centreSelect.value,
                         date: standardDate,
-                        subject: cols[1],
+                        subject: currentSubject || '-',
                         type: cols[2] || 'Study Day',
                         topic: cols[3],
                         marrow_gt: cols[4] || '-',
