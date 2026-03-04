@@ -109,6 +109,28 @@
             box-shadow: 0 4px 12px rgba(56, 189, 248, 0.3);
         }
 
+        .sample-download-btn {
+            display: inline-flex;
+            align-items: center;
+            gap: 0.5rem;
+            background: rgba(255, 255, 255, 0.05);
+            border: 1px solid var(--glass-border);
+            color: var(--text-primary);
+            padding: 0.75rem 1.25rem;
+            border-radius: 0.75rem;
+            text-decoration: none;
+            font-size: 0.9rem;
+            font-weight: 500;
+            transition: all 0.2s ease;
+            margin-bottom: 2rem;
+            cursor: pointer;
+        }
+
+        .sample-download-btn:hover {
+            background: rgba(255, 255, 255, 0.1);
+            border-color: var(--accent-color);
+        }
+
         .search-container {
             margin-bottom: 2rem;
             position: relative;
@@ -436,6 +458,17 @@
             <!-- CSV Form -->
             <div id="csv-upload-section" class="tab-content"
                 style="display: none; text-align: center; padding: 2rem 0;">
+
+                <a href="#" class="sample-download-btn" id="download-user-sample">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none"
+                        stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                        <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path>
+                        <polyline points="7 10 12 15 17 10"></polyline>
+                        <line x1="12" y1="15" x2="12" y2="3"></line>
+                    </svg>
+                    Download Sample User CSV
+                </a>
+
                 <div class="upload-area"
                     style="border: 2px dashed var(--glass-border); border-radius: 1rem; padding: 3rem 2rem; transition: all 0.3s ease;">
                     <svg xmlns="http://www.w3.org/2000/svg" width="48" height="48" viewBox="0 0 24 24" fill="none"
@@ -973,6 +1006,24 @@
                 tabManual.style.color = 'var(--text-secondary)';
                 manualForm.style.display = 'none';
                 csvSection.style.display = 'block';
+            });
+
+            // Sample User CSV Download
+            document.getElementById('download-user-sample')?.addEventListener('click', (e) => {
+                e.preventDefault();
+                const headers = "Name,EnrolmentID,Email,Phone,Role,Password,Centre";
+                const rows = [
+                    "Gourav,D1-1001,gourav@example.com,9007996101,Students,Pass123,Delhi",
+                    "Amit,D1-1002,amit@example.com,9876543210,Students,Pass123,Kolkata"
+                ].join("\n");
+                const blob = new Blob([headers + "\n" + rows], { type: 'text/csv' });
+                const url = window.URL.createObjectURL(blob);
+                const a = document.createElement('a');
+                a.href = url;
+                a.download = 'sample_users.csv';
+                document.body.appendChild(a);
+                a.click();
+                document.body.removeChild(a);
             });
 
             // CSV File Handling
