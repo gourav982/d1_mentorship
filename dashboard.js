@@ -143,33 +143,15 @@ document.addEventListener('DOMContentLoaded', async () => {
         }
 
         // 9. Onboarding Check (Only if they've reset their password)
-        console.log('User Status Check:', {
-            email: userData.email_id,
-            is_first_login: userData.is_first_login,
-            is_onboarded: userData.is_onboarded
-        });
-
-        if (userData.is_first_login) {
-            console.log('Redirecting to password reset flow...');
-            openModal();
-            const closeBtn = document.querySelector('.modal-close-btn');
-            if (closeBtn) closeBtn.style.display = 'none';
-        } else if (userData.role === 'Students' && (userData.is_onboarded === false || userData.is_onboarded === null || userData.is_onboarded === undefined)) {
-            console.log('Showing Onboarding Modal for Student...');
+        if (userData.role === 'Students' && (userData.is_onboarded === false || userData.is_onboarded === null || userData.is_onboarded === undefined)) {
             const onboardingModal = document.getElementById('onboarding-modal');
-            if (onboardingModal) {
-                onboardingModal.classList.add('active');
-            } else {
-                console.error('Onboarding modal element not found in DOM!');
-            }
+            if (onboardingModal) onboardingModal.classList.add('active');
         }
 
         const onboardingForm = document.getElementById('onboarding-form');
         if (onboardingForm) {
             onboardingForm.addEventListener('submit', async (e) => {
                 e.preventDefault();
-                console.log('Submitting onboarding form...');
-
                 const exam = document.getElementById('onboarding-exam').value;
                 const targetRank = document.getElementById('onboarding-target-rank').value;
                 const gtScore = document.getElementById('onboarding-gt-score').value;
@@ -182,7 +164,6 @@ document.addEventListener('DOMContentLoaded', async () => {
                 submitBtn.textContent = 'Saving...';
 
                 try {
-                    // 1. Store in the new Onboarding_Data table
                     const { error: onboardingError } = await supabaseClient
                         .from('Onboarding_Data')
                         .insert([{
@@ -198,27 +179,91 @@ document.addEventListener('DOMContentLoaded', async () => {
 
                     if (onboardingError) throw onboardingError;
 
-                    // 2. Mark as onboarded in Access table
-                    const { error: accessError } = await supabaseClient
-                        .from('Access')
-                        .update({
-                            is_onboarded: true,
-                            onboarding_date: new Date().toISOString()
-                        })
-                        .eq('email_id', userData.email_id);
+                    await supabaseClient.from('Access').update({
+                        is_onboarded: true,
+                        onboarding_date: new Date().toISOString()
+                    }).eq('email_id', userData.email_id);
 
-                    if (accessError) throw accessError;
-
-                    console.log('Onboarding successful!');
                     document.getElementById('onboarding-modal').classList.remove('active');
                     alert('Successfully onboarded! Welcome to DBMCI One Mentorship.');
                 } catch (err) {
-                    console.error('Onboarding error:', err);
                     alert('Error saving onboarding data: ' + err.message);
                     submitBtn.disabled = false;
                     submitBtn.textContent = 'Complete Onboarding';
                 }
             });
+        }
+
+        // 10. Performance Dashboard Logic
+        const loadPerformanceData = async () => {
+            const today = new Date().toISOString().split('T')[0];
+            const enrolmentId = userData.enrolment_id;
+
+            // Update welcome badge
+            if (document.getElementById('welcome-badge')) {
+                document.getElementById('welcome-badge').textContent = `Logged in as ${userData.email_id}`;
+            }
+
+            try {
+                // Fetch Schedules up to today
+                const { data: schedules, error: schedError } = await supabaseClient
+                    .from('Schedules')
+                    .select('type, date')
+                    .lte('date', today);
+
+                // Fetch Results for the user
+                const { data: results, error: resError } = await supabaseClient
+                    .from('Test_Results')
+                    .select('test_type, score, percentile')
+                    .or(`enrolment_id.eq.${enrolmentId},user_email.eq.${userData.email_id}`);
+
+                if (schedError || resError) {
+                    console.error('Data Fetch Error:', schedError || resError);
+                    return;
+                }
+
+                // Helper to count valid appearances
+                const countAppeared = (type) => {
+                    return results.filter(r =>
+                        r.test_type === type &&
+                        ((r.score && r.score !== '-') || (r.percentile && r.percentile !== '-'))
+                    ).length;
+                };
+
+                // Helper to count available
+                const countAvailable = (type) => {
+                    return schedules.filter(s => s.type === type).length;
+                };
+
+                // 1. Custom Module
+                const appCM = countAppeared('Custom Module');
+                const avCM = countAvailable('Custom Module');
+                document.getElementById('cm-appeared').textContent = `${appCM}/${avCM}`;
+                document.getElementById('cm-progress').style.width = avCM > 0 ? `${(appCM / avCM) * 100}%` : '0%';
+
+                // 2. T&D
+                const appTD = countAppeared('T&D');
+                const avTD = countAvailable('T&D');
+                document.getElementById('td-appeared').textContent = `${appTD}/${avTD}`;
+                document.getElementById('td-progress').style.width = avTD > 0 ? `${(appTD / avTD) * 100}%` : '0%';
+
+                // 3. Marrow GT
+                const appGT = countAppeared('Marrow GT');
+                const avGT = countAvailable('Marrow GT');
+                document.getElementById('gt-appeared').textContent = `${appGT}/${avGT}`;
+                document.getElementById('gt-progress').style.width = avGT > 0 ? `${(appGT / avGT) * 100}%` : '0%';
+
+            } catch (err) {
+                console.error('Performance Calc Error:', err);
+            }
+        };
+
+        if (userData.role === 'Students') {
+            await loadPerformanceData();
+        } else {
+            // Hide performance grid for non-students or show admin version (future)
+            const perfGrid = document.querySelector('.performance-grid');
+            if (perfGrid) perfGrid.style.opacity = '0.3';
         }
 
     } catch (err) {

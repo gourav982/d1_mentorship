@@ -129,10 +129,49 @@
             </aside>
             <main class="dashboard-main">
                 <div class="app-container">
-                    <div class="dashboard-content">
-                        <div class="user-badge">Logged in as gourav@marrowmed.com</div>
-                        <h1>Performance Dashboard</h1>
-                        <p>Your minimalist performance workspace is ready.</p>
+                    <div class="dashboard-content" style="text-align: left;">
+                        <div class="user-badge" id="welcome-badge">Logged in as...</div>
+                        <h1 style="margin-bottom: 0.5rem; font-size: 2.5rem;">Performance Overview</h1>
+                        <p style="color: var(--text-secondary); margin-bottom: 2rem;">Track your progress across all
+                            test types.</p>
+
+                        <div class="performance-grid">
+                            <!-- Custom Module Widget -->
+                            <div class="perf-card">
+                                <h3>Custom Module Performance</h3>
+                                <div class="perf-stats">
+                                    <div class="perf-value" id="cm-appeared">0/0</div>
+                                    <div class="perf-label">Appeared</div>
+                                </div>
+                                <div class="progress-container">
+                                    <div class="progress-fill" id="cm-progress" style="width: 0%"></div>
+                                </div>
+                            </div>
+
+                            <!-- T&D Widget -->
+                            <div class="perf-card">
+                                <h3>T&D Performance</h3>
+                                <div class="perf-stats">
+                                    <div class="perf-value" id="td-appeared">0/0</div>
+                                    <div class="perf-label">Appeared</div>
+                                </div>
+                                <div class="progress-container">
+                                    <div class="progress-fill" id="td-progress" style="width: 0%"></div>
+                                </div>
+                            </div>
+
+                            <!-- Marrow GT Widget -->
+                            <div class="perf-card">
+                                <h3>Marrow GT Performance</h3>
+                                <div class="perf-stats">
+                                    <div class="perf-value" id="gt-appeared">0/0</div>
+                                    <div class="perf-label">Appeared</div>
+                                </div>
+                                <div class="progress-container">
+                                    <div class="progress-fill" id="gt-progress" style="width: 0%"></div>
+                                </div>
+                            </div>
+                        </div>
                     </div>
                 </div>
             </main>
