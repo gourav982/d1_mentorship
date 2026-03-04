@@ -12,6 +12,15 @@ document.addEventListener('DOMContentLoaded', async () => {
     const roleDisplay = document.getElementById('display-role');
     const avatarCircle = document.getElementById('avatar-circle');
 
+    // Chart Instances
+    let cmChart = null;
+    let tdChart = null;
+    let gtChart = null;
+
+    // Data Storage for Charts
+    let globalSchedules = [];
+    let globalResults = [];
+
     // Sidebar Toggle
     const sidebar = document.querySelector('.sidebar');
     const sidebarToggle = document.getElementById('sidebar-toggle-btn');
@@ -213,7 +222,7 @@ document.addEventListener('DOMContentLoaded', async () => {
                 // Fetch Results for the user - Use ilike for case-insensitive email matching
                 const { data: results, error: resError } = await supabaseClient
                     .from('Test_Results')
-                    .select('test_type, score, percentile, custom_module_code')
+                    .select('test_type, score, percentile, custom_module_code, enrolment_id, user_email')
                     .or(`enrolment_id.eq.${enrolmentId},user_email.ilike.${userData.email_id.toLowerCase()}`);
 
                 if (schedError || resError) {
@@ -329,6 +338,13 @@ document.addEventListener('DOMContentLoaded', async () => {
                 updateWidget('td', 'T&D');
                 updateWidget('gt', 'Marrow GT');
 
+                // Store for charts
+                globalSchedules = schedules || [];
+                globalResults = results || [];
+
+                // Initialize Charts
+                initCharts();
+
             } catch (err) {
                 console.error('💥 Performance Calc Error:', err);
             }
@@ -344,5 +360,267 @@ document.addEventListener('DOMContentLoaded', async () => {
 
     } catch (err) {
         console.error('Data Load Error:', err);
+    }
+
+    // --- CHART LOGIC ---
+    function initCharts() {
+        populateSubjectFilters();
+        updateCMChart();
+        updateTDChart();
+        updateGTChart();
+
+        // Add Listeners
+        document.getElementById('cm-chart-date-filter')?.addEventListener('change', updateCMChart);
+        document.getElementById('cm-chart-subject-filter')?.addEventListener('change', updateCMChart);
+        document.getElementById('td-chart-date-filter')?.addEventListener('change', updateTDChart);
+        document.getElementById('td-chart-subject-filter')?.addEventListener('change', updateTDChart);
+        document.getElementById('gt-chart-date-filter')?.addEventListener('change', updateGTChart);
+    }
+
+    function populateSubjectFilters() {
+        const subjects = [...new Set(globalSchedules.map(s => s.subject).filter(Boolean))].sort();
+        const options = '<option value="all">All Subjects</option>' +
+            subjects.map(s => `<option value="${s}">${s}</option>`).join('');
+
+        const cmFilter = document.getElementById('cm-chart-subject-filter');
+        const tdFilter = document.getElementById('td-chart-subject-filter');
+        if (cmFilter) cmFilter.innerHTML = options;
+        if (tdFilter) tdFilter.innerHTML = options;
+    }
+
+    function getFilteredData(type, days, subject) {
+        let filtered = globalResults.filter(r => {
+            const rType = (r.test_type || '').toLowerCase().trim();
+            const targetType = type.toLowerCase().trim();
+            let matchesType = (rType === targetType);
+            if (targetType === 't&d') matchesType = rType.includes('t&d') || rType === 'test & discussion';
+            return matchesType;
+        });
+
+        // Link with schedule to get date and subject
+        let enriched = filtered.map(r => {
+            const rCode = (r.custom_module_code || '').trim();
+            const rType = (r.test_type || '').toLowerCase().trim();
+
+            const sched = globalSchedules.find(s => {
+                const sType = (s.type || '').toLowerCase().trim();
+                const sCode = (s.custom_module_code || '').trim();
+                const sTopic = (s.topic || '').trim();
+                const sGT = (s.marrow_gt || '').trim();
+
+                // 1. Direct code match
+                if (rCode && rCode !== '-' && rCode === sCode) return true;
+
+                // 2. Type and Topic match (for T&D/GT)
+                if (rType.includes('t&d') || rType === 'test & discussion') {
+                    if (sType.includes('t&d') && rCode === sTopic) return true;
+                }
+                if (rType.includes('marrow gt')) {
+                    if (rCode === sGT || rCode === sTopic) return true;
+                }
+
+                return false;
+            });
+            return {
+                ...r,
+                date: sched ? sched.date : null,
+                subject: sched ? sched.subject : null
+            };
+        });
+
+        // Date Filter
+        if (days !== 'all') {
+            const cutoff = new Date();
+            cutoff.setDate(cutoff.getDate() - parseInt(days));
+            const cutoffStr = cutoff.toISOString().split('T')[0];
+            enriched = enriched.filter(r => r.date && r.date >= cutoffStr);
+        }
+
+        // Subject Filter
+        if (subject && subject !== 'all') {
+            enriched = enriched.filter(r => r.subject === subject);
+        }
+
+        return enriched;
+    }
+
+    function updateCMChart() {
+        const days = document.getElementById('cm-chart-date-filter').value;
+        const subject = document.getElementById('cm-chart-subject-filter').value;
+        const data = getFilteredData('Custom Module', days, subject);
+
+        // Group by Date for Y-axis
+        const sorted = data.filter(d => d.date).sort((a, b) => new Date(a.date) - new Date(b.date));
+        const labels = sorted.map(d => d.date);
+        const values = sorted.map(d => parseFloat(String(d.percentile).replace(/[^\d.-]/g, '')) || 0);
+
+        const median = calculateMedianValue(values);
+
+        if (cmChart) cmChart.destroy();
+        const ctx = document.getElementById('cm-performance-chart').getContext('2d');
+        cmChart = new Chart(ctx, {
+            type: 'bar',
+            data: {
+                labels: labels,
+                datasets: [{
+                    label: 'Percentile',
+                    data: values,
+                    backgroundColor: 'rgba(56, 189, 248, 0.4)',
+                    borderColor: '#38bdf8',
+                    borderWidth: 1,
+                    borderRadius: 4
+                }]
+            },
+            options: {
+                indexAxis: 'y',
+                responsive: true,
+                maintainAspectRatio: false,
+                scales: {
+                    x: { min: 0, max: 100, grid: { color: 'rgba(255,255,255,0.05)' }, title: { display: true, text: 'Percentile', color: '#94a3b8' } },
+                    y: { grid: { display: false }, title: { display: true, text: 'Date', color: '#94a3b8' } }
+                },
+                plugins: {
+                    legend: { display: false },
+                    annotation: {
+                        annotations: {
+                            line1: {
+                                type: 'line',
+                                xMin: median,
+                                xMax: median,
+                                borderColor: 'rgba(239, 68, 68, 0.8)',
+                                borderWidth: 2,
+                                borderDash: [5, 5],
+                                label: { content: `Median: ${median}`, display: true, position: 'end' }
+                            }
+                        }
+                    }
+                }
+            }
+        });
+    }
+
+    function updateTDChart() {
+        const days = document.getElementById('td-chart-date-filter').value;
+        const subject = document.getElementById('td-chart-subject-filter').value;
+
+        let data = getFilteredData('T&D', days, subject);
+
+        // Group by Subject
+        const subjectMap = {};
+        data.forEach(d => {
+            if (d.subject) {
+                if (!subjectMap[d.subject]) subjectMap[d.subject] = [];
+                subjectMap[d.subject].push(parseFloat(String(d.percentile).replace(/[^\d.-]/g, '')) || 0);
+            }
+        });
+
+        const labels = Object.keys(subjectMap);
+        const values = labels.map(l => calculateMedianValue(subjectMap[l]));
+        const overallMedian = calculateMedianValue(values);
+
+        if (tdChart) tdChart.destroy();
+        const ctx = document.getElementById('td-performance-chart').getContext('2d');
+        tdChart = new Chart(ctx, {
+            type: 'bar',
+            data: {
+                labels: labels,
+                datasets: [{
+                    label: 'Subject Percentile',
+                    data: values,
+                    backgroundColor: 'rgba(34, 197, 94, 0.4)',
+                    borderColor: '#22c55e',
+                    borderWidth: 1,
+                    borderRadius: 4
+                }]
+            },
+            options: {
+                indexAxis: 'y',
+                responsive: true,
+                maintainAspectRatio: false,
+                scales: {
+                    x: { min: 0, max: 100, grid: { color: 'rgba(255,255,255,0.05)' } },
+                    y: { grid: { display: false } }
+                },
+                plugins: {
+                    legend: { display: false },
+                    annotation: {
+                        annotations: {
+                            line1: {
+                                type: 'line',
+                                xMin: overallMedian,
+                                xMax: overallMedian,
+                                borderColor: 'rgba(239, 68, 68, 0.8)',
+                                borderWidth: 2,
+                                borderDash: [5, 5],
+                                label: { content: `Overall Median: ${overallMedian}`, display: true }
+                            }
+                        }
+                    }
+                }
+            }
+        });
+    }
+
+    function updateGTChart() {
+        const days = document.getElementById('gt-chart-date-filter').value;
+        let data = getFilteredData('Marrow GT', days, 'all');
+
+        // Use test name as label (GT Name)
+        const sorted = data.filter(d => d.custom_module_code).sort((a, b) => new Date(a.date) - new Date(b.date));
+        const labels = sorted.map(d => d.custom_module_code); // For Marrow GT, the code is often the name
+        const values = sorted.map(d => parseFloat(String(d.percentile).replace(/[^\d.-]/g, '')) || 0);
+
+        const median = calculateMedianValue(values);
+
+        if (gtChart) gtChart.destroy();
+        const ctx = document.getElementById('gt-performance-chart').getContext('2d');
+        gtChart = new Chart(ctx, {
+            type: 'bar',
+            data: {
+                labels: labels,
+                datasets: [{
+                    label: 'GT Percentile',
+                    data: values,
+                    backgroundColor: 'rgba(245, 158, 11, 0.4)',
+                    borderColor: '#f59e0b',
+                    borderWidth: 1,
+                    borderRadius: 4
+                }]
+            },
+            options: {
+                indexAxis: 'y',
+                responsive: true,
+                maintainAspectRatio: false,
+                scales: {
+                    x: { min: 0, max: 100, grid: { color: 'rgba(255,255,255,0.05)' } },
+                    y: { grid: { display: false } }
+                },
+                plugins: {
+                    legend: { display: false },
+                    annotation: {
+                        annotations: {
+                            line1: {
+                                type: 'line',
+                                xMin: median,
+                                xMax: median,
+                                borderColor: 'rgba(239, 68, 68, 0.8)',
+                                borderWidth: 2,
+                                borderDash: [5, 5],
+                                label: { content: `Median: ${median}`, display: true }
+                            }
+                        }
+                    }
+                }
+            }
+        });
+    }
+
+    function calculateMedianValue(arr) {
+        if (!arr || arr.length === 0) return 0;
+        const nums = arr.map(n => parseFloat(n)).filter(n => !isNaN(n)).sort((a, b) => a - b);
+        if (nums.length === 0) return 0;
+        const mid = Math.floor(nums.length / 2);
+        const median = nums.length % 2 !== 0 ? nums[mid] : (nums[mid - 1] + nums[mid]) / 2;
+        return parseFloat(median.toFixed(1));
     }
 });
