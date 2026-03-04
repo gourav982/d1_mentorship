@@ -21,6 +21,15 @@ document.addEventListener('DOMContentLoaded', async () => {
     let globalSchedules = [];
     let globalResults = [];
 
+    const formatChartDate = (dateStr) => {
+        if (!dateStr) return '-';
+        const d = new Date(dateStr);
+        if (isNaN(d.getTime())) return dateStr;
+        const day = d.getDate().toString().padStart(2, '0');
+        const months = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
+        return `${day}-${months[d.getMonth()]}`;
+    };
+
     // Sidebar Toggle
     const sidebar = document.querySelector('.sidebar');
     const sidebarToggle = document.getElementById('sidebar-toggle-btn');
@@ -458,7 +467,7 @@ document.addEventListener('DOMContentLoaded', async () => {
 
         // Group by Date for Y-axis
         const sorted = data.filter(d => d.date).sort((a, b) => new Date(a.date) - new Date(b.date));
-        const labels = sorted.map(d => d.date);
+        const labels = sorted.map(d => formatChartDate(d.date));
         const values = sorted.map(d => parseFloat(String(d.percentile).replace(/[^\d.-]/g, '')) || 0);
 
         const median = calculateMedianValue(values);
