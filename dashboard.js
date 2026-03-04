@@ -407,24 +407,31 @@ document.addEventListener('DOMContentLoaded', async () => {
                 const sCode = (s.custom_module_code || '').trim();
                 const sTopic = (s.topic || '').trim();
                 const sGT = (s.marrow_gt || '').trim();
+                const sSubject = (s.subject || '').trim();
 
-                // 1. Direct code match
+                // 1. Direct code match (Custom Modules)
                 if (rCode && rCode !== '-' && rCode === sCode) return true;
 
-                // 2. Type and Topic match (for T&D/GT)
+                // 2. Type and Subject/Topic match (for T&D where results code is often the subject/topic)
                 if (rType.includes('t&d') || rType === 'test & discussion') {
-                    if (sType.includes('t&d') && (rCode === sTopic || rCode === sCode)) return true;
+                    if (sType.includes('t&d')) {
+                        if (rCode === sTopic || rCode === sSubject || rCode.includes(sSubject)) return true;
+                    }
                 }
+
+                // 3. Marrow GT match
                 if (rType.includes('marrow gt')) {
                     if (rCode === sGT || rCode === sTopic || rCode === sCode) return true;
                 }
 
                 return false;
             });
+
+            // Enrichment with Fallback: For T&D, if no schedule match, assume the Code IS the subject
             return {
                 ...r,
                 date: sched ? sched.date : null,
-                subject: sched ? sched.subject : null
+                subject: sched ? sched.subject : (rType.includes('t&d') ? rCode : null)
             };
         });
 
