@@ -45,9 +45,9 @@ document.addEventListener('DOMContentLoaded', async () => {
         e.preventDefault();
         const headers = "Enrolment ID,Test Type,Test Code,Score,Percentile";
         const sampleRows = [
-            "D1-1001,Custom Module,ANA-LL-01,85,92",
-            "D1-1002,T&D,PATH-TD-01,70,78",
-            "D1-1001,Marrow GT,Marrow GT 14,145,95"
+            "D1-1001,Custom Module,OBGNEW01,85,92",
+            "D1-1001,T&D,Pediatrics T&D,75,88",
+            "D1-1001,Marrow GT,Marrow GT 20,155,96"
         ].join("\n");
         const blob = new Blob([headers + "\n" + sampleRows], { type: 'text/csv' });
         const url = window.URL.createObjectURL(blob);
@@ -65,7 +65,7 @@ document.addEventListener('DOMContentLoaded', async () => {
             fileNameDisplay.textContent = `Selected: ${file.name}`;
             processBtn.disabled = false;
         } else {
-            fileNameDisplay.textContent = 'Format: Enrolment ID, Test Type, Test Code, Score, Percentile';
+            fileNameDisplay.innerHTML = 'Format: Enrolment ID, Test Type, Test Code, Score, Percentile<br><span style="font-size: 0.8rem; opacity: 0.7;">(Use exact Topic Name for T&D/GT if Code is missing)</span>';
             processBtn.disabled = true;
         }
     });
