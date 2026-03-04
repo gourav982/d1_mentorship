@@ -71,11 +71,56 @@
             border-bottom: 1px solid var(--glass-border);
         }
 
+        th:nth-child(1) {
+            width: 18%;
+        }
+
+        /* Name */
+        th:nth-child(2) {
+            width: 12%;
+        }
+
+        /* Enrolment ID */
+        th:nth-child(3) {
+            width: 22%;
+        }
+
+        /* Email */
+        th:nth-child(4) {
+            width: 10%;
+            text-align: center;
+        }
+
+        /* Role */
+        th:nth-child(5) {
+            width: 12%;
+        }
+
+        /* Phone */
+        th:nth-child(6) {
+            width: 12%;
+        }
+
+        /* Centre */
+        th:nth-child(7) {
+            width: 8%;
+            text-align: center;
+        }
+
+        /* Status */
+        th:nth-child(8) {
+            width: 6%;
+            text-align: right;
+        }
+
+        /* Actions */
+
         td {
-            padding: 1.25rem 1.5rem;
-            font-size: 0.95rem;
+            padding: 1rem 1.5rem;
+            font-size: 0.9rem;
             color: var(--text-primary);
             border-bottom: 1px solid var(--glass-border);
+            vertical-align: middle;
         }
 
         tr:last-child td {
@@ -1011,10 +1056,10 @@
             // Sample User CSV Download
             document.getElementById('download-user-sample')?.addEventListener('click', (e) => {
                 e.preventDefault();
-                const headers = "Name,EnrolmentID,Email,Phone,Role,Password,Centre";
+                const headers = "Name,EnrolmentID,Email,Phone,Role,Password,Centre,Status";
                 const rows = [
-                    "Gourav,D1-1001,gourav@example.com,9007996101,Students,Pass123,Delhi",
-                    "Amit,D1-1002,amit@example.com,9876543210,Students,Pass123,Kolkata"
+                    "Gourav,D1-1001,gourav@example.com,9007996101,Students,Pass123,Delhi,Active",
+                    "Amit,D1-1002,amit@example.com,9876543210,Students,Pass123,Kolkata,Inactive"
                 ].join("\n");
                 const blob = new Blob([headers + "\n" + rows], { type: 'text/csv' });
                 const url = window.URL.createObjectURL(blob);
@@ -1044,6 +1089,12 @@
                             .filter(line => line.trim() !== '')
                             .map(line => {
                                 const [name, enrolment, email, phone, role, password, centre, status] = line.split(',').map(s => s.trim());
+                                // Parse Status: handle 1, true, Active as true; 0, false, Inactive as false
+                                let isActive = true;
+                                if (status) {
+                                    const s = status.toLowerCase();
+                                    if (s === 'inactive' || s === 'false' || s === '0') isActive = false;
+                                }
                                 return {
                                     name,
                                     enrolment_id: enrolment,
@@ -1053,7 +1104,7 @@
                                     password,
                                     centre_name: centre,
                                     is_first_login: true,
-                                    is_active: status ? (status.toLowerCase() === 'true' || status === '1') : true
+                                    is_active: isActive
                                 };
                             });
 
@@ -1078,27 +1129,73 @@
                 // We do this sequentially to avoid rate limits and session issues.
                 for (const user of parsedUsers) {
                     try {
-                        // Create Auth Account
-                        const { error: authErr } = await supabaseClient.auth.signUp({
+                        // 1. Check if user exists
+                        const { data: existingUser } = await supabaseClient
+                            .from('Access')
+                            .select('user_id')
+                            .ilike('email_id', user.email_id)
+                            .maybeSingle();
+
+                        if (existingUser) {
+                            // UPDATE EXISTING USER
+                            const userId = existingUser.user_id;
+
+                            // Update Access table
+                            const { error: upErr } = await supabaseClient
+                                .from('Access')
+                                .update({
+                                    name: user.name,
+                                    enrolment_id: user.enrolment_id,
+                                    phone_number: user.phone_number,
+                                    role: user.role,
+                                    centre_name: user.centre_name
+                                })
+                                .eq('user_id', userId);
+
+                            // Update Status table
+                            const { error: stErr } = await supabaseClient
+                                .from('User_Status')
+                                .upsert([{ user_id: userId, is_active: user.is_active }]);
+
+                            if (!upErr && !stErr) successCount++;
+                            else errorCount++;
+
+                            continue;
+                        }
+
+                        // 2. CREATE NEW USER
+                        const ghostSupabase = supabase.createClient(
+                            'https://aobwkcjfhbruihkandlg.supabase.co',
+                            'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImFvYndrY2pmaGJydWloa2FuZGxnIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzIwMjE1MjAsImV4cCI6MjA4NzU5NzUyMH0.V7OdMoiiDuXIMOdoUDLlUMjdavSjObHpajb2gHh0E38',
+                            { auth: { persistSession: false } }
+                        );
+
+                        const { data: authData, error: authErr } = await ghostSupabase.auth.signUp({
                             email: user.email_id,
                             password: user.password
                         });
 
-                        if (authErr) {
+                        if (authErr && !authErr.message.includes('already registered')) {
                             console.error(`Auth failed for ${user.email_id}:`, authErr.message);
                             errorCount++;
                             continue;
                         }
 
-                        // Create Access Record
-                        const { error: dbErr } = await supabaseClient.from('Access').insert([user]);
-                        if (dbErr) {
-                            console.error(`DB failed for ${user.email_id}:`, dbErr.message);
-                            errorCount++;
+                        const userId = authData?.user?.id;
+                        if (userId) {
+                            user.user_id = userId;
+                            // Create Access Record
+                            const { error: dbErr } = await supabaseClient.from('Access').insert([user]);
+                            // Create Status Record
+                            await supabaseClient.from('User_Status').insert([{ user_id: userId, is_active: user.is_active }]);
+
+                            if (dbErr) errorCount++;
+                            else successCount++;
                         } else {
-                            successCount++;
+                            errorCount++;
                         }
                     } catch (err) {
+                        console.error('Batch error:', err);
                         errorCount++;
                     }
                 }
