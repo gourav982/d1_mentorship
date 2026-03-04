@@ -472,12 +472,11 @@ document.addEventListener('DOMContentLoaded', async () => {
                 }]
             },
             options: {
-                indexAxis: 'y',
                 responsive: true,
                 maintainAspectRatio: false,
                 scales: {
-                    x: { min: 0, max: 100, grid: { color: 'rgba(255,255,255,0.05)' }, title: { display: true, text: 'Percentile', color: '#94a3b8' } },
-                    y: { grid: { display: false }, title: { display: true, text: 'Date', color: '#94a3b8' } }
+                    x: { grid: { display: false }, title: { display: true, text: 'Date', color: '#94a3b8' } },
+                    y: { min: 0, max: 100, grid: { color: 'rgba(255,255,255,0.05)' }, title: { display: true, text: 'Percentile', color: '#94a3b8' } }
                 },
                 plugins: {
                     legend: { display: false },
@@ -485,8 +484,8 @@ document.addEventListener('DOMContentLoaded', async () => {
                         annotations: {
                             line1: {
                                 type: 'line',
-                                xMin: median,
-                                xMax: median,
+                                yMin: median,
+                                yMax: median,
                                 borderColor: 'rgba(239, 68, 68, 0.8)',
                                 borderWidth: 2,
                                 borderDash: [5, 5],
@@ -534,12 +533,11 @@ document.addEventListener('DOMContentLoaded', async () => {
                 }]
             },
             options: {
-                indexAxis: 'y',
                 responsive: true,
                 maintainAspectRatio: false,
                 scales: {
-                    x: { min: 0, max: 100, grid: { color: 'rgba(255,255,255,0.05)' } },
-                    y: { grid: { display: false } }
+                    x: { grid: { display: false }, title: { display: true, text: 'Subject', color: '#94a3b8' } },
+                    y: { min: 0, max: 100, grid: { color: 'rgba(255,255,255,0.05)' }, title: { display: true, text: 'Percentile', color: '#94a3b8' } }
                 },
                 plugins: {
                     legend: { display: false },
@@ -547,8 +545,8 @@ document.addEventListener('DOMContentLoaded', async () => {
                         annotations: {
                             line1: {
                                 type: 'line',
-                                xMin: overallMedian,
-                                xMax: overallMedian,
+                                yMin: overallMedian,
+                                yMax: overallMedian,
                                 borderColor: 'rgba(239, 68, 68, 0.8)',
                                 borderWidth: 2,
                                 borderDash: [5, 5],
@@ -588,12 +586,11 @@ document.addEventListener('DOMContentLoaded', async () => {
                 }]
             },
             options: {
-                indexAxis: 'y',
                 responsive: true,
                 maintainAspectRatio: false,
                 scales: {
-                    x: { min: 0, max: 100, grid: { color: 'rgba(255,255,255,0.05)' } },
-                    y: { grid: { display: false } }
+                    x: { grid: { display: false }, title: { display: true, text: 'Marrow GT', color: '#94a3b8' } },
+                    y: { min: 0, max: 100, grid: { color: 'rgba(255,255,255,0.05)' }, title: { display: true, text: 'Percentile', color: '#94a3b8' } }
                 },
                 plugins: {
                     legend: { display: false },
@@ -601,8 +598,8 @@ document.addEventListener('DOMContentLoaded', async () => {
                         annotations: {
                             line1: {
                                 type: 'line',
-                                xMin: median,
-                                xMax: median,
+                                yMin: median,
+                                yMax: median,
                                 borderColor: 'rgba(239, 68, 68, 0.8)',
                                 borderWidth: 2,
                                 borderDash: [5, 5],
