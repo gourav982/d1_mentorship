@@ -85,10 +85,10 @@
             width: 22%;
         }
 
-        /* Email */
+        /* Role */
         th:nth-child(4) {
             width: 10%;
-            text-align: center;
+            text-align: left;
         }
 
         /* Role */
@@ -178,8 +178,16 @@
 
         .search-container {
             margin-bottom: 2rem;
+            display: flex;
+            gap: 1rem;
+            align-items: center;
+            flex-wrap: wrap;
+        }
+
+        .search-input-wrapper {
             position: relative;
-            max-width: 400px;
+            flex: 1;
+            min-width: 300px;
         }
 
         .search-input {
@@ -192,6 +200,18 @@
             font-size: 0.95rem;
             outline: none;
             transition: all 0.3s ease;
+        }
+
+        .filter-select {
+            background: var(--glass-bg);
+            border: 1px solid var(--glass-border);
+            border-radius: 1rem;
+            padding: 0.8rem 1.5rem 0.8rem 1rem;
+            color: var(--text-primary);
+            font-size: 0.95rem;
+            outline: none;
+            cursor: pointer;
+            min-width: 150px;
         }
 
         .search-input:focus {
@@ -389,13 +409,29 @@
                 </div>
 
                 <div class="search-container">
-                    <svg class="search-icon" xmlns="http://www.w3.org/2000/svg" width="20" height="20"
-                        viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"
-                        stroke-linejoin="round">
-                        <circle cx="11" cy="11" r="8"></circle>
-                        <line x1="21" y1="21" x2="16.65" y2="16.65"></line>
-                    </svg>
-                    <input type="text" id="user-search" class="search-input" placeholder="Search by email or phone...">
+                    <div class="search-input-wrapper">
+                        <svg class="search-icon" xmlns="http://www.w3.org/2000/svg" width="20" height="20"
+                            viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+                            stroke-linecap="round" stroke-linejoin="round">
+                            <circle cx="11" cy="11" r="8"></circle>
+                            <line x1="21" y1="21" x2="16.65" y2="16.65"></line>
+                        </svg>
+                        <input type="text" id="user-search" class="search-input"
+                            placeholder="Search by name, email or phone...">
+                    </div>
+
+                    <select id="role-filter" class="filter-select">
+                        <option value="all">All Roles</option>
+                        <option value="Students">Students</option>
+                        <option value="Mentor">Mentor</option>
+                        <option value="Admin">Admin</option>
+                        <option value="Academics">Academics</option>
+                        <option value="Super admin">Super admin</option>
+                    </select>
+
+                    <select id="centre-filter" class="filter-select">
+                        <option value="all">All Centres</option>
+                    </select>
                 </div>
 
                 <div class="users-table-container">
@@ -712,9 +748,14 @@
                 if (centres) {
                     const addSel = document.getElementById('add-centre');
                     const editSel = document.getElementById('edit-centre-select');
+                    const filterSel = document.getElementById('centre-filter');
+
                     const options = '<option value="">Select Centre</option>' + centres.map(c => `<option value="${c.name}">${c.name}</option>`).join('');
+                    const filterOptions = '<option value="all">All Centres</option>' + centres.map(c => `<option value="${c.name}">${c.name}</option>`).join('');
+
                     if (addSel) addSel.innerHTML = options;
                     if (editSel) editSel.innerHTML = options;
+                    if (filterSel) filterSel.innerHTML = filterOptions;
                 }
             } catch (e) {
                 console.error('Centre Population Error:', e);
@@ -923,15 +964,31 @@
 
             await fetchUsers();
 
-            searchInput.addEventListener('input', (e) => {
-                const term = e.target.value.toLowerCase();
-                const filtered = allUsers.filter(user =>
-                    (user.email_id && user.email_id.toLowerCase().includes(term)) ||
-                    (user.phone_number && user.phone_number.toLowerCase().includes(term)) ||
-                    (user.name && user.name.toLowerCase().includes(term))
-                );
+            const roleFilter = document.getElementById('role-filter');
+            const centreFilter = document.getElementById('centre-filter');
+
+            const applyFilters = () => {
+                const term = searchInput.value.toLowerCase();
+                const role = roleFilter.value;
+                const centre = centreFilter.value;
+
+                const filtered = allUsers.filter(user => {
+                    const matchesSearch = !term ||
+                        (user.email_id && user.email_id.toLowerCase().includes(term)) ||
+                        (user.phone_number && user.phone_number.toLowerCase().includes(term)) ||
+                        (user.name && user.name.toLowerCase().includes(term));
+
+                    const matchesRole = role === 'all' || user.role === role;
+                    const matchesCentre = centre === 'all' || user.centre_name === centre;
+
+                    return matchesSearch && matchesRole && matchesCentre;
+                });
                 renderUsers(filtered);
-            });
+            };
+
+            searchInput.addEventListener('input', applyFilters);
+            roleFilter.addEventListener('change', applyFilters);
+            centreFilter.addEventListener('change', applyFilters);
 
             // Form submission
             const addForm = document.getElementById('add-user-form');
