@@ -70,7 +70,7 @@ document.addEventListener('DOMContentLoaded', async () => {
         e.preventDefault();
         const headers = "Date, Subject, Type, Topic, Marrow GT, Custom Module Code, Start Date & Time, End Date & Time, MCQs\n";
         const sampleRowArr = [
-            "2026-03-01, Anatomy, Study Day, Lower Limb, -, ANA-LL-01, 2026-03-01 10:00:00, 2026-03-01 12:00:00, 50\n",
+            '2026-03-01, Anatomy, "Study Day", "Anatomy Lower Limb", -, ANA-LL-01, "2026-03-01 10:00:00", "2026-03-01 12:00:00", 50\n',
         ];
         const blob = new Blob([headers + sampleRowArr.join("")], { type: 'text/csv' });
         const url = window.URL.createObjectURL(blob);
@@ -113,15 +113,15 @@ document.addEventListener('DOMContentLoaded', async () => {
                     row.end_datetime || '',
                     row.num_questions || ''
                 ];
-                // Escape commas in topic or subject
-                return parts.map(p => `"${p}"`).join(',');
+                // Wrap in quotes and escape internal quotes
+                return parts.map(p => `"${String(p).replace(/"/g, '""')}"`).join(',');
             });
 
             const blob = new Blob([headers + csvRows.join("\n")], { type: 'text/csv' });
             const url = window.URL.createObjectURL(blob);
             const a = document.createElement('a');
             a.setAttribute('href', url);
-            a.setAttribute('download', `schedule_${centre.toLowerCase()}_current.csv`);
+            a.setAttribute('download', `schedule_${centre.toLowerCase().replace(/\s/g, '_')}_current.csv`);
             a.click();
         } catch (err) {
             console.error(err);
@@ -130,6 +130,31 @@ document.addEventListener('DOMContentLoaded', async () => {
             downloadExistingBtn.textContent = 'Download Existing Schedule';
         }
     });
+
+    // Simple robust CSV line splitter helper
+    const splitCSVLine = (line) => {
+        const parts = [];
+        let cur = '';
+        let inQuotes = false;
+        for (let i = 0; i < line.length; i++) {
+            const char = line[i];
+            if (char === '"') {
+                if (inQuotes && line[i + 1] === '"') {
+                    cur += '"'; // Doubled quote
+                    i++;
+                } else {
+                    inQuotes = !inQuotes;
+                }
+            } else if (char === ',' && !inQuotes) {
+                parts.push(cur.trim());
+                cur = '';
+            } else {
+                cur += char;
+            }
+        }
+        parts.push(cur.trim());
+        return parts;
+    };
 
     // 4. File Selection
     fileInput.addEventListener('change', (e) => {
@@ -178,13 +203,12 @@ document.addEventListener('DOMContentLoaded', async () => {
                 let lastDate = null;
                 let lastSubject = null;
 
-                const headerCols = rows[0].split(',').map(c => c.trim().toLowerCase());
-                const hasUUID = headerCols[0].includes('uuid') || headerCols[0].includes('id');
+                const headerLine = rows[0].toLowerCase();
+                const hasUUID = headerLine.includes('uuid') || headerLine.includes('id');
 
                 const payload = rows.slice(1).map((row) => {
-                    // Smart CSV splitting that handles quoted commas
-                    const cols = row.match(/(".*?"|[^",\s]+|(?<=,)(?=,)|(?<=^)(?=,)|(?<=,)(?=$))/g) || [];
-                    const cleanCols = cols.map(c => c.trim().replace(/^"|"$/g, ''));
+                    if (!row.trim()) return null;
+                    const cleanCols = splitCSVLine(row);
 
                     if (cleanCols.length < 5) return null;
 
@@ -213,9 +237,9 @@ document.addEventListener('DOMContentLoaded', async () => {
                         topic: topic,
                         marrow_gt: cleanCols[4 + shift] || '-',
                         custom_module_code: cleanCols[5 + shift] || null,
-                        start_datetime: cleanCols[6 + shift] || null,
-                        end_datetime: cleanCols[7 + shift] || null,
-                        num_questions: (cleanCols[8 + shift] && cleanCols[8 + shift] !== '') ? parseInt(cleanCols[8 + shift]) : null
+                        start_datetime: (cleanCols[6 + shift] && cleanCols[6 + shift] !== '-' && cleanCols[6 + shift] !== '') ? cleanCols[6 + shift] : null,
+                        end_datetime: (cleanCols[7 + shift] && cleanCols[7 + shift] !== '-' && cleanCols[7 + shift] !== '') ? cleanCols[7 + shift] : null,
+                        num_questions: (cleanCols[8 + shift] && cleanCols[8 + shift] !== '' && cleanCols[8 + shift] !== '-') ? parseInt(cleanCols[8 + shift]) : null
                     };
 
                     if (hasUUID && cleanCols[0] && cleanCols[0].length > 10) {
