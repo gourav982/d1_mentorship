@@ -183,8 +183,19 @@ document.addEventListener('DOMContentLoaded', async () => {
     };
 
     const renderSchedule = (schedules, progressMap) => {
+        const mobileList = document.getElementById('schedule-mobile-list');
+
         if (!schedules || schedules.length === 0) {
-            scheduleBody.innerHTML = `<tr><td colspan="12" style="text-align:center; padding: 3rem; color: var(--text-secondary);">No sessions match your filters.</td></tr>`;
+            const noDataHtml = `
+                <div style="text-align:center; padding: 4rem 2rem; color: var(--text-secondary); background: rgba(255,255,255,0.02); border-radius: 1rem; border: 1px dashed var(--glass-border);">
+                    <svg viewBox="0 0 24 24" width="48" height="48" stroke="currentColor" stroke-width="1.5" fill="none" style="opacity: 0.3; margin-bottom: 1rem;">
+                        <circle cx="12" cy="12" r="10"></circle><line x1="12" y1="8" x2="12" y2="12"></line><line x1="12" y1="16" x2="12.01" y2="16"></line>
+                    </svg>
+                    <p style="font-size: 1rem; font-weight: 500;">No sessions matching your filters.</p>
+                </div>`;
+
+            scheduleBody.innerHTML = `<tr><td colspan="12" style="text-align:center; padding: 4rem; color: var(--text-secondary);">No sessions match your filters.</td></tr>`;
+            if (mobileList) mobileList.innerHTML = noDataHtml;
             return;
         }
 
@@ -233,7 +244,6 @@ document.addEventListener('DOMContentLoaded', async () => {
             return result;
         };
 
-        const mobileList = document.getElementById('schedule-mobile-list');
 
         // Desktop Render
         scheduleBody.innerHTML = schedules.map((item, index) => {
@@ -426,7 +436,6 @@ document.addEventListener('DOMContentLoaded', async () => {
         if (adminRoles.includes(userData.role) && adminMenuSec) {
             adminMenuSec.style.display = 'block';
         }
-
         // 2. Modal Logic
         const openModal = () => {
             const nameInput = document.getElementById('profile-name');

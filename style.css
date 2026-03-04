@@ -11,6 +11,15 @@
     display: none;
 }
 
+/* Visibility Utilities - Base State (Desktop) */
+.mobile-only {
+    display: none !important;
+}
+
+.desktop-only {
+    display: block !important;
+}
+
 * {
     margin: 0;
     padding: 0;
@@ -1401,12 +1410,22 @@ td:nth-child(13) {
 
 /* Visibility Utilities */
 .mobile-only {
+    display: block !important;
+    /* Default to visible on mobile */
+}
+
+.desktop-only {
     display: none !important;
+    /* Default to hidden on mobile */
 }
 
 /* Already handled by @media(max-width: 1024px) but safety fallback */
 @media (min-width: 1025px) {
     .desktop-only {
         display: block !important;
+    }
+
+    .mobile-only {
+        display: none !important;
     }
 }
