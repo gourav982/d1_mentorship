@@ -147,38 +147,16 @@
                 <p>This helps us personalize your mentorship experience.</p>
             </div>
             <form id="onboarding-form">
-                <div class="input-grid"
-                    style="display: grid; grid-template-columns: 1fr; gap: 1.25rem; max-height: 50vh; overflow-y: auto; padding-right: 0.5rem;">
+                <div class="input-grid" style="display: grid; grid-template-columns: 1fr; gap: 1rem;">
                     <div class="input-group">
-                        <label>Medical College / University</label>
-                        <input type="text" id="onboarding-college" required placeholder="e.g. MAMC, Delhi">
-                    </div>
-
-                    <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 1rem;">
-                        <div class="input-group">
-                            <label>Year of Study</label>
-                            <select id="onboarding-year" class="centre-selector" required
-                                style="padding: 0.875rem 1rem;">
-                                <option value="" disabled selected>Select Year</option>
-                                <option value="1st Year">1st Year</option>
-                                <option value="2nd Year">2nd Year</option>
-                                <option value="3rd Year">3rd Year</option>
-                                <option value="Final Year">Final Year</option>
-                                <option value="Intern">Intern</option>
-                                <option value="Post-Intern">Post-Intern</option>
-                            </select>
-                        </div>
-                        <div class="input-group">
-                            <label>Target Exam</label>
-                            <select id="onboarding-exam" class="centre-selector" required
-                                style="padding: 0.875rem 1rem;">
-                                <option value="" disabled selected>Select Exam</option>
-                                <option value="NEET PG">NEET PG</option>
-                                <option value="INI-CET">INI-CET</option>
-                                <option value="FMGE">FMGE</option>
-                                <option value="NEXT">NExT</option>
-                            </select>
-                        </div>
+                        <label>Target Exam</label>
+                        <select id="onboarding-exam" class="centre-selector" required style="padding: 0.875rem 1rem;">
+                            <option value="" disabled selected>Select Target Exam</option>
+                            <option value="INICET May'26">INICET May'26</option>
+                            <option value="NEET PG 2026">NEET PG 2026</option>
+                            <option value="INICET Nov'26">INICET Nov'26</option>
+                            <option value="Targetting in 2027">Targetting in 2027</option>
+                        </select>
                     </div>
 
                     <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 1rem;">
@@ -200,19 +178,19 @@
                     <div class="input-group">
                         <label>What is your biggest challenge right now?</label>
                         <textarea id="onboarding-challenge" required class="remarks-input"
-                            style="width: 100%; max-width: none; min-height: 80px;"
-                            placeholder="e.g. Lack of consistency, revision issues..."></textarea>
+                            style="width: 100%; max-width: none; min-height: 60px;"
+                            placeholder="Describe your main hurdle..."></textarea>
                     </div>
 
                     <div class="input-group">
                         <label>What support do you expect from Mentorship Program?</label>
                         <textarea id="onboarding-expectation" required class="remarks-input"
                             style="width: 100%; max-width: none; min-height: 80px;"
-                            placeholder="e.g. Custom schedule, weekly tracking..."></textarea>
+                            placeholder="Tell us how we can help you best..."></textarea>
                     </div>
                 </div>
 
-                <div style="display: flex; gap: 1rem; margin-top: 2.5rem;">
+                <div style="display: flex; gap: 1rem; margin-top: 2rem;">
                     <button type="submit" id="onboarding-submit" class="login-button" style="flex: 1;">Complete
                         Onboarding</button>
                 </div>

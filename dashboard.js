@@ -154,8 +154,8 @@ document.addEventListener('DOMContentLoaded', async () => {
             openModal();
             const closeBtn = document.querySelector('.modal-close-btn');
             if (closeBtn) closeBtn.style.display = 'none';
-        } else if (userData.is_onboarded === false || userData.is_onboarded === null || userData.is_onboarded === undefined) {
-            console.log('Showing Onboarding Modal...');
+        } else if (userData.role === 'Students' && (userData.is_onboarded === false || userData.is_onboarded === null || userData.is_onboarded === undefined)) {
+            console.log('Showing Onboarding Modal for Student...');
             const onboardingModal = document.getElementById('onboarding-modal');
             if (onboardingModal) {
                 onboardingModal.classList.add('active');
@@ -170,8 +170,6 @@ document.addEventListener('DOMContentLoaded', async () => {
                 e.preventDefault();
                 console.log('Submitting onboarding form...');
 
-                const college = document.getElementById('onboarding-college').value;
-                const year = document.getElementById('onboarding-year').value;
                 const exam = document.getElementById('onboarding-exam').value;
                 const targetRank = document.getElementById('onboarding-target-rank').value;
                 const gtScore = document.getElementById('onboarding-gt-score').value;
@@ -188,8 +186,6 @@ document.addEventListener('DOMContentLoaded', async () => {
                         .from('Access')
                         .update({
                             is_onboarded: true,
-                            college: college,
-                            year_of_study: year,
                             target_exam: exam,
                             target_rank: targetRank ? parseInt(targetRank) : null,
                             latest_gt_score: gtScore ? parseFloat(gtScore) : null,
