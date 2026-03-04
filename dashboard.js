@@ -142,6 +142,48 @@ document.addEventListener('DOMContentLoaded', async () => {
             });
         }
 
+        // 9. Onboarding Check (Only if they've reset their password)
+        if (!userData.is_onboarded && !userData.is_first_login) {
+            document.getElementById('onboarding-modal').classList.add('active');
+        }
+
+        const onboardingForm = document.getElementById('onboarding-form');
+        if (onboardingForm) {
+            onboardingForm.addEventListener('submit', async (e) => {
+                e.preventDefault();
+                const college = document.getElementById('onboarding-college').value;
+                const year = document.getElementById('onboarding-year').value;
+                const exam = document.getElementById('onboarding-exam').value;
+                const submitBtn = document.getElementById('onboarding-submit');
+
+                submitBtn.disabled = true;
+                submitBtn.textContent = 'Saving...';
+
+                try {
+                    const { error } = await supabaseClient
+                        .from('Access')
+                        .update({
+                            is_onboarded: true,
+                            college: college,
+                            year_of_study: year,
+                            target_exam: exam,
+                            onboarding_date: new Date().toISOString()
+                        })
+                        .eq('email_id', userData.email_id);
+
+                    if (error) throw error;
+
+                    document.getElementById('onboarding-modal').classList.remove('active');
+                    alert('Successfully onboarded! Welcome to DBMCI One Mentorship.');
+                } catch (err) {
+                    console.error('Onboarding error:', err);
+                    alert('Error saving onboarding data: ' + err.message);
+                    submitBtn.disabled = false;
+                    submitBtn.textContent = 'Complete Onboarding';
+                }
+            });
+        }
+
     } catch (err) {
         console.error('Data Load Error:', err);
     }
