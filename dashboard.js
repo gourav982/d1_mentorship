@@ -239,6 +239,29 @@ document.addEventListener('DOMContentLoaded', async () => {
                     }).length;
                 };
 
+                // Helper to calculate median
+                const calculateMedian = (arr) => {
+                    if (!arr || arr.length === 0) return '-';
+                    const nums = arr.filter(n => !isNaN(n)).sort((a, b) => a - b);
+                    if (nums.length === 0) return '-';
+                    const mid = Math.floor(nums.length / 2);
+                    const median = nums.length % 2 !== 0 ? nums[mid] : (nums[mid - 1] + nums[mid]) / 2;
+                    return median % 1 === 0 ? median : median.toFixed(1);
+                };
+
+                // Helper to get percentiles for a type
+                const getPercentiles = (type) => {
+                    return (results || []).filter(r => {
+                        const rType = (r.test_type || '').toLowerCase().trim();
+                        const targetType = type.toLowerCase().trim();
+                        let matchesType = (rType === targetType);
+                        if (targetType === 't&d') matchesType = rType.includes('t&d') || rType === 'test & discussion';
+
+                        const val = r.percentile;
+                        return matchesType && val && val !== '-' && val !== '' && !isNaN(parseFloat(val));
+                    }).map(r => parseFloat(r.percentile));
+                };
+
                 // Helper to count available tests till today
                 const countAvailable = (type) => {
                     const targetType = type.toLowerCase().trim();
@@ -258,16 +281,23 @@ document.addEventListener('DOMContentLoaded', async () => {
                 };
 
                 // Update UI with robust check
-                const updateWidget = (idPrefix, appeared, available) => {
+                const updateWidget = (idPrefix, type) => {
+                    const appeared = countAppeared(type);
+                    const available = countAvailable(type);
+                    const median = calculateMedian(getPercentiles(type));
+
                     const valueEl = document.getElementById(`${idPrefix}-appeared`);
+                    const medianEl = document.getElementById(`${idPrefix}-median`);
                     const fillEl = document.getElementById(`${idPrefix}-progress`);
+
                     if (valueEl) valueEl.textContent = `${appeared}/${available}`;
+                    if (medianEl) medianEl.textContent = median;
                     if (fillEl) fillEl.style.width = available > 0 ? `${(appeared / available) * 100}%` : '0%';
                 };
 
-                updateWidget('cm', countAppeared('Custom Module'), countAvailable('Custom Module'));
-                updateWidget('td', countAppeared('T&D'), countAvailable('T&D'));
-                updateWidget('gt', countAppeared('Marrow GT'), countAvailable('Marrow GT'));
+                updateWidget('cm', 'Custom Module');
+                updateWidget('td', 'T&D');
+                updateWidget('gt', 'Marrow GT');
 
             } catch (err) {
                 console.error('💥 Performance Calc Error:', err);

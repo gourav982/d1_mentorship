@@ -983,12 +983,24 @@ td:nth-child(13) {
 }
 
 .perf-value {
-    font-size: 2.5rem;
+    font-size: 2.2rem;
     font-weight: 700;
     color: var(--text-primary);
     font-family: 'Outfit', sans-serif;
     line-height: 1;
-    margin-bottom: 0.25rem;
+    margin-bottom: 0.15rem;
+}
+
+.perf-stats.secondary {
+    margin-top: 1rem;
+    margin-bottom: 1.5rem;
+    padding-top: 1rem;
+    border-top: 1px solid rgba(255, 255, 255, 0.05);
+}
+
+.perf-value.secondary {
+    font-size: 1.8rem;
+    color: var(--accent-color);
 }
 
 .perf-label {
