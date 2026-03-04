@@ -226,23 +226,24 @@ document.addEventListener('DOMContentLoaded', async () => {
 
                 // Helper to count valid appearances
                 const countAppeared = (type) => {
-                    return (results || []).filter(r => {
+                    const filtered = (results || []).filter(r => {
                         const rType = (r.test_type || '').toLowerCase().trim();
                         const targetType = type.toLowerCase().trim();
 
                         let matchesType = (rType === targetType);
                         if (targetType === 't&d') matchesType = rType.includes('t&d') || rType === 'test & discussion';
 
-                        const hasData = (r.score && r.score !== '-' && r.score !== '') ||
-                            (r.percentile && r.percentile !== '-' && r.percentile !== '');
-                        return matchesType && hasData;
-                    }).length;
+                        const hasScore = r.score && r.score !== '-' && r.score !== '';
+                        const hasPerc = r.percentile && r.percentile !== '-' && r.percentile !== '';
+                        return matchesType && (hasScore || hasPerc);
+                    });
+                    return filtered.length;
                 };
 
                 // Helper to calculate median
                 const calculateMedian = (arr) => {
                     if (!arr || arr.length === 0) return '-';
-                    const nums = arr.filter(n => !isNaN(n)).sort((a, b) => a - b);
+                    const nums = arr.filter(n => !isNaN(n) && n !== null).sort((a, b) => a - b);
                     if (nums.length === 0) return '-';
                     const mid = Math.floor(nums.length / 2);
                     const median = nums.length % 2 !== 0 ? nums[mid] : (nums[mid - 1] + nums[mid]) / 2;
@@ -251,33 +252,44 @@ document.addEventListener('DOMContentLoaded', async () => {
 
                 // Helper to get percentiles for a type
                 const getPercentiles = (type) => {
-                    return (results || []).filter(r => {
+                    const pList = (results || []).filter(r => {
                         const rType = (r.test_type || '').toLowerCase().trim();
                         const targetType = type.toLowerCase().trim();
                         let matchesType = (rType === targetType);
                         if (targetType === 't&d') matchesType = rType.includes('t&d') || rType === 'test & discussion';
 
-                        const val = r.percentile;
-                        return matchesType && val && val !== '-' && val !== '' && !isNaN(parseFloat(val));
-                    }).map(r => parseFloat(r.percentile));
+                        if (!matchesType) return false;
+
+                        let val = r.percentile;
+                        // Handle null, undefined, placeholder
+                        if (val === undefined || val === null || val === '-' || val === '') return false;
+
+                        // Clean value (remove % or other suffix)
+                        const cleanVal = String(val).replace(/[^\d.-]/g, '');
+                        return cleanVal !== '' && !isNaN(parseFloat(cleanVal));
+                    }).map(r => parseFloat(String(r.percentile).replace(/[^\d.-]/g, '')));
+
+                    console.log(`📈 Valid percentiles for ${type}:`, pList);
+                    return pList;
                 };
 
                 // Helper to count available tests till today
                 const countAvailable = (type) => {
                     const targetType = type.toLowerCase().trim();
+                    let count = 0;
                     if (targetType === 'custom module') {
-                        return (schedules || []).filter(s => s.custom_module_code && s.custom_module_code !== '-' && s.custom_module_code !== '').length;
-                    }
-                    if (targetType === 'marrow gt') {
-                        return (schedules || []).filter(s => s.marrow_gt && s.marrow_gt !== '-' && s.marrow_gt !== '').length;
-                    }
-                    if (targetType === 't&d') {
-                        return (schedules || []).filter(s => {
+                        count = (schedules || []).filter(s => s.custom_module_code && s.custom_module_code !== '-' && s.custom_module_code !== '').length;
+                    } else if (targetType === 'marrow gt') {
+                        count = (schedules || []).filter(s => s.marrow_gt && s.marrow_gt !== '-' && s.marrow_gt !== '').length;
+                    } else if (targetType === 't&d') {
+                        count = (schedules || []).filter(s => {
                             const sType = (s.type || '').toLowerCase().trim();
                             return sType.includes('t&d') || sType === 'test & discussion';
                         }).length;
+                    } else {
+                        count = (schedules || []).filter(s => (s.type || '').toLowerCase().includes(targetType)).length;
                     }
-                    return (schedules || []).filter(s => (s.type || '').toLowerCase().includes(targetType)).length;
+                    return count;
                 };
 
                 // Update UI with robust check
