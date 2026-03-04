@@ -143,14 +143,33 @@ document.addEventListener('DOMContentLoaded', async () => {
         }
 
         // 9. Onboarding Check (Only if they've reset their password)
-        if (!userData.is_onboarded && !userData.is_first_login) {
-            document.getElementById('onboarding-modal').classList.add('active');
+        console.log('User Status Check:', {
+            email: userData.email_id,
+            is_first_login: userData.is_first_login,
+            is_onboarded: userData.is_onboarded
+        });
+
+        if (userData.is_first_login) {
+            console.log('Redirecting to password reset flow...');
+            openModal();
+            const closeBtn = document.querySelector('.modal-close-btn');
+            if (closeBtn) closeBtn.style.display = 'none';
+        } else if (userData.is_onboarded === false || userData.is_onboarded === null || userData.is_onboarded === undefined) {
+            console.log('Showing Onboarding Modal...');
+            const onboardingModal = document.getElementById('onboarding-modal');
+            if (onboardingModal) {
+                onboardingModal.classList.add('active');
+            } else {
+                console.error('Onboarding modal element not found in DOM!');
+            }
         }
 
         const onboardingForm = document.getElementById('onboarding-form');
         if (onboardingForm) {
             onboardingForm.addEventListener('submit', async (e) => {
                 e.preventDefault();
+                console.log('Submitting onboarding form...');
+
                 const college = document.getElementById('onboarding-college').value;
                 const year = document.getElementById('onboarding-year').value;
                 const exam = document.getElementById('onboarding-exam').value;
@@ -183,6 +202,7 @@ document.addEventListener('DOMContentLoaded', async () => {
 
                     if (error) throw error;
 
+                    console.log('Onboarding successful!');
                     document.getElementById('onboarding-modal').classList.remove('active');
                     alert('Successfully onboarded! Welcome to DBMCI One Mentorship.');
                 } catch (err) {
