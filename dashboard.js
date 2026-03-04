@@ -215,7 +215,7 @@ document.addEventListener('DOMContentLoaded', async () => {
                 // Fetch Schedules up to today for the user's centre
                 const { data: schedules, error: schedError } = await supabaseClient
                     .from('Schedule')
-                    .select('type, date, custom_module_code, marrow_gt')
+                    .select('type, date, custom_module_code, marrow_gt, subject, topic')
                     .eq('centre_name', userCentre)
                     .lte('date', today);
 
@@ -413,10 +413,10 @@ document.addEventListener('DOMContentLoaded', async () => {
 
                 // 2. Type and Topic match (for T&D/GT)
                 if (rType.includes('t&d') || rType === 'test & discussion') {
-                    if (sType.includes('t&d') && rCode === sTopic) return true;
+                    if (sType.includes('t&d') && (rCode === sTopic || rCode === sCode)) return true;
                 }
                 if (rType.includes('marrow gt')) {
-                    if (rCode === sGT || rCode === sTopic) return true;
+                    if (rCode === sGT || rCode === sTopic || rCode === sCode) return true;
                 }
 
                 return false;
