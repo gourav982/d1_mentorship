@@ -154,6 +154,11 @@ document.addEventListener('DOMContentLoaded', async () => {
                 const college = document.getElementById('onboarding-college').value;
                 const year = document.getElementById('onboarding-year').value;
                 const exam = document.getElementById('onboarding-exam').value;
+                const targetRank = document.getElementById('onboarding-target-rank').value;
+                const gtScore = document.getElementById('onboarding-gt-score').value;
+                const gtPercentile = document.getElementById('onboarding-gt-percentile').value;
+                const challenge = document.getElementById('onboarding-challenge').value;
+                const expectation = document.getElementById('onboarding-expectation').value;
                 const submitBtn = document.getElementById('onboarding-submit');
 
                 submitBtn.disabled = true;
@@ -167,6 +172,11 @@ document.addEventListener('DOMContentLoaded', async () => {
                             college: college,
                             year_of_study: year,
                             target_exam: exam,
+                            target_rank: targetRank ? parseInt(targetRank) : null,
+                            latest_gt_score: gtScore ? parseFloat(gtScore) : null,
+                            latest_gt_percentile: gtPercentile ? parseFloat(gtPercentile) : null,
+                            biggest_challenge: challenge,
+                            mentorship_expectation: expectation,
                             onboarding_date: new Date().toISOString()
                         })
                         .eq('email_id', userData.email_id);
