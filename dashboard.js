@@ -33,6 +33,12 @@ document.addEventListener('DOMContentLoaded', async () => {
     // Sidebar Toggle
     const sidebar = document.querySelector('.sidebar');
     const sidebarToggle = document.getElementById('sidebar-toggle-btn');
+
+    // Auto-collapse on mobile initial load
+    if (window.innerWidth <= 768) {
+        sidebar?.classList.add('collapsed');
+    }
+
     sidebarToggle?.addEventListener('click', () => {
         sidebar?.classList.toggle('collapsed');
     });

@@ -32,6 +32,11 @@ document.addEventListener('DOMContentLoaded', async () => {
 
     const sidebar = document.querySelector('.sidebar');
     const sidebarToggle = document.getElementById('sidebar-toggle-btn');
+
+    if (window.innerWidth <= 768) {
+        sidebar?.classList.add('collapsed');
+    }
+
     sidebarToggle?.addEventListener('click', () => {
         sidebar?.classList.toggle('collapsed');
     });
@@ -207,8 +212,32 @@ document.addEventListener('DOMContentLoaded', async () => {
         });
         if (curGT !== null) gtRowspans[gtStart] = gtCount;
 
+        const getResultsForItem = (item) => {
+            const itemType = (item.type || '').trim();
+            const itemCode = (item.custom_module_code || '').trim();
+            const itemTopic = (item.topic || '').trim();
+            let result = { score: '-', percentile: '-' };
+
+            if (itemCode && itemCode !== '-') {
+                result = currentResultsMap[`Custom Module:${itemCode}`] ||
+                    currentResultsMap[`${itemType}:${itemCode}`] ||
+                    result;
+            }
+            if (result.score === '-' && (itemType === 'T&D' || itemType === 'Marrow GT' || item.marrow_gt)) {
+                result = currentResultsMap[`T&D:${itemTopic}`] ||
+                    currentResultsMap[`Marrow GT:${itemTopic}`] ||
+                    currentResultsMap[`Marrow GT:${item.marrow_gt}`] ||
+                    result;
+            }
+            return result;
+        };
+
+        const mobileList = document.getElementById('schedule-mobile-list');
+
+        // Desktop Render
         scheduleBody.innerHTML = schedules.map((item, index) => {
             const userProg = progressMap[item.id] || { is_done: false, remarks: '' };
+            const result = getResultsForItem(item);
 
             const subjectCell = subjectRowspans[index]
                 ? `<td rowspan="${subjectRowspans[index]}" style="vertical-align: middle; border-right: 1px solid var(--glass-border); background: rgba(255,255,255,0.02); font-weight:700; color:var(--accent-color); text-transform:uppercase; font-size:0.8rem; letter-spacing:0.05em; text-align: center;">${item.subject || '-'}</td>`
@@ -223,31 +252,6 @@ document.addEventListener('DOMContentLoaded', async () => {
             const endTime = formatTime(item.end_datetime);
             if (startTime !== '-' || endTime !== '-') {
                 timing = `<span style="font-weight: 500; color: var(--text-primary);">${startTime} to ${endTime}</span>`;
-            }
-
-            // Improved Lookup logic:
-            // 1. If it has a code, try "Custom Module" type first (most common for assignments)
-            // 2. Then try the specific type from schedule
-            // 3. Then try the topic as a fallback for T&D/GT
-            const itemType = (item.type || '').trim();
-            const itemCode = (item.custom_module_code || '').trim();
-            const itemTopic = (item.topic || '').trim();
-
-            let result = { score: '-', percentile: '-' };
-
-            if (itemCode && itemCode !== '-') {
-                // Try as Custom Module first
-                result = currentResultsMap[`Custom Module:${itemCode}`] ||
-                    currentResultsMap[`${itemType}:${itemCode}`] ||
-                    result;
-            }
-
-            // If still not found and it's a T&D or GT, try topic matching
-            if (result.score === '-' && (itemType === 'T&D' || itemType === 'Marrow GT' || item.marrow_gt)) {
-                result = currentResultsMap[`T&D:${itemTopic}`] ||
-                    currentResultsMap[`Marrow GT:${itemTopic}`] ||
-                    currentResultsMap[`Marrow GT:${item.marrow_gt}`] ||
-                    result;
             }
 
             return `
@@ -283,6 +287,66 @@ document.addEventListener('DOMContentLoaded', async () => {
                 </tr>
             `;
         }).join('');
+
+        // Mobile Render
+        if (mobileList) {
+            mobileList.innerHTML = schedules.map(item => {
+                const userProg = progressMap[item.id] || { is_done: false, remarks: '' };
+                const result = getResultsForItem(item);
+                const startTime = formatTime(item.start_datetime);
+                const endTime = formatTime(item.end_datetime);
+                const timing = startTime !== '-' ? `${startTime} to ${endTime}` : 'No specific timing';
+
+                return `
+                    <div class="schedule-card ${userProg.is_done ? 'is-done' : ''}">
+                        <div class="card-row">
+                            <span class="subject-badge">${item.subject || 'Study'}</span>
+                            <span style="font-size: 0.75rem; color: var(--text-secondary); font-weight: 600;">${formatDate(item.date)}</span>
+                        </div>
+                        
+                        <div class="card-value" style="font-size: 1.05rem; color: var(--text-primary); margin: 0.25rem 0;">${item.topic}</div>
+                        
+                        <div class="card-row">
+                            <div style="flex: 1;">
+                                <div class="card-label">Session Type</div>
+                                <div class="card-value" style="font-size: 0.8rem; background: rgba(255,255,255,0.05); padding: 0.2rem 0.5rem; border-radius: 4px; display: inline-block;">${item.type || '-'}</div>
+                            </div>
+                            <div style="flex: 1; text-align: right;">
+                                <div class="card-label">Timing</div>
+                                <div class="card-value" style="font-size: 0.8rem;">${timing}</div>
+                            </div>
+                        </div>
+
+                        ${item.marrow_gt && item.marrow_gt !== '-' ? `
+                            <div style="background: rgba(34, 197, 94, 0.08); padding: 0.6rem; border-radius: 0.5rem; border: 1px solid rgba(34, 197, 94, 0.2);">
+                                <div class="card-label" style="color: #22c55e; opacity: 1;">Marrow GT</div>
+                                <div class="card-value" style="color: #22c55e;">${item.marrow_gt}</div>
+                            </div>
+                        ` : ''}
+
+                        <div class="card-metrics">
+                            <div>
+                                <div class="card-label">Result</div>
+                                <div class="card-value" style="color: var(--accent-color);">${result.score} <span style="font-size: 0.75rem; color: var(--text-secondary); opacity: 0.7;">(${result.percentile})</span></div>
+                            </div>
+                            <div style="text-align: right;">
+                                <div class="card-label">Completed</div>
+                                <input type="checkbox" class="checkbox-custom" 
+                                    ${userProg.is_done ? 'checked' : ''} 
+                                    onchange="window.updateProgress('${item.id}', this.checked); this.closest('.schedule-card').classList.toggle('is-done', this.checked)">
+                            </div>
+                        </div>
+
+                        <div style="margin-top: 0.25rem;">
+                            <textarea class="remarks-input" 
+                                placeholder="Add your remarks here..." 
+                                onblur="window.updateRemarks('${item.id}', this.value)"
+                                style="width: 100%; min-height: 48px; background: rgba(0,0,0,0.2); border: 1px solid var(--glass-border); border-radius: 0.6rem; color: #fff; padding: 0.6rem; font-size: 0.85rem;">${userProg.remarks || ''}</textarea>
+                        </div>
+                    </div>
+                `;
+            }).join('');
+        }
     };
 
     // Filter Event Listeners
