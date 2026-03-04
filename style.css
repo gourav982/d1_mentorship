@@ -526,13 +526,13 @@ td:nth-child(13) {
     background: #0f172a;
     /* Match body bg for seamless look */
     z-index: 10;
-    padding: 1.25rem 1rem;
+    padding: 1.25rem 0.75rem;
     white-space: normal;
     word-wrap: normal;
     /* Don't break mid-word */
     overflow-wrap: normal;
-    min-width: 80px;
-    /* Prevent extreme squashing */
+    min-width: 110px;
+    /* Room for "PERCENTILE" */
     vertical-align: middle;
     line-height: 1.2;
     box-shadow: 0 1px 0 var(--glass-border), 0 10px 15px -10px rgba(0, 0, 0, 0.5);
