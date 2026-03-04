@@ -259,9 +259,9 @@ select option {
 }
 
 .top-header {
-    height: 80px;
+    height: 64px;
     width: 100%;
-    padding: 0 2rem;
+    padding: 0 1.5rem;
     display: flex;
     align-items: center;
     justify-content: space-between;
@@ -293,7 +293,7 @@ select option {
     border-right: 1px solid var(--glass-border);
     display: flex;
     flex-direction: column;
-    padding: 2rem 0.75rem;
+    padding: 1rem 0.75rem;
     transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
     animation: slideInLeft 0.6s cubic-bezier(0.16, 1, 0.3, 1);
     z-index: 999;
@@ -376,7 +376,7 @@ select option {
     flex: 1;
     overflow-y: auto;
     position: relative;
-    padding: 2.5rem;
+    padding: 1.5rem;
     transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
     display: flex;
     flex-direction: column;
@@ -392,9 +392,9 @@ select option {
 }
 
 .dashboard-content h1 {
-    font-size: 2.2rem;
+    font-size: 1.8rem;
     font-weight: 700;
-    margin-bottom: 0.5rem;
+    margin-bottom: 0.2rem;
     color: var(--text-primary);
 }
 
@@ -526,7 +526,7 @@ td:nth-child(13) {
     background: #0f172a;
     /* Match body bg for seamless look */
     z-index: 100;
-    padding: 1.25rem 0.75rem;
+    padding: 1rem 0.75rem;
     white-space: normal;
     word-wrap: normal;
     /* Don't break mid-word */
@@ -534,12 +534,12 @@ td:nth-child(13) {
     min-width: 110px;
     /* Room for "PERCENTILE" */
     vertical-align: middle;
-    line-height: 1.2;
+    line-height: 1.1;
     box-shadow: 0 1px 0 var(--glass-border), 0 10px 15px -10px rgba(0, 0, 0, 0.5);
 }
 
 .schedule-table-container td {
-    padding: 1rem;
+    padding: 0.75rem 0.5rem;
     word-wrap: normal;
     overflow-wrap: normal;
     white-space: normal;
