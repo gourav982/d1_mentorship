@@ -376,7 +376,7 @@ select option {
     flex: 1;
     overflow-y: auto;
     position: relative;
-    padding: 1.5rem;
+    padding: 0.5rem 1rem;
     transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
     display: flex;
     flex-direction: column;
@@ -394,13 +394,14 @@ select option {
 .dashboard-content h1 {
     font-size: 1.8rem;
     font-weight: 700;
-    margin-bottom: 0.2rem;
+    margin-top: 0;
+    margin-bottom: 0.1rem;
     color: var(--text-primary);
 }
 
 .dashboard-content p {
     color: var(--text-secondary);
-    margin-bottom: 1rem;
+    margin-bottom: 0.5rem;
     font-size: 1rem;
 }
 
