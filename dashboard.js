@@ -205,16 +205,19 @@ document.addEventListener('DOMContentLoaded', async () => {
             }
 
             try {
-                // Fetch Schedules up to today
+                console.log('Fetching performance for Centre:', userData.centre_name, 'Enrolment:', enrolmentId);
+
+                // Fetch Schedules up to today for the user's centre
                 const { data: schedules, error: schedError } = await supabaseClient
-                    .from('Schedules')
+                    .from('Schedule')
                     .select('type, date, custom_module_code, marrow_gt')
+                    .eq('centre_name', userData.centre_name)
                     .lte('date', today);
 
                 // Fetch Results for the user
                 const { data: results, error: resError } = await supabaseClient
                     .from('Test_Results')
-                    .select('test_type, score, percentile')
+                    .select('test_type, score, percentile, custom_module_code')
                     .or(`enrolment_id.eq.${enrolmentId},user_email.eq.${userData.email_id}`);
 
                 if (schedError || resError) {
@@ -222,21 +225,29 @@ document.addEventListener('DOMContentLoaded', async () => {
                     return;
                 }
 
+                console.log('Fetched Schedules:', schedules?.length);
+                console.log('Fetched Results:', results?.length);
+
                 // Helper to count valid appearances
                 const countAppeared = (type) => {
-                    return results.filter(r =>
-                        r.test_type === type &&
-                        ((r.score && r.score !== '-') || (r.percentile && r.percentile !== '-'))
-                    ).length;
+                    return results.filter(r => {
+                        const matchesType = r.test_type === type;
+                        const hasData = (r.score && r.score !== '-' && r.score !== '') ||
+                            (r.percentile && r.percentile !== '-' && r.percentile !== '');
+                        return matchesType && hasData;
+                    }).length;
                 };
 
-                // Helper to count available
+                // Helper to count available tests till today
                 const countAvailable = (type) => {
                     if (type === 'Custom Module') {
-                        return schedules.filter(s => s.custom_module_code && s.custom_module_code !== '-').length;
+                        return schedules.filter(s => s.custom_module_code && s.custom_module_code !== '-' && s.custom_module_code !== '').length;
                     }
                     if (type === 'Marrow GT') {
-                        return schedules.filter(s => s.marrow_gt && s.marrow_gt !== '-').length;
+                        return schedules.filter(s => s.marrow_gt && s.marrow_gt !== '-' && s.marrow_gt !== '').length;
+                    }
+                    if (type === 'T&D') {
+                        return schedules.filter(s => s.type && s.type.includes('T&D')).length;
                     }
                     return schedules.filter(s => s.type === type).length;
                 };
