@@ -199,39 +199,40 @@ document.addEventListener('DOMContentLoaded', async () => {
             const today = new Date().toISOString().split('T')[0];
             const enrolmentId = userData.enrolment_id;
 
-            // Update welcome badge
-            if (document.getElementById('welcome-badge')) {
-                document.getElementById('welcome-badge').textContent = `Logged in as ${userData.email_id}`;
-            }
-
             try {
-                console.log('Fetching performance for Centre:', userData.centre_name, 'Enrolment:', enrolmentId);
+                const userCentre = userData.centre_name ? userData.centre_name.trim() : null;
+                console.log('📊 Stats for centre:', userCentre, 'Enrolment:', enrolmentId);
 
                 // Fetch Schedules up to today for the user's centre
                 const { data: schedules, error: schedError } = await supabaseClient
                     .from('Schedule')
                     .select('type, date, custom_module_code, marrow_gt')
-                    .eq('centre_name', userData.centre_name)
+                    .eq('centre_name', userCentre)
                     .lte('date', today);
 
                 // Fetch Results for the user
                 const { data: results, error: resError } = await supabaseClient
                     .from('Test_Results')
                     .select('test_type, score, percentile, custom_module_code')
-                    .or(`enrolment_id.eq.${enrolmentId},user_email.eq.${userData.email_id}`);
+                    .or(`enrolment_id.eq.${enrolmentId},user_email.eq.${userData.email_id.toLowerCase()}`);
 
                 if (schedError || resError) {
-                    console.error('Data Fetch Error:', schedError || resError);
+                    console.error('❌ Data Fetch Error:', schedError || resError);
                     return;
                 }
 
-                console.log('Fetched Schedules:', schedules?.length);
-                console.log('Fetched Results:', results?.length);
+                console.log('📅 Found', schedules?.length, 'Scheduled Tests till today.');
+                console.log('🏆 Found', results?.length, 'Results for user.');
 
                 // Helper to count valid appearances
                 const countAppeared = (type) => {
-                    return results.filter(r => {
-                        const matchesType = r.test_type === type;
+                    return (results || []).filter(r => {
+                        const rType = (r.test_type || '').toLowerCase().trim();
+                        const targetType = type.toLowerCase().trim();
+
+                        let matchesType = (rType === targetType);
+                        if (targetType === 't&d') matchesType = rType.includes('t&d') || rType === 'test & discussion';
+
                         const hasData = (r.score && r.score !== '-' && r.score !== '') ||
                             (r.percentile && r.percentile !== '-' && r.percentile !== '');
                         return matchesType && hasData;
@@ -240,38 +241,36 @@ document.addEventListener('DOMContentLoaded', async () => {
 
                 // Helper to count available tests till today
                 const countAvailable = (type) => {
-                    if (type === 'Custom Module') {
-                        return schedules.filter(s => s.custom_module_code && s.custom_module_code !== '-' && s.custom_module_code !== '').length;
+                    const targetType = type.toLowerCase().trim();
+                    if (targetType === 'custom module') {
+                        return (schedules || []).filter(s => s.custom_module_code && s.custom_module_code !== '-' && s.custom_module_code !== '').length;
                     }
-                    if (type === 'Marrow GT') {
-                        return schedules.filter(s => s.marrow_gt && s.marrow_gt !== '-' && s.marrow_gt !== '').length;
+                    if (targetType === 'marrow gt') {
+                        return (schedules || []).filter(s => s.marrow_gt && s.marrow_gt !== '-' && s.marrow_gt !== '').length;
                     }
-                    if (type === 'T&D') {
-                        return schedules.filter(s => s.type && s.type.includes('T&D')).length;
+                    if (targetType === 't&d') {
+                        return (schedules || []).filter(s => {
+                            const sType = (s.type || '').toLowerCase().trim();
+                            return sType.includes('t&d') || sType === 'test & discussion';
+                        }).length;
                     }
-                    return schedules.filter(s => s.type === type).length;
+                    return (schedules || []).filter(s => (s.type || '').toLowerCase().includes(targetType)).length;
                 };
 
-                // 1. Custom Module
-                const appCM = countAppeared('Custom Module');
-                const avCM = countAvailable('Custom Module');
-                document.getElementById('cm-appeared').textContent = `${appCM}/${avCM}`;
-                document.getElementById('cm-progress').style.width = avCM > 0 ? `${(appCM / avCM) * 100}%` : '0%';
+                // Update UI with robust check
+                const updateWidget = (idPrefix, appeared, available) => {
+                    const valueEl = document.getElementById(`${idPrefix}-appeared`);
+                    const fillEl = document.getElementById(`${idPrefix}-progress`);
+                    if (valueEl) valueEl.textContent = `${appeared}/${available}`;
+                    if (fillEl) fillEl.style.width = available > 0 ? `${(appeared / available) * 100}%` : '0%';
+                };
 
-                // 2. T&D
-                const appTD = countAppeared('T&D');
-                const avTD = countAvailable('T&D');
-                document.getElementById('td-appeared').textContent = `${appTD}/${avTD}`;
-                document.getElementById('td-progress').style.width = avTD > 0 ? `${(appTD / avTD) * 100}%` : '0%';
-
-                // 3. Marrow GT
-                const appGT = countAppeared('Marrow GT');
-                const avGT = countAvailable('Marrow GT');
-                document.getElementById('gt-appeared').textContent = `${appGT}/${avGT}`;
-                document.getElementById('gt-progress').style.width = avGT > 0 ? `${(appGT / avGT) * 100}%` : '0%';
+                updateWidget('cm', countAppeared('Custom Module'), countAvailable('Custom Module'));
+                updateWidget('td', countAppeared('T&D'), countAvailable('T&D'));
+                updateWidget('gt', countAppeared('Marrow GT'), countAvailable('Marrow GT'));
 
             } catch (err) {
-                console.error('Performance Calc Error:', err);
+                console.error('💥 Performance Calc Error:', err);
             }
         };
 
