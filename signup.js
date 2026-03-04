@@ -7,6 +7,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
             const name = document.getElementById('name').value;
             const email = document.getElementById('email').value;
+            const enrolment = document.getElementById('enrolment').value;
             const phone = document.getElementById('phone').value;
             const password = document.getElementById('password').value;
 
@@ -37,6 +38,7 @@ document.addEventListener('DOMContentLoaded', () => {
                     {
                         name: name,
                         email_id: email,
+                        enrolment_id: enrolment,
                         phone_number: phone,
                         password: password,
                         role: 'Students',

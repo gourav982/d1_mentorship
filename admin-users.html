@@ -336,6 +336,7 @@
                         <thead>
                             <tr>
                                 <th>Name</th>
+                                <th>Enrolment ID</th>
                                 <th>Email</th>
                                 <th>Role</th>
                                 <th>Phone</th>
@@ -379,6 +380,10 @@
                         <input type="text" id="add-name" required placeholder="Gourav">
                     </div>
                     <div class="input-group">
+                        <label>Enrolment ID</label>
+                        <input type="text" id="add-enrolment" placeholder="e.g. D1-101 (Required for Students)">
+                    </div>
+                    <div class="input-group">
                         <label>Email Address</label>
                         <input type="email" id="add-email" required placeholder="email@example.com">
                     </div>
@@ -404,6 +409,7 @@
                             <option value="">Select Centre</option>
                         </select>
                     </div>
+                    <div></div>
                 </div>
                 <div class="input-group" style="margin-top: 1rem;">
                     <label>Default Password</label>
@@ -441,7 +447,7 @@
                     </svg>
                     <h3 style="margin-bottom: 0.5rem;">Upload CSV File</h3>
                     <p style="color: var(--text-secondary); font-size: 0.9rem; margin-bottom: 1.5rem;">Format: Name,
-                        Email, Phone, Role, Password, Centre</p>
+                        EnrolmentID, Email, Phone, Role, Password, Centre</p>
 
                     <input type="file" id="csv-file-input" accept=".csv" style="display: none;">
                     <button class="btn-add" onclick="document.getElementById('csv-file-input').click()">Select
@@ -484,6 +490,10 @@
                     <div id="edit-user-display"
                         style="padding: 0.875rem 1rem; background: rgba(255,255,255,0.03); border-radius: 0.75rem; color: var(--text-secondary); font-size: 0.9rem;">
                     </div>
+                </div>
+                <div class="input-group" style="margin-top: 1.5rem;">
+                    <label>Enrolment ID</label>
+                    <input type="text" id="edit-enrolment" placeholder="e.g. D1-1001">
                 </div>
                 <div class="input-group" style="margin-top: 1.5rem;">
                     <label>New Role</label>
@@ -638,6 +648,8 @@
             // For Add Modal
             const addRole = document.getElementById('add-role')?.value;
             const addLabel = document.getElementById('centre-label');
+            const addEnrolmentLabel = document.querySelector('label[for="add-enrolment"]') || null;
+
             if (addRole === 'Students' && addLabel) {
                 addLabel.innerHTML = 'Centre Name <span style="color: #ef4444;">*</span>';
             } else if (addLabel) {
@@ -747,6 +759,7 @@
 
             document.getElementById('edit-email-id').value = email;
             document.getElementById('edit-user-display').textContent = `${user.name} (${email})`;
+            document.getElementById('edit-enrolment').value = user.enrolment_id || '';
             document.getElementById('edit-role-select').value = user.role;
             document.getElementById('edit-centre-select').value = user.centre_name || '';
 
@@ -770,6 +783,7 @@
                 usersBody.innerHTML = usersToRender.map(user => `
                     <tr>
                         <td><span style="font-weight: 600;">${user.name}</span></td>
+                        <td><code style="font-family: monospace; font-size: 0.85rem; background: rgba(56, 189, 248, 0.1); color: var(--accent-color); padding: 0.2rem 0.5rem; border-radius: 4px;">${user.enrolment_id || '-'}</code></td>
                         <td>${user.email_id}</td>
                         <td><span class="role-badge">${user.role}</span></td>
                         <td style="color: var(--text-secondary);">${user.phone_number}</td>
@@ -852,6 +866,7 @@
                 const newUser = {
                     name: document.getElementById('add-name').value,
                     email_id: document.getElementById('add-email').value,
+                    enrolment_id: document.getElementById('add-enrolment').value,
                     phone_number: document.getElementById('add-phone').value,
                     role: document.getElementById('add-role').value,
                     password: document.getElementById('add-password').value,
@@ -977,9 +992,10 @@
                         parsedUsers = lines.slice(1) // Skip header
                             .filter(line => line.trim() !== '')
                             .map(line => {
-                                const [name, email, phone, role, password, centre, status] = line.split(',').map(s => s.trim());
+                                const [name, enrolment, email, phone, role, password, centre, status] = line.split(',').map(s => s.trim());
                                 return {
                                     name,
+                                    enrolment_id: enrolment,
                                     email_id: email,
                                     phone_number: phone,
                                     role,
@@ -1163,6 +1179,7 @@
                 editRoleForm.addEventListener('submit', async (e) => {
                     e.preventDefault();
                     const email = document.getElementById('edit-email-id').value;
+                    const enrolmentId = document.getElementById('edit-enrolment').value;
                     const newRole = document.getElementById('edit-role-select').value;
                     const newCentre = document.getElementById('edit-centre-select').value;
 
@@ -1178,6 +1195,7 @@
                     const { error } = await supabaseClient
                         .from('Access')
                         .update({
+                            enrolment_id: enrolmentId,
                             role: newRole,
                             centre_name: newCentre
                         })

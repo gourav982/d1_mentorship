@@ -150,15 +150,18 @@ document.addEventListener('DOMContentLoaded', async () => {
             currentProgressMap = {};
             progress?.forEach(p => currentProgressMap[p.schedule_id] = p);
 
-            // 3. Fetch Test Results for current user
+            // 3. Fetch Test Results for current user using Email or Enrolment ID
             const { data: resultsData } = await supabaseClient
                 .from('Test_Results')
                 .select('*')
-                .eq('user_email', session.user.email);
+                .or(`user_email.eq.${session.user.email}${currentUser.enrolment_id ? `,enrolment_id.eq.${currentUser.enrolment_id}` : ''}`);
 
             currentResultsMap = {};
             resultsData?.forEach(r => {
-                currentResultsMap[r.custom_module_code] = r;
+                // Store results with a composite key of type and identifier
+                const typeKey = (r.test_type || 'Custom Module').trim();
+                const codeKey = (r.custom_module_code || '').trim();
+                currentResultsMap[`${typeKey}:${codeKey}`] = r;
             });
 
             // Populate Subject Dropdown
@@ -222,7 +225,15 @@ document.addEventListener('DOMContentLoaded', async () => {
                 timing = `<span style="font-weight: 500; color: var(--text-primary);">${startTime} to ${endTime}</span>`;
             }
 
-            const result = currentResultsMap[item.custom_module_code] || { score: '-', percentile: '-' };
+            // Lookup result based on type and code
+            const itemType = (item.type || 'Custom Module').trim();
+            const itemCode = (item.custom_module_code || '').trim();
+            const itemTopic = (item.topic || '').trim();
+
+            // Try matching by (Type:Code) first, then (Type:Topic) as fallback for T&D/GT
+            const result = currentResultsMap[`${itemType}:${itemCode}`] ||
+                currentResultsMap[`${itemType}:${itemTopic}`] ||
+                { score: '-', percentile: '-' };
 
             return `
                 <tr>

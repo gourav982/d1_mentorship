@@ -43,10 +43,11 @@ document.addEventListener('DOMContentLoaded', async () => {
     // 2. Sample Results CSV Functionality
     downloadBtn.addEventListener('click', (e) => {
         e.preventDefault();
-        const headers = "Student Email,Custom Module Code,Score,Percentile";
+        const headers = "Enrolment ID,Test Type,Test Code,Score,Percentile";
         const sampleRows = [
-            "student1@example.com,ANA-LL-01,85,92",
-            "student2@example.com,ANA-LL-01,70,78"
+            "D1-1001,Custom Module,ANA-LL-01,85,92",
+            "D1-1002,T&D,PATH-TD-01,70,78",
+            "D1-1001,Marrow GT,Marrow GT 14,145,95"
         ].join("\n");
         const blob = new Blob([headers + "\n" + sampleRows], { type: 'text/csv' });
         const url = window.URL.createObjectURL(blob);
@@ -64,7 +65,7 @@ document.addEventListener('DOMContentLoaded', async () => {
             fileNameDisplay.textContent = `Selected: ${file.name}`;
             processBtn.disabled = false;
         } else {
-            fileNameDisplay.textContent = 'Click to browse files (Student Email, Custom Module Code, Score, Percentile)';
+            fileNameDisplay.textContent = 'Format: Enrolment ID, Test Type, Test Code, Score, Percentile';
             processBtn.disabled = true;
         }
     });
@@ -84,17 +85,18 @@ document.addEventListener('DOMContentLoaded', async () => {
                 const lines = text.split(/\r?\n/).filter(line => line.trim() !== '');
                 if (lines.length < 2) throw new Error('CSV file is empty or missing headers.');
 
-                // Expected Headers: Student Email, Custom Module Code, Score, Percentile
+                // Expected Headers: Enrolment ID, Test Type, Test Code, Score, Percentile
                 const results = [];
                 for (let i = 1; i < lines.length; i++) {
                     const columns = lines[i].split(',').map(c => c.trim());
-                    if (columns.length < 2) continue; // Skip malformed lines
+                    if (columns.length < 3) continue; // Skip malformed lines
 
                     results.push({
-                        user_email: columns[0],
-                        custom_module_code: columns[1],
-                        score: columns[2] || '-',
-                        percentile: columns[3] || '-'
+                        enrolment_id: columns[0],
+                        test_type: columns[1] || 'Custom Module',
+                        custom_module_code: columns[2], // We use this internal column name for 'Test Code'
+                        score: columns[3] || '-',
+                        percentile: columns[4] || '-'
                     });
                 }
 
@@ -102,16 +104,16 @@ document.addEventListener('DOMContentLoaded', async () => {
 
                 showStatus(`Uploading ${results.length} records...`, 'info');
 
-                // Batch Upsert using email + module_code as unique key
+                // Batch Upsert using enrolment_id + test_code + test_type as unique key
                 const { error } = await supabaseClient
                     .from('Test_Results')
-                    .upsert(results, { onConflict: 'user_email,custom_module_code' });
+                    .upsert(results, { onConflict: 'enrolment_id,custom_module_code,test_type' });
 
                 if (error) throw error;
 
                 showStatus(`Successfully uploaded ${results.length} result(s)!`, 'success');
                 fileInput.value = '';
-                fileNameDisplay.textContent = 'Click to browse files (Student Email, Custom Module Code, Score, Percentile)';
+                fileNameDisplay.textContent = 'Format: Enrolment ID, Test Type, Test Code, Score, Percentile';
             } catch (err) {
                 console.error(err);
                 showStatus(`Error: ${err.message}`, 'error');
