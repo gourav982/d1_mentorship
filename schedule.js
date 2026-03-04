@@ -29,11 +29,12 @@ document.addEventListener('DOMContentLoaded', async () => {
     const topicSearch = document.getElementById('topic-search');
     const statusFilter = document.getElementById('status-filter');
     const clearBtn = document.getElementById('clear-filters');
-
+    // Sidebar Toggle
     const sidebar = document.querySelector('.sidebar');
     const sidebarToggle = document.getElementById('sidebar-toggle-btn');
 
-    if (window.innerWidth <= 768) {
+    // Auto-collapse on mobile initial load
+    if (window.innerWidth <= 1024) {
         sidebar?.classList.add('collapsed');
     }
 
@@ -306,12 +307,15 @@ document.addEventListener('DOMContentLoaded', async () => {
                         
                         <div class="card-value" style="font-size: 1.05rem; color: var(--text-primary); margin: 0.25rem 0;">${item.topic}</div>
                         
-                        <div class="card-row">
-                            <div style="flex: 1;">
-                                <div class="card-label">Session Type</div>
-                                <div class="card-value" style="font-size: 0.8rem; background: rgba(255,255,255,0.05); padding: 0.2rem 0.5rem; border-radius: 4px; display: inline-block;">${item.type || '-'}</div>
+                        <div class="card-row" style="margin-bottom: 0.25rem;">
+                            <div style="flex: 1.2;">
+                                <div class="card-label">Type & Code</div>
+                                <div class="card-value" style="font-size: 0.8rem;">
+                                    <span style="background: rgba(255,255,255,0.05); padding: 0.15rem 0.4rem; border-radius: 4px;">${item.type || '-'}</span>
+                                    ${item.custom_module_code ? `<code style="font-family: monospace; opacity: 0.8; margin-left: 0.3rem;">[${item.custom_module_code}]</code>` : ''}
+                                </div>
                             </div>
-                            <div style="flex: 1; text-align: right;">
+                            <div style="flex: 0.8; text-align: right;">
                                 <div class="card-label">Timing</div>
                                 <div class="card-value" style="font-size: 0.8rem;">${timing}</div>
                             </div>
@@ -326,8 +330,13 @@ document.addEventListener('DOMContentLoaded', async () => {
 
                         <div class="card-metrics">
                             <div>
-                                <div class="card-label">Result</div>
-                                <div class="card-value" style="color: var(--accent-color);">${result.score} <span style="font-size: 0.75rem; color: var(--text-secondary); opacity: 0.7;">(${result.percentile})</span></div>
+                                <div class="card-label">Result / Questions</div>
+                                <div class="card-value">
+                                    <span style="color: var(--accent-color); font-weight: 700;">${result.score}</span> 
+                                    <span style="font-size: 0.75rem; color: var(--text-secondary); opacity: 0.8;">(${result.percentile})</span>
+                                    <span style="margin: 0 0.4rem; opacity: 0.3;">|</span>
+                                    <span style="font-size: 0.8rem; font-weight: 700;">${item.num_questions || '-'} Qs</span>
+                                </div>
                             </div>
                             <div style="text-align: right;">
                                 <div class="card-label">Completed</div>
@@ -339,9 +348,10 @@ document.addEventListener('DOMContentLoaded', async () => {
 
                         <div style="margin-top: 0.25rem;">
                             <textarea class="remarks-input" 
-                                placeholder="Add your remarks here..." 
+                                placeholder="Add your remarks..." 
+                                rows="1"
                                 onblur="window.updateRemarks('${item.id}', this.value)"
-                                style="width: 100%; min-height: 48px; background: rgba(0,0,0,0.2); border: 1px solid var(--glass-border); border-radius: 0.6rem; color: #fff; padding: 0.6rem; font-size: 0.85rem;">${userProg.remarks || ''}</textarea>
+                                style="width: 100%; min-height: 32px; background: rgba(0,0,0,0.2); border: 1px solid var(--glass-border); border-radius: 0.6rem; color: #fff; padding: 0.6rem; font-size: 0.85rem; resize: vertical;">${userProg.remarks || ''}</textarea>
                         </div>
                     </div>
                 `;

@@ -1068,7 +1068,7 @@ td:nth-child(13) {
     }
 }
 
-@media (max-width: 768px) {
+@media (max-width: 1024px) {
     .sidebar {
         position: fixed;
         left: -240px;
@@ -1152,6 +1152,15 @@ td:nth-child(13) {
         /* Hide name/role on mobile top-bar */
     }
 
+    /* Fixed Landscape visibility: ensured main doesn't shrink and Cards are shown up to tablet */
+    .desktop-only {
+        display: none !important;
+    }
+
+    .mobile-only {
+        display: block !important;
+    }
+
     /* Mobile Schedule Cards */
     #schedule-mobile-list {
         display: flex;
@@ -1209,11 +1218,63 @@ td:nth-child(13) {
 
     .card-metrics {
         display: grid;
-        grid-template-columns: repeat(2, 1fr);
-        gap: 0.75rem;
+        grid-template-columns: 1.2fr 1fr;
+        gap: 0.5rem;
         background: rgba(255, 255, 255, 0.02);
-        padding: 0.75rem;
+        padding: 0.6rem;
         border-radius: 0.75rem;
+        align-items: center;
+    }
+
+    .filter-section {
+        display: grid !important;
+        grid-template-columns: 1fr 1fr 0.4fr !important;
+        gap: 0.4rem !important;
+        padding: 0.5rem !important;
+        align-items: flex-end !important;
+    }
+
+    /* Row 1: Dates, Subject, Clear */
+    .filter-section> :nth-child(1) {
+        grid-column: 1 / 2;
+    }
+
+    .filter-section> :nth-child(2) {
+        grid-column: 2 / 3;
+    }
+
+    #clear-filters {
+        grid-column: 3 / 4;
+        grid-row: 1 / 2;
+    }
+
+    /* Row 2: Show/Hide, Search */
+    .filter-section> :nth-child(3) {
+        grid-column: 1 / 2;
+        grid-row: 2 / 3;
+    }
+
+    .filter-section> :nth-child(4) {
+        grid-column: 2 / 4;
+        grid-row: 2 / 3;
+    }
+
+    #clear-filters {
+        padding: 0.45rem !important;
+        font-size: 0.75rem !important;
+        width: 100%;
+        margin-top: 0 !important;
+    }
+
+    .filter-group label {
+        display: none;
+        /* Extreme space saving */
+    }
+
+    .filter-select,
+    .filter-input {
+        padding: 0.4rem 0.6rem !important;
+        font-size: 0.8rem !important;
     }
 }
 
@@ -1324,17 +1385,28 @@ td:nth-child(13) {
     width: 100%;
 }
 
+/* Squeeze out dead space globally on schedule page */
+.schedule-header {
+    padding-bottom: 0.75rem !important;
+}
+
+.schedule-header h1 {
+    font-size: 1.5rem !important;
+    margin-bottom: 0.1rem !important;
+}
+
+.schedule-header p {
+    font-size: 0.8rem !important;
+}
+
 /* Visibility Utilities */
 .mobile-only {
     display: none !important;
 }
 
-@media (max-width: 768px) {
+/* Already handled by @media(max-width: 1024px) but safety fallback */
+@media (min-width: 1025px) {
     .desktop-only {
-        display: none !important;
-    }
-
-    .mobile-only {
         display: block !important;
     }
 }

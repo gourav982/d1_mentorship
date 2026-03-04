@@ -35,7 +35,7 @@ document.addEventListener('DOMContentLoaded', async () => {
     const sidebarToggle = document.getElementById('sidebar-toggle-btn');
 
     // Auto-collapse on mobile initial load
-    if (window.innerWidth <= 768) {
+    if (window.innerWidth <= 1024) {
         sidebar?.classList.add('collapsed');
     }
 
