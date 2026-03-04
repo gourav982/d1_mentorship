@@ -296,15 +296,33 @@ document.addEventListener('DOMContentLoaded', async () => {
                 const updateWidget = (idPrefix, type) => {
                     const appeared = countAppeared(type);
                     const available = countAvailable(type);
-                    const median = calculateMedian(getPercentiles(type));
+                    const medianList = getPercentiles(type);
+                    const median = calculateMedian(medianList);
 
                     const valueEl = document.getElementById(`${idPrefix}-appeared`);
                     const medianEl = document.getElementById(`${idPrefix}-median`);
-                    const fillEl = document.getElementById(`${idPrefix}-progress`);
+                    const appFill = document.getElementById(`${idPrefix}-app-progress`);
+                    const medFill = document.getElementById(`${idPrefix}-med-progress`);
 
                     if (valueEl) valueEl.textContent = `${appeared}/${available}`;
                     if (medianEl) medianEl.textContent = median;
-                    if (fillEl) fillEl.style.width = available > 0 ? `${(appeared / available) * 100}%` : '0%';
+
+                    // Helper to color-code and set width
+                    const setProgress = (el, percent) => {
+                        if (!el) return;
+                        el.style.width = `${percent}%`;
+                        el.classList.remove('progress-red', 'progress-yellow', 'progress-green');
+
+                        if (percent < 50) el.classList.add('progress-red');
+                        else if (percent < 80) el.classList.add('progress-yellow');
+                        else el.classList.add('progress-green');
+                    };
+
+                    const appPercent = (available > 0) ? (appeared / available) * 100 : 0;
+                    const medValue = (median !== '-') ? parseFloat(median) : 0;
+
+                    setProgress(appFill, appPercent);
+                    setProgress(medFill, medValue);
                 };
 
                 updateWidget('cm', 'Custom Module');
