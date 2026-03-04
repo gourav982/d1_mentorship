@@ -905,59 +905,72 @@ td:nth-child(13) {
 .scroll-top-btn:active {
     transform: scale(0.95);
 }
+
 /* Performance Dashboard Widgets */
 .performance-grid {
     display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+    grid-template-columns: repeat(3, 1fr);
+    /* Force horizontal on desktop */
     gap: 1.5rem;
-    margin-top: 2rem;
+    margin-top: 1rem;
+    width: 100%;
 }
 
 .perf-card {
+    background: rgba(255, 255, 255, 0.03);
+    /* Fallback for transparency */
     background: var(--glass-bg);
     border: 1px solid var(--glass-border);
-    border-radius: 1.5rem;
-    padding: 1.5rem;
-    backdrop-filter: blur(10px);
+    border-radius: 1.25rem;
+    padding: 1.25rem 1.5rem;
+    backdrop-filter: blur(12px);
+    -webkit-backdrop-filter: blur(12px);
     transition: transform 0.3s ease, border-color 0.3s ease;
     text-align: left;
+    display: flex;
+    flex-direction: column;
+    justify-content: space-between;
+    min-height: 140px;
 }
 
 .perf-card:hover {
     transform: translateY(-5px);
     border-color: var(--accent-color);
+    background: rgba(255, 255, 255, 0.05);
 }
 
 .perf-card h3 {
-    font-size: 0.8rem;
+    font-size: 0.75rem;
     color: var(--text-secondary);
-    margin-bottom: 1rem;
+    margin-bottom: 0.5rem;
     text-transform: uppercase;
-    letter-spacing: 0.05em;
+    letter-spacing: 0.06em;
+    font-weight: 600;
 }
 
 .perf-stats {
     display: flex;
     justify-content: space-between;
-    align-items: flex-end;
+    align-items: baseline;
     margin-bottom: 1rem;
 }
 
 .perf-value {
-    font-size: 2.5rem;
+    font-size: 2.2rem;
     font-weight: 700;
     color: var(--text-primary);
     font-family: 'Outfit', sans-serif;
-    line-height: 1;
+    line-height: 1.1;
 }
 
 .perf-label {
-    font-size: 0.875rem;
+    font-size: 0.8rem;
     color: var(--text-secondary);
+    opacity: 0.8;
 }
 
 .progress-container {
-    height: 8px;
+    height: 6px;
     background: rgba(255, 255, 255, 0.05);
     border-radius: 10px;
     overflow: hidden;
@@ -967,5 +980,18 @@ td:nth-child(13) {
     height: 100%;
     background: linear-gradient(90deg, var(--accent-color), #818cf8);
     width: 0%;
-    transition: width 1s cubic-bezier(0.16, 1, 0.3, 1);
+    transition: width 1.2s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+/* Responsive Fixes */
+@media (max-width: 992px) {
+    .performance-grid {
+        grid-template-columns: repeat(2, 1fr);
+    }
+}
+
+@media (max-width: 600px) {
+    .performance-grid {
+        grid-template-columns: 1fr;
+    }
 }

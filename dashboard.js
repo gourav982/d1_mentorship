@@ -208,7 +208,7 @@ document.addEventListener('DOMContentLoaded', async () => {
                 // Fetch Schedules up to today
                 const { data: schedules, error: schedError } = await supabaseClient
                     .from('Schedules')
-                    .select('type, date')
+                    .select('type, date, custom_module_code, marrow_gt')
                     .lte('date', today);
 
                 // Fetch Results for the user
@@ -232,6 +232,12 @@ document.addEventListener('DOMContentLoaded', async () => {
 
                 // Helper to count available
                 const countAvailable = (type) => {
+                    if (type === 'Custom Module') {
+                        return schedules.filter(s => s.custom_module_code && s.custom_module_code !== '-').length;
+                    }
+                    if (type === 'Marrow GT') {
+                        return schedules.filter(s => s.marrow_gt && s.marrow_gt !== '-').length;
+                    }
                     return schedules.filter(s => s.type === type).length;
                 };
 
