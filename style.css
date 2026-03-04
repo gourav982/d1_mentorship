@@ -380,8 +380,8 @@ select option {
     transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
     display: flex;
     flex-direction: column;
-    align-items: flex-start;
-    /* Ensure top-left alignment */
+    align-items: stretch;
+    /* Allow children to take full width */
     justify-content: flex-start;
 }
 
@@ -528,7 +528,11 @@ td:nth-child(13) {
     z-index: 10;
     padding: 1.25rem 1rem;
     white-space: normal;
-    word-wrap: break-word;
+    word-wrap: normal;
+    /* Don't break mid-word */
+    overflow-wrap: normal;
+    min-width: 80px;
+    /* Prevent extreme squashing */
     vertical-align: middle;
     line-height: 1.2;
     box-shadow: 0 1px 0 var(--glass-border), 0 10px 15px -10px rgba(0, 0, 0, 0.5);
@@ -536,8 +540,8 @@ td:nth-child(13) {
 
 .schedule-table-container td {
     padding: 1rem;
-    word-wrap: break-word;
-    overflow-wrap: break-word;
+    word-wrap: normal;
+    overflow-wrap: normal;
     white-space: normal;
     vertical-align: middle;
     line-height: 1.4;
