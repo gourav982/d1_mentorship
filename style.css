@@ -331,6 +331,31 @@ input::placeholder {
     transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
 }
 
+/* Coming Soon Tag */
+.coming-soon-tag {
+    font-size: 0.65rem;
+    font-weight: 700;
+    text-transform: uppercase;
+    background: rgba(56, 189, 248, 0.1);
+    color: var(--accent-color);
+    padding: 0.2rem 0.6rem;
+    border-radius: 2rem;
+    margin-left: auto;
+    letter-spacing: 0.05em;
+    border: 1px solid rgba(56, 189, 248, 0.2);
+}
+
+.nav-item.disabled {
+    opacity: 0.6;
+    cursor: default;
+    pointer-events: none;
+}
+
+.nav-item.disabled:hover {
+    background: transparent;
+    color: var(--text-secondary);
+}
+
 .schedule-table-container table {
     table-layout: fixed;
     border-collapse: collapse;
