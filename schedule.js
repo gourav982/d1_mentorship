@@ -225,15 +225,30 @@ document.addEventListener('DOMContentLoaded', async () => {
                 timing = `<span style="font-weight: 500; color: var(--text-primary);">${startTime} to ${endTime}</span>`;
             }
 
-            // Lookup result based on type and code
-            const itemType = (item.type || 'Custom Module').trim();
+            // Improved Lookup logic:
+            // 1. If it has a code, try "Custom Module" type first (most common for assignments)
+            // 2. Then try the specific type from schedule
+            // 3. Then try the topic as a fallback for T&D/GT
+            const itemType = (item.type || '').trim();
             const itemCode = (item.custom_module_code || '').trim();
             const itemTopic = (item.topic || '').trim();
 
-            // Try matching by (Type:Code) first, then (Type:Topic) as fallback for T&D/GT
-            const result = currentResultsMap[`${itemType}:${itemCode}`] ||
-                currentResultsMap[`${itemType}:${itemTopic}`] ||
-                { score: '-', percentile: '-' };
+            let result = { score: '-', percentile: '-' };
+
+            if (itemCode && itemCode !== '-') {
+                // Try as Custom Module first
+                result = currentResultsMap[`Custom Module:${itemCode}`] ||
+                    currentResultsMap[`${itemType}:${itemCode}`] ||
+                    result;
+            }
+
+            // If still not found and it's a T&D or GT, try topic matching
+            if (result.score === '-' && (itemType === 'T&D' || itemType === 'Marrow GT' || item.marrow_gt)) {
+                result = currentResultsMap[`T&D:${itemTopic}`] ||
+                    currentResultsMap[`Marrow GT:${itemTopic}`] ||
+                    currentResultsMap[`Marrow GT:${item.marrow_gt}`] ||
+                    result;
+            }
 
             return `
                 <tr>
