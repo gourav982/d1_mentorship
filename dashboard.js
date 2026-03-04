@@ -182,21 +182,32 @@ document.addEventListener('DOMContentLoaded', async () => {
                 submitBtn.textContent = 'Saving...';
 
                 try {
-                    const { error } = await supabaseClient
-                        .from('Access')
-                        .update({
-                            is_onboarded: true,
+                    // 1. Store in the new Onboarding_Data table
+                    const { error: onboardingError } = await supabaseClient
+                        .from('Onboarding_Data')
+                        .insert([{
+                            user_id: userData.user_id,
+                            email_id: userData.email_id,
                             target_exam: exam,
                             target_rank: targetRank ? parseInt(targetRank) : null,
                             latest_gt_score: gtScore ? parseFloat(gtScore) : null,
                             latest_gt_percentile: gtPercentile ? parseFloat(gtPercentile) : null,
                             biggest_challenge: challenge,
-                            mentorship_expectation: expectation,
+                            mentorship_expectation: expectation
+                        }]);
+
+                    if (onboardingError) throw onboardingError;
+
+                    // 2. Mark as onboarded in Access table
+                    const { error: accessError } = await supabaseClient
+                        .from('Access')
+                        .update({
+                            is_onboarded: true,
                             onboarding_date: new Date().toISOString()
                         })
                         .eq('email_id', userData.email_id);
 
-                    if (error) throw error;
+                    if (accessError) throw accessError;
 
                     console.log('Onboarding successful!');
                     document.getElementById('onboarding-modal').classList.remove('active');

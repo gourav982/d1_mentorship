@@ -175,6 +175,30 @@ input::placeholder {
 .centre-selector:focus {
     border-color: var(--accent-color);
     box-shadow: 0 0 0 4px rgba(56, 189, 248, 0.1);
+    outline: none;
+}
+
+/* Cross-browser spinner removal for number inputs */
+input[type="number"]::-webkit-outer-spin-button,
+input[type="number"]::-webkit-inner-spin-button {
+    -webkit-appearance: none;
+    margin: 0;
+}
+
+input[type="number"] {
+    -moz-appearance: textfield;
+    appearance: none;
+}
+
+/* Fix for Firefox select focus and highlight */
+select:focus-visible {
+    outline: 2px solid var(--accent-color);
+    outline-offset: 1px;
+}
+
+select option {
+    background-color: #0f172a;
+    color: #fff;
 }
 
 .login-button {
