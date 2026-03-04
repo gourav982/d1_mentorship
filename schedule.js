@@ -169,13 +169,13 @@ document.addEventListener('DOMContentLoaded', async () => {
             applyFilters();
         } catch (err) {
             console.error('Fetch Error:', err);
-            scheduleBody.innerHTML = `<tr><td colspan="8" style="text-align:center; color:#ef4444;">Error loading schedule.</td></tr>`;
+            scheduleBody.innerHTML = `<tr><td colspan="12" style="text-align:center; color:#ef4444;">Error loading schedule.</td></tr>`;
         }
     };
 
     const renderSchedule = (schedules, progressMap) => {
         if (!schedules || schedules.length === 0) {
-            scheduleBody.innerHTML = `<tr><td colspan="10" style="text-align:center; padding: 3rem; color: var(--text-secondary);">No sessions match your filters.</td></tr>`;
+            scheduleBody.innerHTML = `<tr><td colspan="12" style="text-align:center; padding: 3rem; color: var(--text-secondary);">No sessions match your filters.</td></tr>`;
             return;
         }
 
@@ -389,8 +389,10 @@ document.addEventListener('DOMContentLoaded', async () => {
                     window.location.replace('index.html');
                 } else {
                     alert('Error: ' + result.message);
-                    btn.disabled = false;
-                    btn.textContent = 'Update Password';
+                    if (submitBtn) {
+                        submitBtn.disabled = false;
+                        submitBtn.textContent = 'Update Password';
+                    }
                 }
             });
         }

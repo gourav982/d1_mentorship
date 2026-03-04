@@ -47,11 +47,11 @@ document.addEventListener('DOMContentLoaded', async () => {
     const statusDiv = document.getElementById('upload-status');
     const centreSelect = document.getElementById('upload-centre');
     const downloadBtn = document.getElementById('download-sample-btn');
+    const downloadExistingBtn = document.getElementById('download-existing-btn');
 
     // 2.5 Fetch Centres
     const fetchCentres = async () => {
         let { data: centres, error } = await supabaseClient.from('Centres').select('name').order('name');
-
         if (error || !centres || centres.length === 0) {
             const { data: accessData } = await supabaseClient.from('Access').select('centre_name');
             if (accessData) {
@@ -59,7 +59,6 @@ document.addEventListener('DOMContentLoaded', async () => {
                 centres = unique.sort().map(name => ({ name }));
             }
         }
-
         if (centres) {
             centreSelect.innerHTML = centres.map(c => `<option value="${c.name}">${c.name}</option>`).join('');
         }
@@ -67,20 +66,69 @@ document.addEventListener('DOMContentLoaded', async () => {
     fetchCentres();
 
     // 3. Sample CSV Functionality
-    downloadBtn.addEventListener('click', (e) => {
+    downloadBtn?.addEventListener('click', (e) => {
         e.preventDefault();
         const headers = "Date, Subject, Type, Topic, Marrow GT, Custom Module Code, Start Date & Time, End Date & Time, MCQs\n";
         const sampleRowArr = [
             "2026-03-01, Anatomy, Study Day, Lower Limb, -, ANA-LL-01, 2026-03-01 10:00:00, 2026-03-01 12:00:00, 50\n",
-            "2026-03-05, Anatomy, GT Day, Upper Limb, NEET PG Marrow GT, ANA-LL-02, 2026-03-05 10:00:00, 2026-03-05 12:00:00, 50\n"
         ];
-
         const blob = new Blob([headers + sampleRowArr.join("")], { type: 'text/csv' });
         const url = window.URL.createObjectURL(blob);
         const a = document.createElement('a');
         a.setAttribute('href', url);
         a.setAttribute('download', 'mentorship_schedule_sample.csv');
         a.click();
+    });
+
+    // 3.1 Download Existing Schedule
+    downloadExistingBtn?.addEventListener('click', async (e) => {
+        e.preventDefault();
+        const centre = centreSelect.value;
+        downloadExistingBtn.textContent = 'Fetching...';
+
+        try {
+            const { data, error } = await supabaseClient
+                .from('Schedule')
+                .select('id, date, subject, type, topic, marrow_gt, custom_module_code, start_datetime, end_datetime, num_questions')
+                .eq('centre_name', centre)
+                .order('date', { ascending: true });
+
+            if (error) throw error;
+            if (!data || data.length === 0) {
+                alert(`No existing schedule found for ${centre}.`);
+                return;
+            }
+
+            const headers = "UUID (ID), Date, Subject, Type, Topic, Marrow GT, Custom Module Code, Start Date & Time, End Date & Time, MCQs\n";
+            const csvRows = data.map(row => {
+                const parts = [
+                    row.id,
+                    row.date,
+                    row.subject,
+                    row.type,
+                    row.topic,
+                    row.marrow_gt,
+                    row.custom_module_code || '',
+                    row.start_datetime || '',
+                    row.end_datetime || '',
+                    row.num_questions || ''
+                ];
+                // Escape commas in topic or subject
+                return parts.map(p => `"${p}"`).join(',');
+            });
+
+            const blob = new Blob([headers + csvRows.join("\n")], { type: 'text/csv' });
+            const url = window.URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.setAttribute('href', url);
+            a.setAttribute('download', `schedule_${centre.toLowerCase()}_current.csv`);
+            a.click();
+        } catch (err) {
+            console.error(err);
+            alert('Failed to download: ' + err.message);
+        } finally {
+            downloadExistingBtn.textContent = 'Download Existing Schedule';
+        }
     });
 
     // 4. File Selection
@@ -90,7 +138,7 @@ document.addEventListener('DOMContentLoaded', async () => {
             fileNameDisplay.style.color = 'var(--accent-color)';
             processBtn.disabled = false;
         } else {
-            fileNameDisplay.textContent = 'Click to browse files (Date, Subject, Topic, Custom Module Code, Start, End, Qs)';
+            fileNameDisplay.textContent = 'Click to browse files...';
             processBtn.disabled = true;
         }
     });
@@ -101,35 +149,26 @@ document.addEventListener('DOMContentLoaded', async () => {
         const reader = new FileReader();
 
         processBtn.disabled = true;
-        processBtn.textContent = 'Uploading...';
+        processBtn.textContent = 'Processing...';
         statusDiv.style.display = 'none';
 
         reader.onload = async (event) => {
             try {
                 const text = event.target.result;
                 const rows = text.split('\n').filter(row => row.trim() !== "");
+                if (rows.length < 2) throw new Error("CSV is empty or missing data.");
 
-                // Helper to parse date string (handles DD/MM/YYYY, DD/MM/YY, and YYYY-MM-DD)
+                // Helper to parse date string
                 const parseDate = (d) => {
                     if (!d || d.trim() === "") return null;
-                    d = d.trim();
-
-                    // If already YYYY-MM-DD
+                    d = d.trim().replace(/^"|"$/g, '');
                     if (/^\d{4}-\d{2}-\d{2}$/.test(d)) return d;
-
-                    // Handle DD/MM/YYYY or DD-MM-YYYY
                     const parts = d.split(/[/-]/);
                     if (parts.length === 3) {
                         let p1 = parts[0].padStart(2, '0');
                         let p2 = parts[1].padStart(2, '0');
                         let p3 = parts[2];
-
-                        // If p1 is YYYY (length 4) -> YYYY-MM-DD
-                        if (p1.length === 4) {
-                            return `${p1}-${p2}-${p3.padStart(2, '0')}`;
-                        }
-
-                        // Otherwise Assume DD/MM/YYYY
+                        if (p1.length === 4) return `${p1}-${p2}-${p3.padStart(2, '0')}`;
                         if (p3.length === 2) p3 = '20' + p3;
                         return `${p3}-${p2}-${p1}`;
                     }
@@ -139,52 +178,58 @@ document.addEventListener('DOMContentLoaded', async () => {
                 let lastDate = null;
                 let lastSubject = null;
 
-                // Headers: Date, Subject, Type, Topic, Marrow GT, Code, Start, End, MCQs
+                const headerCols = rows[0].split(',').map(c => c.trim().toLowerCase());
+                const hasUUID = headerCols[0].includes('uuid') || headerCols[0].includes('id');
+
                 const payload = rows.slice(1).map((row) => {
-                    const cols = row.split(',').map(c => c.trim());
-                    if (cols.length < 9) return null;
+                    // Smart CSV splitting that handles quoted commas
+                    const cols = row.match(/(".*?"|[^",\s]+|(?<=,)(?=,)|(?<=^)(?=,)|(?<=,)(?=$))/g) || [];
+                    const cleanCols = cols.map(c => c.trim().replace(/^"|"$/g, ''));
 
-                    let rawDate = cols[0];
-                    let currentSubject = cols[1];
+                    if (cleanCols.length < 5) return null;
 
-                    // Carry forward logic
-                    if (!rawDate || rawDate === "") {
-                        rawDate = lastDate;
-                    } else {
-                        lastDate = rawDate;
-                    }
+                    let shift = hasUUID ? 1 : 0;
+                    let rawDate = cleanCols[0 + shift];
+                    let currentSubject = cleanCols[1 + shift];
 
-                    if (!currentSubject || currentSubject === "") {
-                        currentSubject = lastSubject;
-                    } else {
-                        lastSubject = currentSubject;
-                    }
+                    // Carry forward
+                    if (!rawDate || rawDate === "") rawDate = lastDate;
+                    else lastDate = rawDate;
+
+                    if (!currentSubject || currentSubject === "") currentSubject = lastSubject;
+                    else lastSubject = currentSubject;
 
                     const standardDate = parseDate(rawDate);
-                    if (!standardDate) return null; // Skip if no date at all
+                    if (!standardDate) return null;
 
-                    // CRITICAL: Skip rows that have no topic content (e.g. empty lines with commas)
-                    const currentTopic = cols[3];
-                    if (!currentTopic || currentTopic.trim() === "") return null;
+                    const topic = cleanCols[3 + shift];
+                    if (!topic) return null;
 
-                    return {
+                    const obj = {
                         centre_name: centreSelect.value,
                         date: standardDate,
                         subject: currentSubject || '-',
-                        type: cols[2] || 'Study Day',
-                        topic: currentTopic,
-                        marrow_gt: cols[4] || '-',
-                        custom_module_code: cols[5] || null,
-                        start_datetime: cols[6] || null,
-                        end_datetime: cols[7] || null,
-                        num_questions: (cols[8] && cols[8] !== '') ? parseInt(cols[8]) : null
+                        type: cleanCols[2 + shift] || 'Study Day',
+                        topic: topic,
+                        marrow_gt: cleanCols[4 + shift] || '-',
+                        custom_module_code: cleanCols[5 + shift] || null,
+                        start_datetime: cleanCols[6 + shift] || null,
+                        end_datetime: cleanCols[7 + shift] || null,
+                        num_questions: (cleanCols[8 + shift] && cleanCols[8 + shift] !== '') ? parseInt(cleanCols[8 + shift]) : null
                     };
+
+                    if (hasUUID && cleanCols[0] && cleanCols[0].length > 10) {
+                        obj.id = cleanCols[0];
+                    }
+
+                    return obj;
                 }).filter(p => p !== null);
 
-                if (payload.length === 0) throw new Error("No valid data found in CSV. Check your formatting.");
+                if (payload.length === 0) throw new Error("No valid records found in file.");
 
-                // Insert into "Schedule" table
-                const { error } = await supabaseClient.from('Schedule').insert(payload);
+                const { error } = await supabaseClient
+                    .from('Schedule')
+                    .upsert(payload, { onConflict: hasUUID ? 'id' : 'centre_name, date, topic' });
 
                 if (error) throw error;
 
@@ -192,25 +237,20 @@ document.addEventListener('DOMContentLoaded', async () => {
                 statusDiv.style.background = 'rgba(34, 197, 94, 0.1)';
                 statusDiv.style.border = '1px solid #22c55e';
                 statusDiv.style.color = '#22c55e';
-                statusDiv.textContent = `Successfully synced ${payload.length} rows for ${centreSelect.value} centre!`;
-
-                fileInput.value = '';
-                fileNameDisplay.textContent = 'Click to browse files (Date, Subject, Topic, Custom Module Code, Start, End, Qs)';
-                fileNameDisplay.style.color = 'var(--text-secondary)';
+                statusDiv.textContent = `Successfully synced ${payload.length} records!`;
 
             } catch (err) {
-                console.error('Upload Error:', err);
+                console.error(err);
                 statusDiv.style.display = 'block';
                 statusDiv.style.background = 'rgba(239, 68, 68, 0.1)';
                 statusDiv.style.border = '1px solid #ef4444';
                 statusDiv.style.color = '#ef4444';
                 statusDiv.textContent = 'Error: ' + err.message;
             } finally {
-                processBtn.disabled = true;
+                processBtn.disabled = false;
                 processBtn.textContent = 'Upload Schedule';
             }
         };
-
         reader.readAsText(file);
     });
 });
