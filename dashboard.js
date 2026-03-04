@@ -210,11 +210,11 @@ document.addEventListener('DOMContentLoaded', async () => {
                     .eq('centre_name', userCentre)
                     .lte('date', today);
 
-                // Fetch Results for the user
+                // Fetch Results for the user - Use ilike for case-insensitive email matching
                 const { data: results, error: resError } = await supabaseClient
                     .from('Test_Results')
                     .select('test_type, score, percentile, custom_module_code')
-                    .or(`enrolment_id.eq.${enrolmentId},user_email.eq.${userData.email_id.toLowerCase()}`);
+                    .or(`enrolment_id.eq.${enrolmentId},user_email.ilike.${userData.email_id.toLowerCase()}`);
 
                 if (schedError || resError) {
                     console.error('❌ Data Fetch Error:', schedError || resError);
@@ -243,7 +243,7 @@ document.addEventListener('DOMContentLoaded', async () => {
                 // Helper to calculate median
                 const calculateMedian = (arr) => {
                     if (!arr || arr.length === 0) return '-';
-                    const nums = arr.filter(n => !isNaN(n) && n !== null).sort((a, b) => a - b);
+                    const nums = arr.map(n => parseFloat(n)).filter(n => !isNaN(n)).sort((a, b) => a - b);
                     if (nums.length === 0) return '-';
                     const mid = Math.floor(nums.length / 2);
                     const median = nums.length % 2 !== 0 ? nums[mid] : (nums[mid - 1] + nums[mid]) / 2;
@@ -283,8 +283,8 @@ document.addEventListener('DOMContentLoaded', async () => {
                         count = (schedules || []).filter(s => s.marrow_gt && s.marrow_gt !== '-' && s.marrow_gt !== '').length;
                     } else if (targetType === 't&d') {
                         count = (schedules || []).filter(s => {
-                            const sType = (s.type || '').toLowerCase().trim();
-                            return sType.includes('t&d') || sType === 'test & discussion';
+                            const combined = `${s.type || ''} ${s.topic || ''}`.toLowerCase();
+                            return combined.includes('t&d') || combined.includes('test & discussion');
                         }).length;
                     } else {
                         count = (schedules || []).filter(s => (s.type || '').toLowerCase().includes(targetType)).length;
