@@ -309,63 +309,103 @@ document.addEventListener('DOMContentLoaded', async () => {
                 const timing = startTime !== '-' ? `${startTime} to ${endTime}` : 'No specific timing';
 
                 return `
-                    <div class="schedule-card ${userProg.is_done ? 'is-done' : ''}">
+                    <div class="schedule-card ${userProg.is_done ? 'is-done' : ''}" data-date="${item.date}">
                         <div class="card-row">
                             <span class="subject-badge">${item.subject || 'Study'}</span>
                             <span style="font-size: 0.75rem; color: var(--text-secondary); font-weight: 600;">${formatDate(item.date)}</span>
                         </div>
                         
-                        <div class="card-value" style="font-size: 1.05rem; color: var(--text-primary); margin: 0.25rem 0;">${item.topic}</div>
+                        <div class="card-value" style="font-size: 1.1rem; color: var(--text-primary); margin: 0.15rem 0 0.5rem 0; line-height: 1.3;">${item.topic}</div>
                         
-                        <div class="card-row" style="margin-bottom: 0.25rem;">
-                            <div style="flex: 1.2;">
-                                <div class="card-label">Type & Code</div>
-                                <div class="card-value" style="font-size: 0.8rem;">
-                                    <span style="background: rgba(255,255,255,0.05); padding: 0.15rem 0.4rem; border-radius: 4px;">${item.type || '-'}</span>
-                                    ${item.custom_module_code ? `<code style="font-family: monospace; opacity: 0.8; margin-left: 0.3rem;">[${item.custom_module_code}]</code>` : ''}
-                                </div>
+                        <!-- Line 1: Type, Code, Timing (All Centered) -->
+                        <div style="display: grid; grid-template-columns: 1fr 1fr 1.2fr; gap: 0.5rem; margin-bottom: 0.75rem; text-align: center;">
+                            <div>
+                                <div class="card-label">Type</div>
+                                <div class="card-value" style="font-size: 0.8rem; opacity: 0.9;">${item.type || '-'}</div>
                             </div>
-                            <div style="flex: 0.8; text-align: right;">
-                                <div class="card-label">Timing</div>
-                                <div class="card-value" style="font-size: 0.8rem;">${timing}</div>
+                            <div>
+                                <div class="card-label">Code</div>
+                                <div class="card-value" style="font-family: monospace; font-size: 0.8rem; opacity: 0.9;">${item.custom_module_code || '-'}</div>
+                            </div>
+                            <div>
+                                <div class="card-label">Test Timing</div>
+                                <div class="card-value" style="font-size: 0.75rem; line-height: 1.2;">${timing}</div>
                             </div>
                         </div>
 
                         ${item.marrow_gt && item.marrow_gt !== '-' ? `
-                            <div style="background: rgba(34, 197, 94, 0.08); padding: 0.6rem; border-radius: 0.5rem; border: 1px solid rgba(34, 197, 94, 0.2);">
+                            <div style="background: rgba(34, 197, 94, 0.08); padding: 0.6rem; border-radius: 0.5rem; border: 1px solid rgba(34, 197, 94, 0.2); margin-bottom: 0.75rem; text-align: center;">
                                 <div class="card-label" style="color: #22c55e; opacity: 1;">Marrow GT</div>
                                 <div class="card-value" style="color: #22c55e;">${item.marrow_gt}</div>
                             </div>
                         ` : ''}
 
-                        <div class="card-metrics">
-                            <div>
-                                <div class="card-label">Result / Questions</div>
-                                <div class="card-value">
-                                    <span style="color: var(--accent-color); font-weight: 700;">${result.score}</span> 
-                                    <span style="font-size: 0.75rem; color: var(--text-secondary); opacity: 0.8;">(${result.percentile})</span>
-                                    <span style="margin: 0 0.4rem; opacity: 0.3;">|</span>
-                                    <span style="font-size: 0.8rem; font-weight: 700;">${item.num_questions || '-'} Qs</span>
+                        <!-- Line 2: Results Grid (Left) & Mark Complete (Right) - Two Distinct Containers -->
+                        <div style="display: flex; gap: 0.5rem; margin-bottom: 0.6rem; align-items: stretch;">
+                            <!-- Performance Metrics -->
+                            <div style="flex: 1; display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 0.25rem; background: rgba(255, 255, 255, 0.03); padding: 0.55rem 0.25rem; border-radius: 0.75rem; border: 1px solid rgba(255,255,255,0.05); text-align: center; align-items: center;">
+                                <div>
+                                    <div class="card-label">Score</div>
+                                    <div class="card-value" style="color: var(--accent-color); font-weight: 700; font-size: 0.95rem;">${result.score}</div>
+                                </div>
+                                <div style="border-left: 1px solid rgba(255,255,255,0.08); border-right: 1px solid rgba(255,255,255,0.08);">
+                                    <div class="card-label">Percentile</div>
+                                    <div class="card-value" style="font-weight: 600; font-size: 0.9rem;">${result.percentile}</div>
+                                </div>
+                                <div>
+                                    <div class="card-label">MCQs</div>
+                                    <div class="card-value" style="font-weight: 600; font-size: 0.9rem;">${item.num_questions || '-'}</div>
                                 </div>
                             </div>
-                            <div style="text-align: right;">
-                                <div class="card-label">Completed</div>
+
+                            <!-- Done Toggle Group -->
+                            <div style="width: 85px; display: flex; flex-direction: column; justify-content: center; align-items: center; background: rgba(56, 189, 248, 0.04); border: 1px solid rgba(56, 189, 248, 0.1); border-radius: 0.75rem; text-align: center;">
+                                <div class="card-label" style="color: var(--accent-color); opacity: 1; font-size: 0.55rem; margin-bottom: 0.15rem;">MARK DONE</div>
                                 <input type="checkbox" class="checkbox-custom" 
+                                    style="transform: scale(0.9);"
                                     ${userProg.is_done ? 'checked' : ''} 
                                     onchange="window.updateProgress('${item.id}', this.checked); this.closest('.schedule-card').classList.toggle('is-done', this.checked)">
                             </div>
                         </div>
 
-                        <div style="margin-top: 0.25rem;">
+                        <!-- Line 3: Remarks (Full Width) -->
+                        <div style="width: 100%;">
                             <textarea class="remarks-input" 
-                                placeholder="Add your remarks..." 
-                                rows="1"
+                                placeholder="Add study remarks..." 
                                 onblur="window.updateRemarks('${item.id}', this.value)"
-                                style="width: 100%; min-height: 32px; background: rgba(0,0,0,0.2); border: 1px solid var(--glass-border); border-radius: 0.6rem; color: #fff; padding: 0.6rem; font-size: 0.85rem; resize: vertical;">${userProg.remarks || ''}</textarea>
+                                oninput="this.style.height = 'auto'; this.style.height = (this.scrollHeight) + 'px';"
+                                style="width: 100% !important; max-width: none !important; min-height: 42px; background: rgba(255, 255, 255, 0.02); border: 1px solid var(--glass-border); border-radius: 0.65rem; color: #fff; padding: 0.65rem 0.75rem; font-size: 0.85rem; resize: vertical !important; line-height: 1.4; overflow: hidden; display: block; box-sizing: border-box;">${userProg.remarks || ''}</textarea>
                         </div>
                     </div>
                 `;
             }).join('');
+
+            // Auto-expand remarks initially
+            setTimeout(() => {
+                mobileList.querySelectorAll('.remarks-input').forEach(ta => {
+                    ta.style.height = 'auto';
+                    ta.style.height = ta.scrollHeight + 'px';
+                });
+            }, 50);
+
+            // Auto-scroll to today
+            if (window.innerWidth <= 1024) {
+                setTimeout(() => {
+                    const today = new Date().toISOString().split('T')[0];
+                    const cards = Array.from(document.querySelectorAll('.schedule-card'));
+                    const target = cards.find(c => c.getAttribute('data-date') >= today);
+                    if (target) {
+                        target.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                        target.style.transition = 'all 0.4s ease';
+                        target.style.borderColor = 'var(--accent-color)';
+                        target.style.boxShadow = '0 0 20px rgba(56, 189, 248, 0.2)';
+                        setTimeout(() => {
+                            target.style.boxShadow = '';
+                            target.style.borderColor = 'var(--glass-border)';
+                        }, 2500);
+                    }
+                }, 400);
+            }
         }
     };
 
