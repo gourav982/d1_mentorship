@@ -1472,6 +1472,37 @@ td:nth-child(13) {
     padding-bottom: 0.5rem;
 }
 
+.query-column {
+    display: flex;
+    flex-direction: column;
+    width: 300px;
+    flex-shrink: 0;
+    border-right: 1px solid var(--glass-border);
+    padding-right: 1rem;
+}
+
+.query-card {
+    background: var(--card-bg);
+    border: 1px solid var(--glass-border);
+    border-radius: 0.75rem;
+    padding: 1rem;
+    margin-bottom: 0.75rem;
+    cursor: pointer;
+    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.query-card:hover {
+    background: rgba(255, 255, 255, 0.05);
+    border-color: rgba(56, 189, 248, 0.3);
+    transform: translateY(-2px);
+}
+
+.query-card.active {
+    background: rgba(56, 189, 248, 0.1);
+    border-color: var(--accent-color);
+    box-shadow: 0 0 20px rgba(56, 189, 248, 0.15);
+}
+
 .query-tabs {
     display: flex;
     gap: 1rem;
@@ -1505,32 +1536,11 @@ td:nth-child(13) {
     padding-right: 0.5rem;
 }
 
-.query-card {
-    background: var(--glass-bg);
-    border: 1px solid var(--glass-border);
-    border-radius: 1.25rem;
-    padding: 1.5rem;
-    transition: all 0.3s ease;
-    cursor: pointer;
-    position: relative;
-    overflow: hidden;
-}
-
-.query-card:hover {
-    border-color: rgba(56, 189, 248, 0.2);
-    transform: translateY(-2px);
-    background: rgba(255, 255, 255, 0.04);
-}
-
-.query-card.active {
-    border-color: var(--accent-color);
-    background: rgba(56, 189, 248, 0.05);
-}
 
 .query-card-header {
     display: flex;
     justify-content: space-between;
-    margin-bottom: 0.75rem;
+    align-items: flex-start;
 }
 
 .student-info {
@@ -1573,13 +1583,8 @@ td:nth-child(13) {
 }
 
 .query-content-preview {
-    font-size: 0.9rem;
-    color: var(--text-secondary);
-    line-height: 1.5;
-    display: -webkit-box;
-    -webkit-line-clamp: 2;
-    -webkit-box-orient: vertical;
-    overflow: hidden;
+    display: none;
+    /* Removed as per user request to optimize space */
 }
 
 .query-footer {
@@ -1645,10 +1650,11 @@ td:nth-child(13) {
 }
 
 .comment-item {
+    margin-bottom: 0.75rem;
     padding: 1rem;
     background: rgba(255, 255, 255, 0.02);
     border: 1px solid var(--glass-border);
-    border-radius: 1rem;
+    border-radius: 0.75rem;
 }
 
 .comment-header {
@@ -1913,10 +1919,41 @@ td:nth-child(13) {
     border-bottom: 1px solid var(--glass-border);
 }
 
+.back-btn-mobile {
+    display: none;
+    align-items: center;
+    gap: 0.5rem;
+    background: rgba(56, 189, 248, 0.1);
+    border: 1px solid rgba(56, 189, 248, 0.2);
+    color: var(--accent-color);
+    padding: 0.5rem 0.85rem;
+    border-radius: 0.75rem;
+    font-size: 0.85rem;
+    font-weight: 600;
+    margin-right: 0.75rem;
+    text-decoration: none;
+    transition: all 0.2s;
+}
+
+.back-btn-mobile:active {
+    transform: scale(0.95);
+    background: rgba(56, 189, 248, 0.2);
+}
+
 @media (max-width: 1024px) {
     .queries-layout {
         grid-template-columns: 1fr;
         height: auto;
+    }
+
+    .query-column {
+        width: 100%;
+        padding-right: 0;
+        border-right: none;
+    }
+
+    .back-btn-mobile {
+        display: flex;
     }
 
     .mobile-hidden {

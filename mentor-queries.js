@@ -100,17 +100,13 @@ document.addEventListener('DOMContentLoaded', async () => {
         }
 
         queryList.innerHTML = currentQueries.map(q => `
-            <div class="query-card ${selectedQueryId === q.id ? 'active' : ''}" onclick="window.selectQuery('${q.id}')">
-                <div class="query-card-header">
+            <div class="query-card ${selectedQueryId === q.id ? 'active' : ''}" onclick="window.selectQuery('${q.id}')" style="padding: 1rem;">
+                <div class="query-card-header" style="margin-bottom: 0;">
                     <div class="student-info">
-                        <span class="student-name">${q.student_name}</span>
-                        <span class="student-id">${q.student_enrolment} • ${q.centre_name}</span>
+                        <span class="student-name" style="font-size: 0.95rem;">${q.student_name}</span>
+                        <span class="student-id" style="font: 0.75rem; opacity: 0.7;">${q.student_enrolment} • ${q.centre_name}</span>
                     </div>
-                    <span class="query-status status-${q.status}">${q.status}</span>
-                </div>
-                <div class="query-content-preview">${q.content}</div>
-                <div class="query-footer">
-                    <span>${new Date(q.created_at).toLocaleDateString('en-IN', { day: '2-digit', month: 'short' })}</span>
+                    <span class="query-status status-${q.status}" style="font-size: 0.65rem;">${q.status}</span>
                 </div>
             </div>
         `).join('');
@@ -144,25 +140,26 @@ document.addEventListener('DOMContentLoaded', async () => {
                 : '';
 
             queryDetail.innerHTML = `
-                <div class="detail-header" style="padding: 1rem 1.25rem;">
-                    <div style="display: flex; align-items: center; gap: 0.75rem;">
-                        <button class="icon-btn mobile-only" onclick="window.closeDetail()" style="margin-right: 0.5rem; color: var(--accent-color);">
-                            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <div class="detail-header" style="padding: 1rem 1.25rem; border-bottom: 1px solid var(--glass-border); margin-bottom: 1.5rem;">
+                    <div style="display: flex; align-items: center; gap: 0.5rem;">
+                        <a href="javascript:void(0)" class="back-btn-mobile" onclick="window.closeDetail()">
+                            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
                                 <line x1="19" y1="12" x2="5" y2="12"></line>
-                                <polyline points="12 19 5 12 12 5"></polyline>
+                                <polyline points="12 5 5 12 12 19"></polyline>
                             </svg>
-                        </button>
+                            Back
+                        </a>
                         <div class="student-info">
-                            <h2 style="font-size: 1rem; font-weight: 700; margin: 0; color: #fff;">${q.student_name}</h2>
+                            <h2 style="font-size: 1.1rem; font-weight: 700; margin: 0; color: #fff;">${q.student_name}</h2>
                             <span class="student-id" style="color: var(--text-secondary); font-size: 0.75rem;">${q.student_enrolment} • ${q.centre_name}</span>
                         </div>
                     </div>
                     <div style="display: flex; gap: 0.75rem; align-items: center;">
                         ${statusButton}
-                        <span class="query-status status-${q.status}" style="font-size: 0.7rem;">${q.status}</span>
+                        <span class="query-status status-${q.status}" style="font-size: 0.7rem; text-transform: uppercase; letter-spacing: 0.05em;">${q.status}</span>
                     </div>
                 </div>
-                <div class="detail-body" id="detail-body" style="padding: 1rem;">
+                <div class="detail-body" id="detail-body" style="padding: 0 1.25rem 1.25rem 1.25rem;">
                     <div class="original-post" style="padding: 1rem; border-radius: 0.75rem; background: rgba(56, 189, 248, 0.05); border: 1px solid rgba(56, 189, 248, 0.1); margin-bottom: 1rem;">
                     <div class="comment-header" style="margin-bottom: 0.5rem; border-bottom: none; padding-bottom: 0;">
                         <span class="comment-author" style="font-size: 0.75rem; text-transform: uppercase; letter-spacing: 0.05em;">Student's Question</span>
@@ -303,6 +300,14 @@ document.addEventListener('DOMContentLoaded', async () => {
     const sidebar = document.querySelector('.sidebar');
     const sidebarToggle = document.getElementById('sidebar-toggle-btn');
     sidebarToggle?.addEventListener('click', () => sidebar?.classList.toggle('collapsed'));
+
+    window.closeDetail = () => {
+        queryDetail.classList.add('mobile-hidden');
+        const qListColumn = document.querySelector('.query-column');
+        if (qListColumn) qListColumn.classList.remove('mobile-hidden');
+        selectedQueryId = null;
+        renderQueryList();
+    };
 
     init();
 });
