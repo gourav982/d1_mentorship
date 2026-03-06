@@ -54,9 +54,16 @@ document.addEventListener('DOMContentLoaded', () => {
                     const modal = document.getElementById('success-modal');
                     if (modal) modal.classList.add('active');
 
+                    // 4. Role-Based Redirect
+                    const userData = await window.syncUserProfile();
+
                     setTimeout(() => {
-                        window.location.href = 'dashboard.html';
-                    }, 2000);
+                        if (userData) {
+                            window.redirectToDefaultPage(userData);
+                        } else {
+                            window.location.href = 'dashboard.html';
+                        }
+                    }, 1500);
                 } catch (err) {
                     console.error('Login error:', err);
                     alert('An error occurred. Please try again.');

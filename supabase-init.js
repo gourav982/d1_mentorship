@@ -157,6 +157,29 @@ window.syncUserProfile = async () => {
     }
 };
 
+window.redirectToDefaultPage = async (userData) => {
+    if (!userData) return;
+
+    const role = userData.role;
+    const currentPath = window.location.pathname;
+
+    let targetPage = 'dashboard.html'; // Default for students
+
+    if (role === 'Mentor') {
+        targetPage = 'mentor-queries.html';
+    } else if (role === 'Admin' || role === 'Super admin') {
+        targetPage = 'admin-users.html';
+    } else if (role === 'Academics') {
+        targetPage = 'upload-schedule.html';
+    }
+
+    // Only redirect if we are on index.html or if we are on dashboard.html but shouldn't be
+    if (currentPath.includes('index.html') || currentPath === '/' || (currentPath.includes('dashboard.html') && role !== 'Students')) {
+        console.log(`🚀 Routing ${role} to ${targetPage}`);
+        window.location.replace(targetPage);
+    }
+};
+
 window.applyPermissions = async () => {
     const elements = document.querySelectorAll('[data-permission]');
 
@@ -164,6 +187,9 @@ window.applyPermissions = async () => {
         // Sync profile first
         const userData = await window.syncUserProfile();
         if (!userData) return;
+
+        // Auto-redirect if on wrong page for role
+        await window.redirectToDefaultPage(userData);
 
         if (userData.role === 'Super admin') {
             // For super admin, just ensure admin sections are visible
@@ -193,11 +219,13 @@ window.applyPermissions = async () => {
             }
         });
 
-        // 5. Hide Empty Nav Groups
+        // 5. Hide Empty Nav Groups (Careful with "Coming Soon" items)
         document.querySelectorAll('.nav-group').forEach(group => {
             let sibling = group.nextElementSibling;
             let hasVisibleLink = false;
             while (sibling && !sibling.classList.contains('nav-group') && !sibling.classList.contains('admin-only')) {
+                // A link is visible if it doesn't have display: none. 
+                // We also check "disabled" items which might not have data-permission but should be counted.
                 if (sibling.classList.contains('nav-item') && sibling.style.display !== 'none') {
                     hasVisibleLink = true;
                     break;

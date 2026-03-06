@@ -17,18 +17,32 @@
     <script>
         // Premium Auth Guard
         const checkAuth = async () => {
-            // This URL and Key should match supabase-init.js (redundant here for immediate execution)
             const SUPABASE_URL = 'https://aobwkcjfhbruihkandlg.supabase.co';
             const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImFvYndrY2pmaGJydWloa2FuZGxnIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzIwMjE1MjAsImV4cCI6MjA4NzU5NzUyMH0.V7OdMoiiDuXIMOdoUDLlUMjdavSjObHpajb2gHh0E38';
-            // Use a temporary client for immediate auth check before the main client is initialized
             const tempSupabase = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 
             const { data: { session } } = await tempSupabase.auth.getSession();
             if (!session) {
                 window.location.replace('index.html');
-            } else {
-                document.body.style.display = 'block';
+                return;
             }
+
+            // High-speed role check for default landing
+            let { data: userData } = await tempSupabase.from('Access').select('role').eq('email_id', session.user.email).single();
+            if (!userData) {
+                const retry = await tempSupabase.from('access').select('role').eq('email_id', session.user.email).single();
+                userData = retry.data;
+            }
+
+            if (userData && userData.role !== 'Students') {
+                // Mentors/Admins shouldn't land here
+                let target = 'mentor-queries.html';
+                if (userData.role === 'Admin' || userData.role === 'Super admin') target = 'admin-users.html';
+                window.location.replace(target);
+                return;
+            }
+
+            document.body.style.display = 'block';
         };
         checkAuth();
     </script>
