@@ -27,10 +27,8 @@ document.addEventListener('DOMContentLoaded', async () => {
         currentUser = profile;
         if (!currentUser) return;
 
-        // UI Header
-        document.getElementById('display-name').textContent = currentUser.name || 'User';
-        document.getElementById('display-role').textContent = currentUser.role || 'Member';
-        document.getElementById('avatar-circle').textContent = (currentUser.name || 'U').charAt(0).toUpperCase();
+        // Apply permissions for sidebar AND update profile info (centralized in supabase-init.js)
+        await window.applyPermissions();
 
         // 2. Center Logic
         allowedCentres = await window.getAllowedCentres();
@@ -41,13 +39,11 @@ document.addEventListener('DOMContentLoaded', async () => {
             centreSelect.value = selectedCentre;
         } else if (allowedCentres.length === 1) {
             selectedCentre = allowedCentres[0];
-            document.getElementById('query-board-subtitle').textContent += ` Handling: ${selectedCentre}`;
+            const boardSubtitle = document.getElementById('query-board-subtitle');
+            if (boardSubtitle) boardSubtitle.textContent += ` Handling: ${selectedCentre}`;
         } else {
             selectedCentre = currentUser.centre_name || 'All';
         }
-
-        // Apply permissions for sidebar (Admin stuff)
-        window.applyPermissions();
 
         await fetchQueries();
     };

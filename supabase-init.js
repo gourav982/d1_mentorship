@@ -125,34 +125,73 @@ window.applyPermissions = async () => {
         const { data: { session } } = await window.supabaseClient.auth.getSession();
         if (!session) return;
 
-        // 1. Fetch user's role
-        const { data: userData } = await window.supabaseClient
+        // 1. Fetch user's role and details for high-fidelity sync
+        let { data: userData } = await window.supabaseClient
             .from('Access')
-            .select('role')
+            .select('role, name')
             .ilike('email_id', session.user.email)
             .single();
 
-        if (!userData) return;
-        if (userData.role === 'Super admin') return; // Nothing to hide for Super Admin
-
-        // 2. Fetch permissions with resilience for case-sensitivity
-        let res = await window.supabaseClient.from('Role_Permissions').select('permission_key, is_granted').eq('role_name', userData.role);
-
-        // Retry with lowercase if it fails
-        if (res.error && (res.error.message?.includes('not find') || res.error.message?.includes('cache') || res.error.code === '42P01')) {
-            res = await window.supabaseClient.from('role_permissions').select('permission_key, is_granted').eq('role_name', userData.role);
+        if (!userData) {
+            const retry = await window.supabaseClient.from('access').select('role, name').ilike('email_id', session.user.email).single();
+            userData = retry.data;
         }
+
+        if (!userData) return;
+
+        // 2. Global Profile Sync (Fixes "Loading..." issue)
+        const nameDisplay = document.getElementById('display-name');
+        const roleDisplay = document.getElementById('display-role');
+        const avatarCircle = document.getElementById('avatar-circle');
+
+        if (nameDisplay) nameDisplay.textContent = userData.name || session.user.email.split('@')[0];
+        if (roleDisplay) roleDisplay.textContent = userData.role || 'Member';
+        if (avatarCircle) avatarCircle.textContent = (userData.name || 'U').charAt(0).toUpperCase();
+
+        if (userData.role === 'Super admin') {
+            // For super admin, just ensure admin sections are visible
+            document.querySelectorAll('.admin-only').forEach(el => el.style.display = 'block');
+            return;
+        }
+
+        // 3. Fetch permissions
+        let res = await window.supabaseClient.from('Role_Permissions').select('permission_key, is_granted').eq('role_name', userData.role);
+        if (res.error) res = await window.supabaseClient.from('role_permissions').select('permission_key, is_granted').eq('role_name', userData.role);
 
         const perms = res.data;
         const permMap = perms ? Object.fromEntries(perms.map(p => [p.permission_key, p.is_granted])) : {};
 
+        // 4. Apply Visibility
         elements.forEach(el => {
             const key = el.getAttribute('data-permission');
-            // If perm is explicitly FALSE, or if role is not Super Admin and perm is UNDEFINED (not in list)
             if (permMap[key] === false || (permMap[key] === undefined && userData.role !== 'Super admin')) {
                 el.style.display = 'none';
+                el.classList.add('perm-hidden'); // Mark for group-hiding logic
             }
         });
+
+        // 5. Hide Empty Nav Groups (Fixes "ghost" headers)
+        document.querySelectorAll('.nav-group').forEach(group => {
+            // Find next siblings until next .nav-group or end
+            let sibling = group.nextElementSibling;
+            let hasVisibleLink = false;
+            while (sibling && !sibling.classList.contains('nav-group') && !sibling.classList.contains('admin-only')) {
+                if (sibling.classList.contains('nav-item') && sibling.style.display !== 'none') {
+                    hasVisibleLink = true;
+                    break;
+                }
+                sibling = sibling.nextElementSibling;
+            }
+            if (!hasVisibleLink) group.style.display = 'none';
+        });
+
+        // Toggle admin section container level
+        const adminSec = document.getElementById('admin-section');
+        if (adminSec) {
+            const visibleItems = adminSec.querySelectorAll('.nav-item:not([style*="display: none"])');
+            adminSec.style.display = visibleItems.length > 0 ? 'block' : 'none';
+        }
+
     } catch (err) {
         console.error('Apply Permissions Error:', err);
     }
