@@ -24,7 +24,15 @@
                 return;
             }
 
-            const { data: userData } = await tempSupabase.from('Access').select('role').ilike('email_id', session.user.email).single();
+            // Lowercase 'access' to be safe on production
+            let { data: userData } = await tempSupabase.from('access').select('role').ilike('email_id', session.user.email).single();
+
+            // Fallback for case sensitivity
+            if (!userData) {
+                const retry = await tempSupabase.from('Access').select('role').ilike('email_id', session.user.email).single();
+                userData = retry.data;
+            }
+
             if (!userData) {
                 window.location.replace('index.html');
                 return;
@@ -35,12 +43,21 @@
                 return;
             }
 
-            // Check perm for other roles
-            const { data: perms } = await tempSupabase.from('Role_Permissions')
+            // Check perm for other roles - resilient table check
+            let { data: perms } = await tempSupabase.from('role_permissions')
                 .select('is_granted')
                 .eq('role_name', userData.role)
                 .eq('permission_key', 'page_queries')
                 .single();
+
+            if (!perms) {
+                const retryPerm = await tempSupabase.from('Role_Permissions')
+                    .select('is_granted')
+                    .eq('role_name', userData.role)
+                    .eq('permission_key', 'page_queries')
+                    .single();
+                perms = retryPerm.data;
+            }
 
             if (perms && perms.is_granted) {
                 document.body.style.display = 'block';
