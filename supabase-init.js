@@ -270,11 +270,16 @@ window.getAllowedCentres = async () => {
         const { data: { session } } = await window.supabaseClient.auth.getSession();
         if (!session) return [];
 
-        const { data: userData } = await window.supabaseClient
+        let { data: userData, error: fetchErr } = await window.supabaseClient
             .from('Access')
             .select('role, centre_name')
             .ilike('email_id', session.user.email)
             .single();
+
+        if (fetchErr || !userData) {
+            const retry = await window.supabaseClient.from('access').select('role, centre_name').ilike('email_id', session.user.email).single();
+            userData = retry.data;
+        }
 
         if (!userData) return [];
 

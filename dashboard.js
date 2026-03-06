@@ -105,6 +105,8 @@ document.addEventListener('DOMContentLoaded', async () => {
         // 6. Apply Permissions (For all roles!)
         await window.applyPermissions();
 
+        const adminRoles = ['Super admin', 'Admin', 'Mentor', 'Academics'];
+
         // 6. Modal Fill Logic
         const openModal = () => {
             document.getElementById('profile-name').value = userData.name || '';
