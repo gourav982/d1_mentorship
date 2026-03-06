@@ -207,7 +207,7 @@ window.applyPermissions = async () => {
         const perms = res.data;
         const permMap = perms ? Object.fromEntries(perms.map(p => [p.permission_key, p.is_granted])) : {};
 
-        // 4. Apply Visibility
+        // 4. Apply Individual Item Visibility
         elements.forEach(el => {
             const key = el.getAttribute('data-permission');
             if (permMap[key] === false || (permMap[key] === undefined && userData.role !== 'Super admin')) {
@@ -219,23 +219,35 @@ window.applyPermissions = async () => {
             }
         });
 
-        // 5. Hide Empty Nav Groups (Careful with "Coming Soon" items)
+        // 5. COUPLED SECTION LOGIC: Hide Nav Group if NO permitted functional items are visible inside it.
         document.querySelectorAll('.nav-group').forEach(group => {
-            let sibling = group.nextElementSibling;
-            let hasVisibleLink = false;
-            while (sibling && !sibling.classList.contains('nav-group') && !sibling.classList.contains('admin-only')) {
-                // A link is visible if it doesn't have display: none. 
-                // We also check "disabled" items which might not have data-permission but should be counted.
-                if (sibling.classList.contains('nav-item') && sibling.style.display !== 'none') {
-                    hasVisibleLink = true;
-                    break;
+            let next = group.nextElementSibling;
+            let sectionHasFunctionalAccess = false;
+            let sectionItems = [];
+
+            // Traverse siblings until next group or admin corner
+            while (next && !next.classList.contains('nav-group') && !next.classList.contains('admin-only')) {
+                if (next.classList.contains('nav-item')) {
+                    sectionItems.push(next);
+                    const key = next.getAttribute('data-permission');
+                    // A section is "Open" only if an item with a PERMISSION KEY is granted and visible
+                    if (key && next.style.display !== 'none') {
+                        sectionHasFunctionalAccess = true;
+                    }
                 }
-                sibling = sibling.nextElementSibling;
+                next = next.nextElementSibling;
             }
-            if (!hasVisibleLink) group.style.display = 'none';
-            else group.style.display = 'block';
+
+            if (!sectionHasFunctionalAccess) {
+                group.style.display = 'none';
+                sectionItems.forEach(item => item.style.display = 'none');
+            } else {
+                group.style.display = 'block';
+                // Items themselves maintain their display state from step 4
+            }
         });
 
+        // 6. Handle Admin Corner separately
         const adminSec = document.getElementById('admin-section');
         if (adminSec) {
             const visibleItems = adminSec.querySelectorAll('.nav-item:not([style*="display: none"])');
