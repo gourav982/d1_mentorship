@@ -284,7 +284,12 @@ select option {
 .header-left {
     display: flex;
     align-items: center;
-    gap: 2rem;
+    gap: 1rem;
+    /* Reduced gap slightly */
+}
+
+.sidebar-toggle {
+    margin-right: 0.5rem;
 }
 
 .dashboard-container {
@@ -294,8 +299,8 @@ select option {
 }
 
 .sidebar {
-    width: 240px;
-    /* Reduced width */
+    width: 260px;
+    /* Slightly wider for better text fit */
     background: rgba(15, 23, 42, 0.3);
     backdrop-filter: blur(10px);
     -webkit-backdrop-filter: blur(10px);
