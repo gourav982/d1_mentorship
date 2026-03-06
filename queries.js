@@ -120,11 +120,14 @@ document.addEventListener('DOMContentLoaded', async () => {
         `).join('');
     };
 
-    // 4. Select Query
     window.selectQuery = async (id) => {
         selectedQueryId = id;
-        renderQueryList(); // Update active state
+        renderQueryList();
 
+        const qListColumn = document.querySelector('.query-column');
+        if (qListColumn) qListColumn.classList.add('mobile-hidden');
+
+        queryDetail.classList.remove('mobile-hidden');
         queryDetail.innerHTML = '<div style="text-align: center; padding: 3rem; color: var(--text-secondary);">Loading details...</div>';
 
         const q = currentQueries.find(x => x.id === id);
@@ -142,36 +145,44 @@ document.addEventListener('DOMContentLoaded', async () => {
 
             const isMentor = ['Super admin', 'Admin', 'Mentor', 'Academics'].includes(currentUser.role);
             const statusButton = isMentor && q.status === 'new'
-                ? `<button class="btn-secondary" onclick="window.markAsDone('${q.id}')" style="font-size: 0.75rem; padding: 0.4rem 0.8rem;">Mark as Done</button>`
+                ? `<button class="btn-secondary" onclick="window.markAsDone('${q.id}')" style="font-size: 0.75rem; padding: 0.4rem 0.8rem; border-radius: 0.5rem;">Mark as Done</button>`
                 : '';
 
             queryDetail.innerHTML = `
-                <div class="detail-header">
-                    <div class="student-info">
-                        <h2 style="font-size: 1.1rem; font-weight: 700;">Query Interaction</h2>
-                        <span class="student-id">${q.student_name} (${q.student_enrolment}) • ${q.centre_name}</span>
+                <div class="detail-header" style="padding: 1rem 1.25rem;">
+                    <div style="display: flex; align-items: center; gap: 0.75rem;">
+                        <button class="icon-btn mobile-only" onclick="window.closeDetail()" style="margin-right: 0.5rem; color: var(--accent-color);">
+                            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                <line x1="19" y1="12" x2="5" y2="12"></line>
+                                <polyline points="12 19 5 12 12 5"></polyline>
+                            </svg>
+                        </button>
+                        <div class="student-info">
+                            <h2 style="font-size: 1rem; font-weight: 700; margin: 0; color: #fff;">${q.student_name}</h2>
+                            <span class="student-id" style="color: var(--text-secondary); font-size: 0.75rem;">${q.student_enrolment} • ${q.centre_name}</span>
+                        </div>
                     </div>
-                    <div style="display: flex; gap: 0.5rem; align-items: center;">
+                    <div style="display: flex; gap: 0.75rem; align-items: center;">
                         ${statusButton}
-                        <span class="query-status status-${q.status}">${q.status}</span>
+                        <span class="query-status status-${q.status}" style="font-size: 0.7rem;">${q.status}</span>
                     </div>
                 </div>
-                <div class="detail-body" id="detail-body">
-                    <div class="original-post">
-                        <div class="comment-header">
-                            <span class="comment-author">Original Post</span>
-                            <span>${new Date(q.created_at).toLocaleString('en-IN')}</span>
+                <div class="detail-body" id="detail-body" style="padding: 1rem;">
+                    <div class="original-post" style="padding: 1rem; border-radius: 0.75rem; background: rgba(56, 189, 248, 0.05); border: 1px solid rgba(56, 189, 248, 0.1); margin-bottom: 1rem;">
+                        <div class="comment-header" style="margin-bottom: 0.5rem; border-bottom: none; padding-bottom: 0;">
+                            <span class="comment-author" style="font-size: 0.75rem; text-transform: uppercase;">Original Question</span>
+                            <span style="font-size: 0.75rem;">${new Date(q.created_at).toLocaleString('en-IN', { dateStyle: 'medium', timeStyle: 'short' })}</span>
                         </div>
-                        <div class="post-text">${q.content}</div>
+                        <div class="post-text" style="font-size: 0.95rem; line-height: 1.5; color: #e2e8f0;">${q.content}</div>
                     </div>
-                    <div class="comments-section">
+                    <div class="comments-section" style="display: flex; flex-direction: column; gap: 0.75rem;">
                         ${comments.map(c => `
-                            <div class="comment-item">
-                                <div class="comment-header">
-                                    <span class="comment-author">${c.author_name} <span class="comment-role-badge">${c.author_role}</span></span>
-                                    <span>${new Date(c.created_at).toLocaleString('en-IN')}</span>
+                            <div class="comment-item" style="padding: 0.85rem; border-radius: 0.75rem; border: 1px solid var(--glass-border); background: ${c.author_role === 'Mentor' ? 'rgba(56, 189, 248, 0.03)' : 'rgba(255, 255, 255, 0.02)'}">
+                                <div class="comment-header" style="margin-bottom: 0.4rem; border-bottom: none; padding-bottom: 0;">
+                                    <span class="comment-author" style="font-size: 0.85rem;">${c.author_name} <span class="comment-role-badge" style="font-size: 0.65rem; padding: 0.1rem 0.4rem;">${c.author_role}</span></span>
+                                    <span style="font-size: 0.7rem; opacity: 0.6;">${new Date(c.created_at).toLocaleString('en-IN', { dateStyle: 'medium', timeStyle: 'short' })}</span>
                                 </div>
-                                <div class="comment-text">${c.content}</div>
+                                <div class="comment-text" style="font-size: 0.9rem; line-height: 1.4; color: #cbd5e1;">${c.content}</div>
                             </div>
                         `).join('')}
                     </div>
