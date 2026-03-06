@@ -67,23 +67,33 @@ document.addEventListener('DOMContentLoaded', async () => {
         profileSummary.style.display = 'none';
 
         try {
-            // Find student by enrolment ID
-            const { data: student, error } = await supabaseClient
+            // Find student by enrolment ID with resilience
+            let { data: student, error: fetchError } = await supabaseClient
                 .from('access')
                 .select('*')
                 .ilike('enrolment_id', query)
                 .single();
 
-            if (error || !student) {
-                alert('Student not found. Please check the Enrolment ID.');
-                return;
+            if (fetchError || !student) {
+                // Retry with uppercase Access
+                const { data: retryStudent, error: retryError } = await supabaseClient
+                    .from('Access')
+                    .select('*')
+                    .ilike('enrolment_id', query)
+                    .single();
+
+                student = retryStudent;
+                if (!student) {
+                    alert('Student not found. Please check the Enrolment ID (e.g. TEST001).');
+                    return;
+                }
             }
 
             targetStudent = student;
             await loadStudentPerformance(student);
         } catch (err) {
             console.error('Search Error:', err);
-            alert('Error searching for student.');
+            alert('Error searching for student. Please try again.');
         } finally {
             searchBtn.disabled = false;
             searchBtn.textContent = 'Fetch Performance';

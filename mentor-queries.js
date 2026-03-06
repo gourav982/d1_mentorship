@@ -14,24 +14,21 @@ document.addEventListener('DOMContentLoaded', async () => {
 
     // 1. Initialize
     const init = async () => {
-        const { data: { session } } = await supabaseClient.auth.getSession();
-        if (!session) return;
+        // Sync Profile and Apply Sidebar Permissions
+        currentUser = await window.syncUserProfile();
+        if (!currentUser) {
+            // Re-fetch just in case
+            const { data: { session } } = await supabaseClient.auth.getSession();
+            if (session) currentUser = await window.syncUserProfile();
+        }
 
-        // Fetch profile
-        const { data: profile } = await supabaseClient
-            .from('access')
-            .select('*')
-            .ilike('email_id', session.user.email)
-            .single();
-
-        currentUser = profile;
-        if (!currentUser) return;
-
-        // Apply permissions for sidebar AND update profile info (centralized in supabase-init.js)
         await window.applyPermissions();
+
+        if (!currentUser) return;
 
         // 2. Center Logic
         allowedCentres = await window.getAllowedCentres();
+
         if (allowedCentres.length > 1) {
             centreControls.style.display = 'flex';
             centreSelect.innerHTML = allowedCentres.map(c => `<option value="${c}">${c}</option>`).join('');
@@ -40,7 +37,7 @@ document.addEventListener('DOMContentLoaded', async () => {
         } else if (allowedCentres.length === 1) {
             selectedCentre = allowedCentres[0];
             const boardSubtitle = document.getElementById('query-board-subtitle');
-            if (boardSubtitle) boardSubtitle.textContent += ` Handling: ${selectedCentre}`;
+            if (boardSubtitle) boardSubtitle.textContent = `Handling queries for: ${selectedCentre}`;
         } else {
             selectedCentre = currentUser.centre_name || 'All';
         }
@@ -53,17 +50,17 @@ document.addEventListener('DOMContentLoaded', async () => {
         queryList.innerHTML = '<div style="text-align: center; padding: 3rem; color: var(--text-secondary);">Loading student queries...</div>';
 
         try {
-            let query = supabaseClient.from('queries').select('*').order('last_activity_at', { ascending: false });
+            let queryBuilder = supabaseClient.from('queries').select('*').order('last_activity_at', { ascending: false });
 
             // Mentors see queries for their selected centre
             if (selectedCentre && selectedCentre !== 'All') {
-                query = query.eq('centre_name', selectedCentre);
+                queryBuilder = queryBuilder.eq('centre_name', selectedCentre);
             }
 
             // Filter by tab status
-            query = query.eq('status', activeTab);
+            queryBuilder = queryBuilder.eq('status', activeTab);
 
-            const { data, error } = await query;
+            const { data, error } = await queryBuilder;
             if (error) throw error;
 
             currentQueries = data || [];
@@ -76,25 +73,29 @@ document.addEventListener('DOMContentLoaded', async () => {
     };
 
     const updateCounts = async () => {
-        let q = supabaseClient.from('queries').select('status');
-        if (selectedCentre && selectedCentre !== 'All') {
-            q = q.eq('centre_name', selectedCentre);
+        try {
+            let q = supabaseClient.from('queries').select('status');
+            if (selectedCentre && selectedCentre !== 'All') {
+                q = q.eq('centre_name', selectedCentre);
+            }
+
+            const { data: counts } = await q;
+            const newCount = counts ? counts.filter(c => c.status === 'new').length : 0;
+            const doneCount = counts ? counts.filter(c => c.status === 'done').length : 0;
+
+            const countNewEl = document.getElementById('count-new');
+            const countDoneEl = document.getElementById('count-done');
+            if (countNewEl) countNewEl.textContent = `(${newCount})`;
+            if (countDoneEl) countDoneEl.textContent = `(${doneCount})`;
+        } catch (e) {
+            console.warn('Count update failed:', e);
         }
-
-        const { data: counts } = await q;
-        const newCount = counts ? counts.filter(c => c.status === 'new').length : 0;
-        const doneCount = counts ? counts.filter(c => c.status === 'done').length : 0;
-
-        const countNewEl = document.getElementById('count-new');
-        const countDoneEl = document.getElementById('count-done');
-        if (countNewEl) countNewEl.textContent = `(${newCount})`;
-        if (countDoneEl) countDoneEl.textContent = `(${doneCount})`;
     };
 
     // 3. Render List
     const renderQueryList = () => {
         if (currentQueries.length === 0) {
-            queryList.innerHTML = `<div style="text-align: center; padding: 3rem; color: var(--text-secondary); opacity: 0.6;">No queries found in this section.</div>`;
+            queryList.innerHTML = `<div style="text-align: center; padding: 3rem; color: var(--text-secondary); opacity: 0.6;">No queries found.</div>`;
             return;
         }
 
@@ -109,7 +110,7 @@ document.addEventListener('DOMContentLoaded', async () => {
                 </div>
                 <div class="query-content-preview">${q.content}</div>
                 <div class="query-footer">
-                    <span>${new Date(q.created_at).toLocaleDateString('en-IN', { day: '2-digit', month: 'short', year: 'numeric' })}</span>
+                    <span>${new Date(q.created_at).toLocaleDateString('en-IN', { day: '2-digit', month: 'short' })}</span>
                 </div>
             </div>
         `).join('');
@@ -118,15 +119,14 @@ document.addEventListener('DOMContentLoaded', async () => {
     // 4. Select Query
     window.selectQuery = async (id) => {
         selectedQueryId = id;
-        renderQueryList(); // Update active state
+        renderQueryList();
 
-        queryDetail.innerHTML = '<div style="text-align: center; padding: 3rem; color: var(--text-secondary);">Loading details...</div>';
+        queryDetail.innerHTML = '<div style="text-align: center; padding: 3rem; color: var(--text-secondary);">Loading conversation...</div>';
 
         const q = currentQueries.find(x => x.id === id);
         if (!q) return;
 
         try {
-            // Fetch comments
             const { data: comments, error } = await supabaseClient
                 .from('query_comments')
                 .select('*')
@@ -136,16 +136,16 @@ document.addEventListener('DOMContentLoaded', async () => {
             if (error) throw error;
 
             const statusButton = q.status === 'new'
-                ? `<button class="btn-secondary" onclick="window.markAsDone('${q.id}')" style="font-size: 0.75rem; padding: 0.4rem 0.8rem;">Mark as Done</button>`
+                ? `<button class="btn-secondary" onclick="window.markAsDone('${q.id}')" style="font-size: 0.75rem; padding: 0.4rem 0.8rem; border-radius: 0.5rem;">Mark as Done</button>`
                 : '';
 
             queryDetail.innerHTML = `
                 <div class="detail-header">
                     <div class="student-info">
                         <h2 style="font-size: 1.1rem; font-weight: 700;">Query Interaction</h2>
-                        <span class="student-id">${q.student_name} (${q.student_enrolment}) • ${q.centre_name}</span>
+                        <span class="student-id" style="color: var(--accent-color)">${q.student_name} • ${q.student_enrolment}</span>
                     </div>
-                    <div style="display: flex; gap: 0.5rem; align-items: center;">
+                    <div style="display: flex; gap: 0.75rem; align-items: center;">
                         ${statusButton}
                         <span class="query-status status-${q.status}">${q.status}</span>
                     </div>
@@ -154,7 +154,7 @@ document.addEventListener('DOMContentLoaded', async () => {
                     <div class="original-post">
                         <div class="comment-header">
                             <span class="comment-author">Original Post by Student</span>
-                            <span>${new Date(q.created_at).toLocaleString('en-IN')}</span>
+                            <span>${new Date(q.created_at).toLocaleString('en-IN', { dateStyle: 'medium', timeStyle: 'short' })}</span>
                         </div>
                         <div class="post-text">${q.content}</div>
                     </div>
@@ -163,7 +163,7 @@ document.addEventListener('DOMContentLoaded', async () => {
                             <div class="comment-item">
                                 <div class="comment-header">
                                     <span class="comment-author">${c.author_name} <span class="comment-role-badge">${c.author_role}</span></span>
-                                    <span>${new Date(c.created_at).toLocaleString('en-IN')}</span>
+                                    <span>${new Date(c.created_at).toLocaleString('en-IN', { dateStyle: 'medium', timeStyle: 'short' })}</span>
                                 </div>
                                 <div class="comment-text">${c.content}</div>
                             </div>
@@ -183,9 +183,8 @@ document.addEventListener('DOMContentLoaded', async () => {
                 </div>
             `;
 
-            // Scroll to bottom
-            const detailBody = document.getElementById('detail-body');
-            if (detailBody) detailBody.scrollTop = detailBody.scrollHeight;
+            const body = document.getElementById('detail-body');
+            if (body) body.scrollTop = body.scrollHeight;
 
         } catch (err) {
             console.error('Detail Error:', err);
@@ -213,7 +212,6 @@ document.addEventListener('DOMContentLoaded', async () => {
 
             if (error) throw error;
 
-            // Update last activity
             await supabaseClient.from('queries').update({
                 last_activity_at: new Date().toISOString()
             }).eq('id', queryId);
@@ -228,23 +226,19 @@ document.addEventListener('DOMContentLoaded', async () => {
         }
     };
 
-    // 6. Mark as Done
     window.markAsDone = async (id) => {
-        if (!confirm('Mark this query as resolved?')) return;
-
+        if (!confirm('Resolve this student query?')) return;
         try {
             const { error } = await supabaseClient.from('queries').update({ status: 'done' }).eq('id', id);
             if (error) throw error;
-
             await fetchQueries();
             selectedQueryId = null;
             queryDetail.innerHTML = `
                 <div style="display: flex; flex-direction: column; align-items: center; justify-content: center; height: 100%; color: var(--text-secondary); gap: 1rem; opacity: 0.6;">
                     <svg width="64" height="64" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1">
-                        <path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"></path>
-                        <polyline points="22 4 12 14.01 9 11.01"></polyline>
+                        <polyline points="20 6 9 17 4 12"></polyline>
                     </svg>
-                    <span>Query marked as done</span>
+                    <span>Query marked as resolved</span>
                 </div>
             `;
         } catch (err) {
@@ -252,7 +246,6 @@ document.addEventListener('DOMContentLoaded', async () => {
         }
     };
 
-    // UI Listeners
     centreSelect?.addEventListener('change', (e) => {
         selectedCentre = e.target.value;
         fetchQueries();
@@ -270,13 +263,13 @@ document.addEventListener('DOMContentLoaded', async () => {
                     <svg width="64" height="64" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1">
                         <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"></path>
                     </svg>
-                    <span>Select a query to view student interactions</span>
+                    <span>Select a student query to respond</span>
                 </div>
             `;
         });
     });
 
-    // Profile Dropdown
+    // Profile Modals
     const profileBtn = document.getElementById('user-profile-btn');
     profileBtn?.addEventListener('click', (e) => {
         e.stopPropagation();
@@ -284,31 +277,20 @@ document.addEventListener('DOMContentLoaded', async () => {
     });
     document.addEventListener('click', () => profileBtn?.classList.remove('active'));
 
-    // Profile Modal
     document.getElementById('open-profile-btn')?.addEventListener('click', (e) => {
         e.preventDefault();
-        document.getElementById('profile-name').value = currentUser.name || '';
-        document.getElementById('profile-email').value = currentUser.email_id || '';
-        document.getElementById('profile-enrolment').value = `${currentUser.enrolment_id || 'N/A'} • ${currentUser.centre_name || 'N/A'}`;
         document.getElementById('password-modal').classList.add('active');
     });
 
-    document.querySelector('.modal-close-btn')?.addEventListener('click', () => {
-        document.getElementById('password-modal').classList.remove('active');
-    });
-
-    // Logout
     document.getElementById('logout-btn')?.addEventListener('click', async (e) => {
         e.preventDefault();
         await supabaseClient.auth.signOut();
         window.location.replace('index.html');
     });
 
-    // Sidebar Toggle
     const sidebar = document.querySelector('.sidebar');
     const sidebarToggle = document.getElementById('sidebar-toggle-btn');
     sidebarToggle?.addEventListener('click', () => sidebar?.classList.toggle('collapsed'));
 
-    // Start
     init();
 });

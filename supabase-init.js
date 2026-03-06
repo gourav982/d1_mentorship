@@ -117,40 +117,60 @@ window.hasPermission = async (permissionKey) => {
 };
 
 // Auto-apply permissions to all elements with [data-permission]
-window.applyPermissions = async () => {
-    const elements = document.querySelectorAll('[data-permission]');
-    if (!elements.length) return;
-
+// 2. Global Profile Sync (Fixes "Loading..." issue)
+window.syncUserProfile = async () => {
     try {
         const { data: { session } } = await window.supabaseClient.auth.getSession();
         if (!session) return;
 
-        // 1. Fetch user's role and details for high-fidelity sync
         let { data: userData } = await window.supabaseClient
             .from('Access')
-            .select('role, name')
+            .select('role, name, email_id, enrolment_id, centre_name')
             .ilike('email_id', session.user.email)
             .single();
 
         if (!userData) {
-            const retry = await window.supabaseClient.from('access').select('role, name').ilike('email_id', session.user.email).single();
+            const retry = await window.supabaseClient.from('access').select('role, name, email_id, enrolment_id, centre_name').ilike('email_id', session.user.email).single();
             userData = retry.data;
         }
 
+        if (userData) {
+            const nameDisplay = document.getElementById('display-name');
+            const roleDisplay = document.getElementById('display-role');
+            const avatarCircle = document.getElementById('avatar-circle');
+
+            if (nameDisplay) nameDisplay.textContent = userData.name || session.user.email.split('@')[0];
+            if (roleDisplay) roleDisplay.textContent = userData.role || 'Member';
+            if (avatarCircle) avatarCircle.textContent = (userData.name || 'U').charAt(0).toUpperCase();
+
+            // Populate profile modal fields if they exist
+            const pName = document.getElementById('profile-name');
+            const pEmail = document.getElementById('profile-email');
+            const pEnrol = document.getElementById('profile-enrolment');
+            if (pName) pName.value = userData.name || '';
+            if (pEmail) pEmail.value = userData.email_id || '';
+            if (pEnrol) pEnrol.value = `${userData.enrolment_id || 'N/A'} • ${userData.centre_name || 'N/A'}`;
+        }
+        return userData;
+    } catch (err) {
+        console.error('Profile Sync Error:', err);
+    }
+};
+
+window.applyPermissions = async () => {
+    const elements = document.querySelectorAll('[data-permission]');
+
+    try {
+        // Sync profile first
+        const userData = await window.syncUserProfile();
         if (!userData) return;
-
-        // 2. Global Profile Sync (Fixes "Loading..." issue)
-        const nameDisplay = document.getElementById('display-name');
-        const roleDisplay = document.getElementById('display-role');
-        const avatarCircle = document.getElementById('avatar-circle');
-
-        if (nameDisplay) nameDisplay.textContent = userData.name || session.user.email.split('@')[0];
-        if (roleDisplay) roleDisplay.textContent = userData.role || 'Member';
-        if (avatarCircle) avatarCircle.textContent = (userData.name || 'U').charAt(0).toUpperCase();
 
         if (userData.role === 'Super admin') {
             // For super admin, just ensure admin sections are visible
             document.querySelectorAll('.admin-only').forEach(el => el.style.display = 'block');
+            // Show mentor tabs if on queries page
+            const mTabs = document.getElementById('mentor-tabs');
+            if (mTabs) mTabs.style.display = 'flex';
             return;
         }
 
@@ -166,13 +186,15 @@ window.applyPermissions = async () => {
             const key = el.getAttribute('data-permission');
             if (permMap[key] === false || (permMap[key] === undefined && userData.role !== 'Super admin')) {
                 el.style.display = 'none';
-                el.classList.add('perm-hidden'); // Mark for group-hiding logic
+                el.classList.add('perm-hidden');
+            } else {
+                el.style.display = ''; // Restore default
+                el.classList.remove('perm-hidden');
             }
         });
 
-        // 5. Hide Empty Nav Groups (Fixes "ghost" headers)
+        // 5. Hide Empty Nav Groups
         document.querySelectorAll('.nav-group').forEach(group => {
-            // Find next siblings until next .nav-group or end
             let sibling = group.nextElementSibling;
             let hasVisibleLink = false;
             while (sibling && !sibling.classList.contains('nav-group') && !sibling.classList.contains('admin-only')) {
@@ -183,9 +205,9 @@ window.applyPermissions = async () => {
                 sibling = sibling.nextElementSibling;
             }
             if (!hasVisibleLink) group.style.display = 'none';
+            else group.style.display = 'block';
         });
 
-        // Toggle admin section container level
         const adminSec = document.getElementById('admin-section');
         if (adminSec) {
             const visibleItems = adminSec.querySelectorAll('.nav-item:not([style*="display: none"])');
