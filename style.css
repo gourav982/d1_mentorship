@@ -9,7 +9,7 @@
 
 .admin-only,
 .perm-hidden {
-    display: none !important;
+    display: none;
 }
 
 /* Visibility Utilities - Base State (Desktop) */

@@ -191,26 +191,22 @@ window.applyPermissions = async () => {
         // Auto-redirect if on wrong page for role
         await window.redirectToDefaultPage(userData);
 
-        if (userData.role === 'Super admin') {
-            // For super admin, just ensure admin sections are visible
-            document.querySelectorAll('.admin-only').forEach(el => el.style.display = 'block');
-            // Show mentor tabs if on queries page
-            const mTabs = document.getElementById('mentor-tabs');
-            if (mTabs) mTabs.style.display = 'flex';
-            return;
+        const isSuperAdmin = userData.role === 'Super admin';
+
+        // 3. Fetch permissions (Skip if super admin to allow all)
+        let permMap = {};
+        if (!isSuperAdmin) {
+            let res = await window.supabaseClient.from('Role_Permissions').select('permission_key, is_granted').eq('role_name', userData.role);
+            if (res.error) res = await window.supabaseClient.from('role_permissions').select('permission_key, is_granted').eq('role_name', userData.role);
+            const perms = res.data;
+            permMap = perms ? Object.fromEntries(perms.map(p => [p.permission_key, p.is_granted])) : {};
         }
-
-        // 3. Fetch permissions
-        let res = await window.supabaseClient.from('Role_Permissions').select('permission_key, is_granted').eq('role_name', userData.role);
-        if (res.error) res = await window.supabaseClient.from('role_permissions').select('permission_key, is_granted').eq('role_name', userData.role);
-
-        const perms = res.data;
-        const permMap = perms ? Object.fromEntries(perms.map(p => [p.permission_key, p.is_granted])) : {};
 
         // 4. Apply Individual Item Visibility
         elements.forEach(el => {
             const key = el.getAttribute('data-permission');
-            if (permMap[key] === false || (permMap[key] === undefined && userData.role !== 'Super admin')) {
+            // Hide if denied OR if missing AND NOT super admin
+            if (!isSuperAdmin && (permMap[key] === false || permMap[key] === undefined)) {
                 el.style.display = 'none';
                 el.classList.add('perm-hidden');
             } else {
@@ -219,7 +215,14 @@ window.applyPermissions = async () => {
             }
         });
 
-        // 5. COUPLED SECTION LOGIC: Hide Nav Group if NO permitted functional items are visible inside it.
+        // 5. Special Unhide for Super Admin (Admin sections & tabs)
+        if (isSuperAdmin) {
+            document.querySelectorAll('.admin-only').forEach(el => el.style.display = 'block');
+            const mTabs = document.getElementById('mentor-tabs');
+            if (mTabs) mTabs.style.display = 'flex';
+        }
+
+        // 6. COUPLED SECTION LOGIC: Hide Nav Group if NO permitted functional items are visible inside it.
         document.querySelectorAll('.nav-group').forEach(group => {
             let next = group.nextElementSibling;
             let sectionHasFunctionalAccess = false;
@@ -238,7 +241,7 @@ window.applyPermissions = async () => {
                 next = next.nextElementSibling;
             }
 
-            if (!sectionHasFunctionalAccess) {
+            if (!sectionHasFunctionalAccess && !isSuperAdmin) {
                 group.style.display = 'none';
                 sectionItems.forEach(item => item.style.display = 'none');
             } else {
@@ -251,7 +254,7 @@ window.applyPermissions = async () => {
         const adminSec = document.getElementById('admin-section');
         if (adminSec) {
             const visibleItems = adminSec.querySelectorAll('.nav-item:not([style*="display: none"])');
-            adminSec.style.display = visibleItems.length > 0 ? 'block' : 'none';
+            adminSec.style.display = (visibleItems.length > 0 || isSuperAdmin) ? 'block' : 'none';
         }
 
     } catch (err) {
