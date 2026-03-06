@@ -4,14 +4,53 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Mentorship Queries | DBMCi One</title>
-    <link rel="preconnect" href="https://fonts.googleapis.com">
-    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link
-        href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600&family=Outfit:wght@300;400;700&display=swap"
-        rel="stylesheet">
+    <title>Student's Query | Mentor's Corner</title>
     <link rel="stylesheet" href="style.css">
+    <link
+        href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Outfit:wght@400;500;600;700&display=swap"
+        rel="stylesheet">
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <style>
+        body {
+            display: none;
+        }
+
+        /* Prevent flash before access check */
+
+        /* Mentor specific styles */
+        .centre-selector-wrapper {
+            margin-bottom: 2rem;
+            display: flex;
+            align-items: center;
+            gap: 1rem;
+            background: rgba(15, 23, 42, 0.4);
+            padding: 1rem 1.5rem;
+            border-radius: 1rem;
+            border: 1px solid var(--glass-border);
+        }
+
+        .centre-label {
+            font-size: 0.9rem;
+            font-weight: 600;
+            color: var(--text-secondary);
+        }
+
+        .centre-select {
+            background: rgba(15, 23, 42, 0.6);
+            border: 1px solid var(--glass-border);
+            color: var(--text-primary);
+            padding: 0.5rem 1rem;
+            border-radius: 0.75rem;
+            font-family: inherit;
+            outline: none;
+            cursor: pointer;
+            min-width: 200px;
+        }
+
+        .centre-select:focus {
+            border-color: var(--accent-color);
+        }
+    </style>
     <script>
         const checkPageAccess = async () => {
             const SUPABASE_URL = 'https://aobwkcjfhbruihkandlg.supabase.co';
@@ -24,10 +63,7 @@
                 return;
             }
 
-            // Lowercase 'access' to be safe on production
             let { data: userData } = await tempSupabase.from('access').select('role').ilike('email_id', session.user.email).single();
-
-            // Fallback for case sensitivity
             if (!userData) {
                 const retry = await tempSupabase.from('Access').select('role').ilike('email_id', session.user.email).single();
                 userData = retry.data;
@@ -38,23 +74,23 @@
                 return;
             }
 
-            if (userData.role === 'Super admin' || userData.role === 'Students') {
+            if (userData.role === 'Super admin') {
                 document.body.style.display = 'block';
                 return;
             }
 
-            // Check perm for other roles - resilient table check
+            // Check perm for mentor queries
             let { data: perms } = await tempSupabase.from('role_permissions')
                 .select('is_granted')
                 .eq('role_name', userData.role)
-                .eq('permission_key', 'page_queries')
+                .eq('permission_key', 'page_mentor_queries')
                 .single();
 
             if (!perms) {
                 const retryPerm = await tempSupabase.from('Role_Permissions')
                     .select('is_granted')
                     .eq('role_name', userData.role)
-                    .eq('permission_key', 'page_queries')
+                    .eq('permission_key', 'page_mentor_queries')
                     .single();
                 perms = retryPerm.data;
             }
@@ -62,41 +98,49 @@
             if (perms && perms.is_granted) {
                 document.body.style.display = 'block';
             } else {
-                console.warn('Access Denied for:', userData.role);
                 window.location.replace('dashboard.html');
             }
         };
         checkPageAccess();
     </script>
-    <style>
-        body {
-            display: none;
-        }
-    </style>
 </head>
 
 <body>
-    <div class="dashboard-wrapper">
+    <div class="app-layout">
         <header class="top-header">
             <div class="header-left">
                 <button id="sidebar-toggle-btn" class="icon-btn sidebar-toggle">
-                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                         <line x1="3" y1="12" x2="21" y2="12"></line>
                         <line x1="3" y1="6" x2="21" y2="6"></line>
                         <line x1="3" y1="18" x2="21" y2="18"></line>
                     </svg>
                 </button>
-                <div class="sidebar-logo">DBMCi One Mentorship</div>
+                <div class="logo-wrapper">
+                    <div class="logo-icon">
+                        <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                            stroke-width="2">
+                            <path d="M12 2L2 7l10 5 10-5-10-5zM2 17l10 5 10-5M2 12l10 5 10-5"></path>
+                        </svg>
+                    </div>
+                    <span class="logo-text">DBMCI One</span>
+                </div>
             </div>
+
             <div class="header-right">
                 <div class="user-profile" id="user-profile-btn">
-                    <div class="avatar" id="avatar-circle">?</div>
+                    <div class="avatar" id="avatar-circle">U</div>
                     <div class="profile-info">
                         <span class="name" id="display-name">Loading...</span>
                         <span class="role" id="display-role">...</span>
                     </div>
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+                        style="margin-left: 0.5rem; opacity: 0.5;">
+                        <path d="M6 9l6 6 6-6"></path>
+                    </svg>
+
                     <div class="profile-dropdown">
-                        <a href="#" class="dropdown-item" id="open-profile-btn">
+                        <a href="#" id="open-profile-btn" class="dropdown-item">
                             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="18"
                                 height="18">
                                 <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"></path>
@@ -127,15 +171,15 @@
                     <a href="schedule.html" class="nav-item">Schedule</a>
 
                     <div class="nav-group" style="margin-top: 1.5rem;">Mentorship</div>
-                    <a href="queries.html" class="nav-item active" data-permission="page_queries">Put your Query</a>
+                    <a href="queries.html" class="nav-item" data-permission="page_queries">Put your Query</a>
                     <a href="#" class="nav-item disabled">Book a Session <span class="coming-soon-tag">Coming
                             Soon</span></a>
                     <a href="#" class="nav-item disabled">Session History <span class="coming-soon-tag">Coming
                             Soon</span></a>
 
                     <div class="nav-group" style="margin-top: 1.5rem;">Mentor's Corner</div>
-                    <a href="mentor-queries.html" class="nav-item" data-permission="page_mentor_queries">Student's
-                        Query</a>
+                    <a href="mentor-queries.html" class="nav-item active"
+                        data-permission="page_mentor_queries">Student's Query</a>
                     <a href="mentor-performance.html" class="nav-item"
                         data-permission="page_student_performance">Student Performance</a>
 
@@ -155,47 +199,44 @@
             </aside>
 
             <main class="dashboard-main">
-                <div class="query-board-container">
-                    <div class="query-header">
-                        <div>
-                            <h1 style="font-size: 1.75rem; font-weight: 700;">Put your Query</h1>
-                            <p id="query-board-subtitle" style="color: var(--text-secondary); font-size: 0.9rem;">
-                                Interact with your mentors and get your doubts resolved.</p>
+                <div class="page-header" style="margin-bottom: 2rem;">
+                    <div>
+                        <h1 class="page-title">Student's Query</h1>
+                        <p class="page-subtitle" id="query-board-subtitle">Manage student queries for your assigned
+                            centres.</p>
+                    </div>
+                </div>
+
+                <div class="centre-selector-wrapper" id="mentor-centre-controls" style="display: none;">
+                    <span class="centre-label">Select Centre to Manage:</span>
+                    <select id="mentor-centre-select" class="centre-select">
+                        <!-- Populated dynamic -->
+                    </select>
+                </div>
+
+                <div class="queries-layout">
+                    <!-- Left: List -->
+                    <div class="query-list-pane">
+                        <div class="mentor-tabs" id="mentor-tabs">
+                            <button class="query-tab active" data-tab="new">New Queries <span
+                                    id="count-new"></span></button>
+                            <button class="query-tab" data-tab="done">Marked as Done <span
+                                    id="count-done"></span></button>
                         </div>
-                        <div id="student-actions">
-                            <button id="btn-new-query" class="btn-primary">
-                                + New Query
-                            </button>
+                        <div class="query-list" id="query-list">
+                            <!-- Populated via JS -->
                         </div>
                     </div>
 
-                    <div class="queries-layout">
-                        <!-- Left: Query List -->
-                        <div class="query-column">
-                            <div class="query-tabs" id="mentor-tabs" style="display: none;">
-                                <div class="query-tab active" data-tab="new">New Queries <span id="count-new"></span>
-                                </div>
-                                <div class="query-tab" data-tab="done">Marked as Done <span id="count-done"></span>
-                                </div>
-                            </div>
-                            <div class="query-list" id="query-list">
-                                <!-- Loaded dynamically -->
-                                <div style="text-align: center; padding: 3rem; color: var(--text-secondary);">
-                                    Loading queries...
-                                </div>
-                            </div>
-                        </div>
-
-                        <!-- Right: Query Detail -->
-                        <div class="query-detail-pane mobile-hidden" id="query-detail">
-                            <div
-                                style="display: flex; flex-direction: column; align-items: center; justify-content: center; height: 100%; color: var(--text-secondary); gap: 1rem; opacity: 0.6;">
-                                <svg width="64" height="64" viewBox="0 0 24 24" fill="none" stroke="currentColor"
-                                    stroke-width="1">
-                                    <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"></path>
-                                </svg>
-                                <span>Select a query to view interactions</span>
-                            </div>
+                    <!-- Right: Interaction -->
+                    <div class="query-detail-pane" id="query-detail">
+                        <div
+                            style="display: flex; flex-direction: column; align-items: center; justify-content: center; height: 100%; color: var(--text-secondary); gap: 1rem; opacity: 0.6;">
+                            <svg width="64" height="64" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                                stroke-width="1">
+                                <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"></path>
+                            </svg>
+                            <span>Select a query to view student interactions</span>
                         </div>
                     </div>
                 </div>
@@ -203,54 +244,32 @@
         </div>
     </div>
 
-    <!-- New Query Modal -->
-    <div class="modal-overlay" id="query-modal">
-        <div class="modal-content" style="max-width: 800px;">
-            <div class="modal-header">
-                <h2>Post a New Query</h2>
-                <button class="close-modal">&times;</button>
-            </div>
-            <form id="new-query-form" style="margin-top: 1.5rem;">
-                <div class="input-group">
-                    <label>What is your doubt? (Be specific)</label>
-                    <textarea id="query-text-input" class="filter-input" style="min-height: 400px;"
-                        placeholder="Type your query here..." required></textarea>
-                </div>
-                <div class="modal-actions">
-                    <button type="button" class="btn-secondary close-modal">Cancel</button>
-                    <button type="submit" id="submit-query-btn" class="btn-primary">Post Query</button>
-                </div>
-            </form>
-        </div>
-    </div>
-
-    <!-- Profile Modal (Shared Logic) -->
+    <!-- Modals (Profile) -->
     <div class="modal-overlay" id="password-modal">
-        <div class="modal-content" style="max-width: 400px;">
+        <div class="modal-card">
             <div class="modal-header">
-                <h2>My Profile</h2>
-                <button class="close-modal"
-                    onclick="document.getElementById('password-modal').classList.remove('active')">&times;</button>
+                <h2>User Profile</h2>
+                <button class="modal-close-btn">&times;</button>
             </div>
-            <div style="margin-top: 1.5rem; display: flex; flex-direction: column; gap: 1rem;">
+            <div style="text-align: left; margin-top: 1.5rem;">
                 <div class="input-group">
-                    <label>Full Name</label>
-                    <input type="text" id="profile-name" readonly>
+                    <label>Name</label>
+                    <input type="text" id="profile-name" class="filter-input" readonly>
                 </div>
                 <div class="input-group">
-                    <label>Email ID</label>
-                    <input type="text" id="profile-email" readonly>
+                    <label>Email</label>
+                    <input type="email" id="profile-email" class="filter-input" readonly>
                 </div>
-                <div class="input-group">
-                    <label>Enrolment ID</label>
-                    <input type="text" id="profile-enrolment" readonly>
+                <div class="input-group" id="enrolment-group">
+                    <label>Enrolment ID/Center</label>
+                    <input type="text" id="profile-enrolment" class="filter-input" readonly>
                 </div>
             </div>
         </div>
     </div>
 
     <script src="supabase-init.js"></script>
-    <script src="queries.js"></script>
+    <script src="mentor-queries.js"></script>
 </body>
 
 </html>

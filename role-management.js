@@ -22,9 +22,11 @@ document.addEventListener('DOMContentLoaded', async () => {
                 {
                     name: 'Core Pages',
                     permissions: [
-                        { key: 'page_dashboard', label: 'Performance Homepage', desc: 'Main student/mentor dashboard & charts' },
+                        { key: 'page_dashboard', label: 'Performance Homepage', desc: 'Main student dashboard & charts' },
                         { key: 'page_schedule', label: 'Schedule Roadmap', desc: 'View classes and tests roadmap' },
-                        { key: 'page_queries', label: 'Put your Query', desc: 'Access to mentorship query board' }
+                        { key: 'page_queries', label: 'Put your Query (Student)', desc: 'Access to post queries for students' },
+                        { key: 'page_mentor_queries', label: 'Student\'s Query (Mentor)', desc: 'Mentor view to manage student queries' },
+                        { key: 'page_student_performance', label: 'Student Performance (Mentor)', desc: 'Mentor view to search and see student stats' }
                     ]
                 },
                 {
