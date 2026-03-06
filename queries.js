@@ -290,6 +290,13 @@ document.addEventListener('DOMContentLoaded', async () => {
     };
 
     // UI Listeners
+    const profileBtn = document.getElementById('user-profile-btn');
+    profileBtn?.addEventListener('click', (e) => {
+        e.stopPropagation();
+        profileBtn.classList.toggle('active');
+    });
+    document.addEventListener('click', () => profileBtn?.classList.remove('active'));
+
     document.getElementById('btn-new-query')?.addEventListener('click', () => {
         queryModal.classList.add('active');
     });

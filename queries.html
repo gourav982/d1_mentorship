@@ -30,17 +30,22 @@
                 return;
             }
 
-            if (userData.role === 'Super admin') {
+            if (userData.role === 'Super admin' || userData.role === 'Students') {
                 document.body.style.display = 'block';
                 return;
             }
 
-            // Check perm
-            const { data: perms } = await tempSupabase.from('Role_Permissions').select('is_granted').eq('role_name', userData.role).eq('permission_key', 'page_queries').single();
+            // Check perm for other roles
+            const { data: perms } = await tempSupabase.from('Role_Permissions')
+                .select('is_granted')
+                .eq('role_name', userData.role)
+                .eq('permission_key', 'page_queries')
+                .single();
 
             if (perms && perms.is_granted) {
                 document.body.style.display = 'block';
             } else {
+                console.warn('Access Denied for:', userData.role);
                 window.location.replace('dashboard.html');
             }
         };
@@ -105,7 +110,7 @@
                     <a href="schedule.html" class="nav-item">Schedule</a>
 
                     <div class="nav-group" style="margin-top: 1.5rem;">Mentorship</div>
-                    <a href="queries.html" class="nav-item active">Put your Query</a>
+                    <a href="queries.html" class="nav-item active" data-permission="page_queries">Put your Query</a>
                     <a href="#" class="nav-item disabled">Book a Session <span class="coming-soon-tag">Coming
                             Soon</span></a>
                     <a href="#" class="nav-item disabled">Session History <span class="coming-soon-tag">Coming
