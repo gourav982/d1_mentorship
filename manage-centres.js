@@ -17,7 +17,14 @@ document.addEventListener('DOMContentLoaded', async () => {
 
     // Show Admin Section
     const adminSec = document.getElementById('admin-section');
-    if (adminSec) adminSec.style.display = 'block';
+    if (adminSec) {
+        adminSec.style.display = 'block';
+
+        // Hide super-admin only items if current user is not super admin
+        if (userData.role !== 'Super admin') {
+            document.querySelectorAll('.super-admin-only').forEach(el => el.style.display = 'none');
+        }
+    }
 
     // Sidebar Toggle
     const sidebar = document.querySelector('.sidebar');
@@ -41,6 +48,8 @@ document.addEventListener('DOMContentLoaded', async () => {
     // 3. Fetch & Render
     const fetchCentres = async () => {
         try {
+            const allowedCentres = await window.getAllowedCentres();
+
             let { data, error } = await supabaseClient
                 .from('Centres')
                 .select('*')
@@ -54,10 +63,12 @@ document.addEventListener('DOMContentLoaded', async () => {
                         const unique = [...new Set(accessData.map(u => u.centre_name).filter(Boolean))];
                         data = unique.map((name, i) => ({ id: `fallback-${i}`, name, location: 'Synced from Users' }));
                     }
-                    showSetupNotice();
-                } else {
-                    throw error;
-                }
+                } else { throw error; }
+            }
+
+            // Filter by allowed centres (unless Super Admin)
+            if (userData.role !== 'Super admin') {
+                data = data.filter(c => allowedCentres.includes(c.name));
             }
             renderCentres(data);
         } catch (err) {

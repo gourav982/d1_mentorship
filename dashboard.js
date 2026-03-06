@@ -58,12 +58,22 @@ document.addEventListener('DOMContentLoaded', async () => {
     });
 
     try {
-        // 3. Fetch User Profile
-        const { data: userData, error: fetchError } = await supabaseClient
+        // 3. Fetch User Profile with resilience
+        let { data: userData, error: fetchError } = await supabaseClient
             .from('Access')
             .select('*, User_Status(is_active)')
             .ilike('email_id', session.user.email)
             .single();
+
+        if (fetchError && (fetchError.message?.includes('not find') || fetchError.code === '42P01')) {
+            const { data: retryData, error: retryError } = await supabaseClient
+                .from('access')
+                .select('*, User_Status(is_active)')
+                .ilike('email_id', session.user.email)
+                .single();
+            userData = retryData;
+            fetchError = retryError;
+        }
 
         if (fetchError || !userData) {
             console.warn('Profile not found for:', session.user.email);
@@ -95,7 +105,17 @@ document.addEventListener('DOMContentLoaded', async () => {
         const adminRoles = ['Super admin', 'Admin', 'Mentor', 'Academics'];
         if (adminRoles.includes(userData.role)) {
             const adminSec = document.getElementById('admin-section');
-            if (adminSec) adminSec.style.display = 'block';
+            if (adminSec) {
+                adminSec.style.display = 'block';
+
+                // Strict check: only Super Admin sees their exclusive menus
+                if (userData.role !== 'Super admin') {
+                    document.querySelectorAll('.super-admin-only').forEach(el => el.style.display = 'none');
+                }
+
+                // Fetch granular perms from matrix
+                window.applyPermissions();
+            }
         }
 
         // 6. Modal Fill Logic
@@ -218,20 +238,47 @@ document.addEventListener('DOMContentLoaded', async () => {
             });
         }
 
-        // 10. Performance Dashboard Logic
+        // 10. Performance Dashboard Logic & Filters
+        let selectedCentre = userData.centre_name || 'Delhi';
+        const allowedCentres = await window.getAllowedCentres();
+        const filterContainer = document.getElementById('filter-container');
+
+        if (adminRoles.includes(userData.role) && allowedCentres.length > 0) {
+            const options = allowedCentres.map(name => `<option value="${name}">${name}</option>`).join('');
+            if (filterContainer) {
+                filterContainer.innerHTML = `
+                    <select id="dashboard-centre-filter" style="background: rgba(15, 23, 42, 0.6); border: 1px solid var(--glass-border); border-radius: 0.75rem; padding: 0.6rem 2.5rem 0.6rem 1rem; color: #fff; font-size: 0.85rem; appearance: none; background-image: url('data:image/svg+xml,%3Csvg xmlns=\'http://www.w3.org/2000/svg\' width=\'16\' height=\'16\' viewBox=\'0 0 24 24\' fill=\'none\' stroke=\'%2338bdf8\' stroke-width=\'2\' stroke-linecap=\'round\' stroke-linejoin=\'round\'%3E%3Cpolyline points=\'6 9 12 15 18 9\'%3E%3C/polyline%3E%3C/svg%3E'); background-repeat: no-repeat; background-position: right 0.75rem center; cursor: pointer; min-width: 180px;">
+                        ${options}
+                    </select>
+                `;
+                const sel = document.getElementById('dashboard-centre-filter');
+                selectedCentre = allowedCentres[0];
+                sel.value = selectedCentre;
+                sel.addEventListener('change', (e) => {
+                    selectedCentre = e.target.value;
+                    loadPerformanceData();
+                });
+            }
+        }
+
         const loadPerformanceData = async () => {
             const today = new Date().toISOString().split('T')[0];
             const enrolmentId = userData.enrolment_id;
 
             try {
-                const userCentre = userData.centre_name ? userData.centre_name.trim() : null;
-                console.log('📊 Stats for centre:', userCentre, 'Enrolment:', enrolmentId);
+                // Secondary security verification
+                const allowed = await window.getAllowedCentres();
+                if (!allowed.includes(selectedCentre)) {
+                    selectedCentre = allowed[0] || userData.centre_name || 'Delhi';
+                }
 
-                // Fetch Schedules up to today for the user's centre
+                console.log('📊 Stats for centre:', selectedCentre, 'Enrolment:', enrolmentId);
+
+                // Fetch Schedules for selected centre
                 const { data: schedules, error: schedError } = await supabaseClient
                     .from('Schedule')
                     .select('type, date, custom_module_code, marrow_gt, subject, topic')
-                    .eq('centre_name', userCentre)
+                    .eq('centre_name', selectedCentre)
                     .lte('date', today);
 
                 // Fetch Results for the user - Use ilike for case-insensitive email matching

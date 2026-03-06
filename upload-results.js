@@ -20,7 +20,14 @@ document.addEventListener('DOMContentLoaded', async () => {
 
     // Show Admin Section
     const adminSec = document.getElementById('admin-section');
-    if (adminSec) adminSec.style.display = 'block';
+    if (adminSec) {
+        adminSec.style.display = 'block';
+
+        // Hide super-admin only items if current user is not super admin
+        if (userData.role !== 'Super admin') {
+            document.querySelectorAll('.super-admin-only').forEach(el => el.style.display = 'none');
+        }
+    }
 
     document.body.style.display = 'block';
     document.getElementById('display-name').textContent = userData.name || 'Admin';

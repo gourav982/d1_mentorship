@@ -1,0 +1,561 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Role Management | Admin Corner</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link
+        href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600&family=Outfit:wght@300;400;700&display=swap"
+        rel="stylesheet">
+    <link rel="stylesheet" href="style.css">
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <script>
+        const checkPageAccess = async () => {
+            const SUPABASE_URL = 'https://aobwkcjfhbruihkandlg.supabase.co';
+            const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImFvYndrY2pmaGJydWloa2FuZGxnIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzIwMjE1MjAsImV4cCI6MjA4NzU5NzUyMH0.V7OdMoiiDuXIMOdoUDLlUMjdavSjObHpajb2gHh0E38';
+            const tempSupabase = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+            const { data: { session } } = await tempSupabase.auth.getSession();
+
+            if (!session) {
+                window.location.replace('index.html');
+                return;
+            }
+
+            const { data: userData } = await tempSupabase.from('Access').select('role').ilike('email_id', session.user.email).single();
+            if (!userData) {
+                window.location.replace('index.html');
+                return;
+            }
+
+            if (userData.role === 'Super admin') {
+                document.body.style.display = 'block';
+                return;
+            }
+
+            // Check if role has 'page_permissions' granted
+            const { data: perms } = await tempSupabase.from('Role_Permissions').select('is_granted').eq('role_name', userData.role).eq('permission_key', 'page_permissions').single();
+
+            if (perms && perms.is_granted) {
+                document.body.style.display = 'block';
+            } else {
+                window.location.replace('dashboard.html');
+            }
+        };
+        checkPageAccess();
+    </script>
+    <style>
+        body {
+            display: none;
+        }
+
+        .role-page-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 1.5rem;
+            /* Condensed */
+            padding-top: 0.5rem;
+        }
+
+        .permissions-container {
+            background: var(--glass-bg);
+            border: 1px solid var(--glass-border);
+            border-radius: 1.5rem;
+            backdrop-filter: blur(20px);
+            -webkit-backdrop-filter: blur(20px);
+            flex: 1;
+            /* Take available space */
+            overflow: auto;
+            position: relative;
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.2);
+            margin-bottom: 1rem;
+        }
+
+        .permissions-table {
+            width: 100%;
+            border-collapse: separate;
+            border-spacing: 0;
+            text-align: left;
+            table-layout: fixed;
+        }
+
+        .permissions-table thead {
+            position: sticky;
+            top: 0;
+            z-index: 100;
+        }
+
+        .permissions-table th {
+            background: #0f172a;
+            padding: 1.25rem 1rem;
+            font-size: 0.7rem;
+            font-weight: 700;
+            text-transform: uppercase;
+            letter-spacing: 0.1em;
+            color: var(--text-secondary);
+            border-bottom: 1px solid var(--glass-border);
+            vertical-align: middle;
+        }
+
+        .permissions-table td {
+            padding: 0.75rem 1rem;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+            vertical-align: middle;
+            font-size: 0.85rem;
+        }
+
+        .category-row {
+            background: rgba(56, 189, 248, 0.1) !important;
+            position: sticky;
+            top: 66px;
+            /* High fidelity offset for sticky th */
+            z-index: 90;
+            cursor: pointer;
+        }
+
+        .category-row:hover {
+            background: rgba(56, 189, 248, 0.15) !important;
+        }
+
+        .category-name {
+            display: flex;
+            align-items: center;
+            gap: 0.75rem;
+            font-weight: 800;
+            color: var(--accent-color);
+            font-family: 'Outfit', sans-serif;
+            font-size: 0.95rem;
+        }
+
+        .permission-info {
+            display: flex;
+            flex-direction: column;
+            gap: 0.15rem;
+        }
+
+        .permission-label {
+            font-weight: 600;
+            color: var(--text-primary);
+            font-size: 0.9rem;
+        }
+
+        .permission-desc {
+            font-size: 0.7rem;
+            color: var(--text-secondary);
+            line-height: 1.4;
+            opacity: 0.8;
+        }
+
+        .checkbox-cell {
+            text-align: center;
+        }
+
+        /* Premium Look Checkbox */
+        .permission-checkbox {
+            width: 20px;
+            height: 20px;
+            cursor: pointer;
+            accent-color: var(--accent-color);
+            transition: all 0.2s;
+        }
+
+        .permission-checkbox:disabled {
+            cursor: not-allowed;
+            opacity: 1;
+            /* Override default fade */
+        }
+
+        /* Custom visual for Super Admin checkboxes to be clearer */
+        .super-admin-check {
+            color: var(--accent-color);
+            font-weight: bold;
+            font-size: 1.2rem;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+        }
+
+        .btn-add {
+            background: var(--accent-color);
+            color: #000;
+            border: none;
+            padding: 0.75rem 1.5rem;
+            border-radius: 0.75rem;
+            font-weight: 700;
+            font-size: 0.85rem;
+            cursor: pointer;
+            transition: all 0.2s;
+            display: flex;
+            align-items: center;
+            gap: 0.6rem;
+            font-family: 'Outfit', sans-serif;
+        }
+
+        .btn-add:hover {
+            transform: translateY(-2px);
+            filter: brightness(1.1);
+        }
+
+        .btn-save {
+            background: var(--accent-color);
+            color: #000;
+            border: none;
+            padding: 0.85rem 2.5rem;
+            border-radius: 1rem;
+            font-weight: 700;
+            font-size: 0.9rem;
+            cursor: pointer;
+            transition: all 0.2s;
+            text-transform: uppercase;
+            letter-spacing: 0.1em;
+            box-shadow: 0 8px 25px rgba(56, 189, 248, 0.2);
+            font-family: 'Outfit', sans-serif;
+        }
+
+        .btn-save:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 12px 30px rgba(56, 189, 248, 0.4);
+        }
+
+        /* Modal Styles */
+        .modal-overlay {
+            position: fixed;
+            inset: 0;
+            background: rgba(0, 0, 0, 0.85);
+            backdrop-filter: blur(12px);
+            display: none;
+            align-items: center;
+            justify-content: center;
+            z-index: 2000;
+        }
+
+        .modal-overlay.active {
+            display: flex;
+        }
+
+        .modal-container {
+            background: #1e293b;
+            border: 1px solid var(--glass-border);
+            border-radius: 2rem;
+            width: 100%;
+            max-width: 650px;
+            padding: 2.5rem;
+            position: relative;
+            box-shadow: 0 25px 60px rgba(0, 0, 0, 0.5);
+            animation: modalIn 0.4s cubic-bezier(0.16, 1, 0.3, 1);
+        }
+
+        @keyframes modalIn {
+            from {
+                opacity: 0;
+                transform: scale(0.95) translateY(20px);
+            }
+
+            to {
+                opacity: 1;
+                transform: scale(1) translateY(0);
+            }
+        }
+
+        .modal-close {
+            position: absolute;
+            top: 2rem;
+            right: 2rem;
+            background: rgba(255, 255, 255, 0.05);
+            border: 1px solid var(--glass-border);
+            color: var(--text-secondary);
+            width: 36px;
+            height: 36px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+
+        .modal-close:hover {
+            background: rgba(255, 255, 255, 0.1);
+            color: #fff;
+        }
+
+        .form-group {
+            margin-bottom: 1.5rem;
+        }
+
+        .form-label {
+            display: block;
+            margin-bottom: 0.6rem;
+            font-weight: 700;
+            font-size: 0.85rem;
+            color: var(--text-secondary);
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+        }
+
+        .form-input {
+            width: 100%;
+            background: rgba(15, 23, 42, 0.6);
+            border: 1px solid var(--glass-border);
+            border-radius: 1rem;
+            padding: 0.9rem 1.25rem;
+            color: #fff;
+            font-family: inherit;
+            font-size: 0.95rem;
+            transition: all 0.2s;
+        }
+
+        .form-input:focus {
+            outline: none;
+            border-color: var(--accent-color);
+            background: rgba(56, 189, 248, 0.05);
+        }
+
+        .centre-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(130px, 1fr));
+            gap: 1rem;
+            max-height: 250px;
+            overflow-y: auto;
+            padding: 1rem;
+            background: rgba(15, 23, 42, 0.4);
+            border: 1px solid var(--glass-border);
+            border-radius: 1.25rem;
+        }
+
+        .centre-grid::-webkit-scrollbar {
+            width: 6px;
+        }
+
+        .centre-grid::-webkit-scrollbar-thumb {
+            background: rgba(56, 189, 248, 0.2);
+            border-radius: 10px;
+        }
+
+        .chevron {
+            transition: transform 0.2s;
+        }
+
+        .chevron.collapsed {
+            transform: rotate(-90deg);
+        }
+
+        .hidden {
+            display: none !important;
+        }
+
+        /* Sync with Standard Dashboard Scrollbar */
+        .permissions-container::-webkit-scrollbar {
+            width: 8px;
+            height: 8px;
+        }
+
+        .permissions-container::-webkit-scrollbar-thumb {
+            background: rgba(56, 189, 248, 0.2);
+            border-radius: 10px;
+        }
+
+        .permissions-container::-webkit-scrollbar-track {
+            background: transparent;
+        }
+    </style>
+</head>
+
+<body>
+    <div class="dashboard-wrapper">
+        <!-- Standard Header -->
+        <header class="top-header">
+            <div class="header-left">
+                <button id="sidebar-toggle-btn" class="sidebar-toggle">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none"
+                        stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                        <line x1="3" y1="12" x2="21" y2="12"></line>
+                        <line x1="3" y1="6" x2="21" y2="6"></line>
+                        <line x1="3" y1="18" x2="21" y2="18"></line>
+                    </svg>
+                </button>
+                <div class="sidebar-logo">DBMCI One Mentorship</div>
+            </div>
+            <div class="header-actions">
+                <button class="action-btn" title="Audit Logs">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none"
+                        stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                        <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path>
+                        <polyline points="14 2 14 8 20 8"></polyline>
+                        <line x1="16" y1="13" x2="8" y2="13"></line>
+                        <line x1="16" y1="17" x2="8" y2="17"></line>
+                        <polyline points="10 9 9 9 8 9"></polyline>
+                    </svg>
+                </button>
+                <div class="user-profile" id="user-profile-btn">
+                    <div class="avatar" id="avatar-circle">?</div>
+                    <div class="profile-info">
+                        <span class="name" id="display-name">Loading...</span>
+                        <span class="role" id="display-role">Verifying...</span>
+                    </div>
+                </div>
+            </div>
+        </header>
+
+        <div class="dashboard-container">
+            <!-- Sidebar -->
+            <aside class="sidebar">
+                <nav class="sidebar-nav">
+                    <div class="nav-group">Main Menu</div>
+                    <a href="dashboard.html" class="nav-item">Performance Homepage</a>
+                    <a href="schedule.html" class="nav-item">Schedule</a>
+
+                    <div class="nav-group" style="margin-top: 1.5rem;">Mentorship</div>
+                    <a href="queries.html" class="nav-item">Put your Query</a>
+                    <a href="#" class="nav-item disabled">Book a Session <span class="coming-soon-tag">Coming
+                            Soon</span></a>
+                    <a href="#" class="nav-item disabled">Session History <span class="coming-soon-tag">Coming
+                            Soon</span></a>
+
+                    <div class="admin-only" id="admin-section">
+                        <div class="nav-group" style="margin-top: 1.5rem;">Admin Corner</div>
+                        <a href="admin-users.html" class="nav-item" data-permission="page_users">Users & Roles</a>
+                        <a href="role-management.html" class="nav-item active" data-permission="page_permissions">Role
+                            Permissions</a>
+                        <a href="upload-schedule.html" class="nav-item" data-permission="page_upload_schedule">Upload
+                            Schedule</a>
+                        <a href="upload-results.html" class="nav-item" data-permission="page_upload_results">Upload
+                            Results</a>
+                        <a href="manage-centres.html" class="nav-item" data-permission="page_manage_centres">Manage
+                            Centres</a>
+                    </div>
+                </nav>
+            </aside>
+
+            <main class="dashboard-main">
+                <div class="dashboard-content" style="display: flex; flex-direction: column; height: 100%;">
+                    <div class="role-page-header">
+                        <div>
+                            <h1 style="font-family: 'Outfit', sans-serif; font-size: 2rem; margin-top: 0;">Role
+                                Permissions</h1>
+                            <p style="font-size: 0.9rem; color: var(--text-secondary); margin-top: 0.25rem;">Manage
+                                platform-wide granular access controls.</p>
+                        </div>
+                        <div style="display: flex; gap: 1rem; align-items: center;">
+                            <button id="view-audit-logs" class="btn-add"
+                                style="background: rgba(255,255,255,0.05); color: #fff; border: 1px solid var(--glass-border);">
+                                <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24"
+                                    fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"
+                                    stroke-linejoin="round">
+                                    <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path>
+                                    <polyline points="14 2 14 8 20 8"></polyline>
+                                    <line x1="16" y1="13" x2="8" y2="13"></line>
+                                    <line x1="16" y1="17" x2="8" y2="17"></line>
+                                    <polyline points="10 9 9 9 8 9"></polyline>
+                                </svg>
+                                Audit Logs (CSV)
+                            </button>
+                            <button id="create-role-btn" class="btn-add">
+                                <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24"
+                                    fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"
+                                    stroke-linejoin="round">
+                                    <line x1="12" y1="5" x2="12" y2="19"></line>
+                                    <line x1="5" y1="12" x2="19" y2="12"></line>
+                                </svg>
+                                Create New Role
+                            </button>
+                        </div>
+                    </div>
+
+                    <div class="permissions-container">
+                        <table class="permissions-table" id="permissions-table">
+                            <thead id="permissions-thead">
+                                <!-- Populated by JS -->
+                            </thead>
+                            <tbody id="permissions-tbody">
+                                <!-- Populated by JS -->
+                            </tbody>
+                        </table>
+                    </div>
+
+                    <div
+                        style="margin-top: 1rem; background: var(--glass-bg); border-radius: 1.25rem; padding: 1.5rem; border: 1px solid var(--glass-border); display: flex; align-items: center; justify-content: space-between; gap: 2rem;">
+                        <div style="display: flex; flex: 1; gap: 2rem;">
+                            <div
+                                style="display: flex; align-items: center; gap: 0.5rem; color: var(--text-secondary); font-size: 0.75rem;">
+                                <span style="font-size: 1rem;">📂</span> Category groups
+                            </div>
+                            <div
+                                style="display: flex; align-items: center; gap: 0.5rem; color: var(--text-secondary); font-size: 0.75rem;">
+                                <div
+                                    style="width: 14px; height: 14px; border: 1px solid var(--accent-color); border-radius: 3px; display: flex; align-items: center; justify-content: center; background: var(--accent-color); color: #000; font-size: 10px; font-weight: bold;">
+                                    ✓</div>
+                                Granted
+                            </div>
+                            <div
+                                style="display: flex; align-items: center; gap: 0.5rem; color: var(--text-secondary); font-size: 0.75rem;">
+                                <div
+                                    style="width: 14px; height: 14px; border: 1px solid var(--glass-border); border-radius: 3px; background: rgba(255,255,255,0.05);">
+                                </div>
+                                Restricted
+                            </div>
+                        </div>
+                        <button id="save-permissions-btn" class="btn-save">Save Changes</button>
+                    </div>
+                </div>
+            </main>
+        </div>
+    </div>
+
+    <!-- Create/Edit Role Modal -->
+    <div id="role-modal" class="modal-overlay">
+        <div class="modal-container">
+            <button class="modal-close" onclick="document.getElementById('role-modal').classList.remove('active')">
+                <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none"
+                    stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+                    <line x1="18" y1="6" x2="6" y2="18"></line>
+                    <line x1="6" y1="6" x2="18" y2="18"></line>
+                </svg>
+            </button>
+            <h2 id="modal-title"
+                style="font-family: 'Outfit', sans-serif; font-size: 1.75rem; margin-bottom: 0.5rem; color: var(--text-primary);">
+                Create New Role</h2>
+            <p id="modal-desc" style="font-size: 0.95rem; color: var(--text-secondary); margin-bottom: 2rem;">Define
+                administrative permissions and regional data visibility.</p>
+
+            <form id="role-form">
+                <div class="form-group">
+                    <label class="form-label">Role Name</label>
+                    <input type="text" id="role-name-input" class="form-input" placeholder="e.g. Regional Manager"
+                        required>
+                </div>
+                <div class="form-group">
+                    <label class="form-label">Role Description</label>
+                    <textarea id="role-desc-input" class="form-input" rows="2"
+                        placeholder="Briefly explain the scope of this role..."></textarea>
+                </div>
+
+                <div class="form-group">
+                    <label class="form-label">Authorized Centres</label>
+                    <div id="centre-checkboxes" class="centre-grid">
+                        <!-- Centres populated by JS -->
+                    </div>
+                    <p style="font-size: 0.7rem; color: var(--text-secondary); margin-top: 0.75rem; line-height: 1.4;">
+                        Select the centres this role is permitted to monitor and manage. Data outside these centres will
+                        be hidden.</p>
+                </div>
+
+                <div style="margin-top: 2.5rem; display: flex; gap: 1.25rem;">
+                    <button type="button" class="btn-add"
+                        style="background: rgba(255,255,255,0.05); color: #fff; flex: 1; justify-content: center; border: 1px solid var(--glass-border);"
+                        onclick="document.getElementById('role-modal').classList.remove('active')">Cancel</button>
+                    <button type="submit" id="modal-submit-btn" class="btn-add"
+                        style="flex: 2; justify-content: center;">Save Platform Role</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <script src="supabase-init.js"></script>
+    <script src="role-management.js"></script>
+</body>
+
+</html>

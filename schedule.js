@@ -135,6 +135,13 @@ document.addEventListener('DOMContentLoaded', async () => {
 
     const fetchSchedule = async () => {
         try {
+            // Re-verify allowed centres for security bypass prevention
+            const allowed = await window.getAllowedCentres();
+            if (!allowed.includes(selectedCentre)) {
+                console.warn('Unauthorized centre selection detected. Resetting...');
+                selectedCentre = allowed[0] || 'Delhi';
+            }
+
             // Fetch Schedules for selected centre
             const { data: schedules, error: schedError } = await supabaseClient
                 .from('Schedule')
@@ -456,13 +463,24 @@ document.addEventListener('DOMContentLoaded', async () => {
 
     // Initial Load
     try {
-        const { data: userData, error: fetchError } = await supabaseClient
+        // Fetch Profile with resilience
+        let { data: userData, error: fetchError } = await supabaseClient
             .from('Access')
             .select('*')
             .ilike('email_id', session.user.email)
             .single();
 
-        if (fetchError || !userData) throw fetchError;
+        if (fetchError && (fetchError.message?.includes('not find') || fetchError.code === '42P01')) {
+            const { data: retryData, error: retryError } = await supabaseClient
+                .from('access')
+                .select('*')
+                .ilike('email_id', session.user.email)
+                .single();
+            userData = retryData;
+            fetchError = retryError;
+        }
+
+        if (fetchError || !userData) throw fetchError || new Error('Profile not found');
 
         currentUser = userData;
         document.body.style.display = 'block';
@@ -475,6 +493,13 @@ document.addEventListener('DOMContentLoaded', async () => {
         const adminRoles = ['Super admin', 'Admin', 'Mentor', 'Academics'];
         if (adminRoles.includes(userData.role) && adminMenuSec) {
             adminMenuSec.style.display = 'block';
+
+            // Strict check: only Super Admin sees their exclusive menus
+            if (userData.role !== 'Super admin') {
+                document.querySelectorAll('.super-admin-only').forEach(el => el.style.display = 'none');
+            }
+
+            window.applyPermissions();
         }
         // 2. Modal Logic
         const openModal = () => {
@@ -546,37 +571,28 @@ document.addEventListener('DOMContentLoaded', async () => {
             });
         }
 
-        // 5. Setup Filtering
+        // 5. Setup Filtering based on Allowed Centres
+        const allowedCentres = await window.getAllowedCentres();
         const isAdmin = adminRoles.includes(userData.role);
-        if (isAdmin) {
-            // Fetch Centres for dropdown
-            let { data: centres, error } = await supabaseClient.from('Centres').select('name').order('name');
 
-            // Fallback to Access table
-            if (error || !centres || centres.length === 0) {
-                const { data: accessData } = await supabaseClient.from('Access').select('centre_name');
-                if (accessData) {
-                    const unique = [...new Set(accessData.map(u => u.centre_name).filter(Boolean))];
-                    centres = unique.sort().map(name => ({ name }));
-                }
-            }
-
-            const options = centres?.map(c => `<option value="${c.name}">${c.name}</option>`).join('') || '';
-
+        if (isAdmin && allowedCentres.length > 1) {
+            // Show dropdown for allowed centres
+            const options = allowedCentres.map(name => `<option value="${name}">${name}</option>`).join('');
             filterContainer.innerHTML = `
                 <select id="centre-filter-select" class="centre-selector">
                     ${options}
                 </select>
             `;
             const sel = document.getElementById('centre-filter-select');
-            selectedCentre = centres && centres.length > 0 ? centres[0].name : "Delhi";
+            selectedCentre = allowedCentres[0];
             sel.value = selectedCentre;
             sel.addEventListener('change', (e) => {
                 selectedCentre = e.target.value;
                 fetchSchedule();
             });
         } else {
-            selectedCentre = userData.centre_name || 'Delhi';
+            // Single centre or student: fallback to the first allowed or their profile centre
+            selectedCentre = allowedCentres[0] || userData.centre_name || 'Delhi';
             filterContainer.innerHTML = `<div class="locked-centre">Centre: ${selectedCentre}</div>`;
         }
 

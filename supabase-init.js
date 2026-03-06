@@ -74,3 +74,137 @@ window.togglePasswordVisibility = (inputId, btn) => {
     // Smoothly color the icon
     btn.style.color = isPassword ? 'var(--accent-color)' : 'var(--text-secondary)';
 };
+
+// --- GLOBAL PERMISSION ENGINE ---
+window.hasPermission = async (permissionKey) => {
+    try {
+        const { data: { session } } = await window.supabaseClient.auth.getSession();
+        if (!session) return false;
+
+        // 1. Fetch User's Role
+        const { data: userData } = await window.supabaseClient
+            .from('Access')
+            .select('role')
+            .ilike('email_id', session.user.email)
+            .single();
+
+        if (!userData) return false;
+        if (userData.role === 'Super admin') return true; // Super admin always has all perms
+
+        // 2. Check Permission Matrix with case resilience
+        let res = await window.supabaseClient
+            .from('Role_Permissions')
+            .select('is_granted')
+            .eq('role_name', userData.role)
+            .eq('permission_key', permissionKey)
+            .single();
+
+        if (res.error && (res.error.message?.includes('not find') || res.error.message?.includes('cache') || res.error.code === '42P01')) {
+            res = await window.supabaseClient
+                .from('role_permissions')
+                .select('is_granted')
+                .eq('role_name', userData.role)
+                .eq('permission_key', permissionKey)
+                .single();
+        }
+
+        const perm = res.data;
+        return perm ? perm.is_granted : false;
+    } catch (err) {
+        console.error('Permission Check Error:', err);
+        return false;
+    }
+};
+
+// Auto-apply permissions to all elements with [data-permission]
+window.applyPermissions = async () => {
+    const elements = document.querySelectorAll('[data-permission]');
+    if (!elements.length) return;
+
+    try {
+        const { data: { session } } = await window.supabaseClient.auth.getSession();
+        if (!session) return;
+
+        // 1. Fetch user's role
+        const { data: userData } = await window.supabaseClient
+            .from('Access')
+            .select('role')
+            .ilike('email_id', session.user.email)
+            .single();
+
+        if (!userData) return;
+        if (userData.role === 'Super admin') return; // Nothing to hide for Super Admin
+
+        // 2. Fetch permissions with resilience for case-sensitivity
+        let res = await window.supabaseClient.from('Role_Permissions').select('permission_key, is_granted').eq('role_name', userData.role);
+
+        // Retry with lowercase if it fails
+        if (res.error && (res.error.message?.includes('not find') || res.error.message?.includes('cache') || res.error.code === '42P01')) {
+            res = await window.supabaseClient.from('role_permissions').select('permission_key, is_granted').eq('role_name', userData.role);
+        }
+
+        const perms = res.data;
+        const permMap = perms ? Object.fromEntries(perms.map(p => [p.permission_key, p.is_granted])) : {};
+
+        elements.forEach(el => {
+            const key = el.getAttribute('data-permission');
+            // If perm is explicitly FALSE, or if role is not Super Admin and perm is UNDEFINED (not in list)
+            if (permMap[key] === false || (permMap[key] === undefined && userData.role !== 'Super admin')) {
+                el.style.display = 'none';
+            }
+        });
+    } catch (err) {
+        console.error('Apply Permissions Error:', err);
+    }
+};
+
+// --------------------------------------------------------------------------
+// CENTRE ACCESS HELPER
+// --------------------------------------------------------------------------
+window.getAllowedCentres = async () => {
+    try {
+        const { data: { session } } = await window.supabaseClient.auth.getSession();
+        if (!session) return [];
+
+        const { data: userData } = await window.supabaseClient
+            .from('Access')
+            .select('role, centre_name')
+            .ilike('email_id', session.user.email)
+            .single();
+
+        if (!userData) return [];
+
+        // Special Case: Super admin sees everything
+        if (userData.role === 'Super admin') {
+            const { data: all } = await window.supabaseClient.from('Centres').select('name');
+            return all ? all.map(c => c.name) : [];
+        }
+
+        // Special Case: Students ONLY see their own centre
+        if (userData.role === 'Students') {
+            return userData.centre_name ? [userData.centre_name] : [];
+        }
+
+        // Standard Case: Check Role_Centres mapping
+        let res = await window.supabaseClient.from('Role_Centres').select('centre_name').eq('role_name', userData.role);
+
+        // Lowercase fallback resilience
+        if (res.error && (res.error.message?.includes('not find') || res.error.message?.includes('cache') || res.error.code === '42P01' || res.error.code === 'PGRST116')) {
+            res = await window.supabaseClient.from('role_centres').select('centre_name').eq('role_name', userData.role);
+        }
+
+        const allowed = res.data ? res.data.map(rc => rc.centre_name) : [];
+
+        // Critical Security logic: If mapping exists, it MUST be followed.
+        // Fallback to profile centre ONLY if no Role_Centres mapping is defined at all.
+        if (allowed.length === 0 && userData.centre_name) {
+            console.warn(`No Role_Centres mapping for ${userData.role}. Falling back to profile centre: ${userData.centre_name}`);
+            return [userData.centre_name];
+        }
+
+        return allowed;
+    } catch (err) {
+        console.error('Centre Access Error:', err);
+        return [];
+    }
+};
