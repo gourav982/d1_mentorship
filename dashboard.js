@@ -102,21 +102,8 @@ document.addEventListener('DOMContentLoaded', async () => {
         roleDisplay.textContent = userData.role || 'Member';
         avatarCircle.textContent = (userData.name || 'U').charAt(0).toUpperCase();
 
-        const adminRoles = ['Super admin', 'Admin', 'Mentor', 'Academics'];
-        if (adminRoles.includes(userData.role)) {
-            const adminSec = document.getElementById('admin-section');
-            if (adminSec) {
-                adminSec.style.display = 'block';
-
-                // Strict check: only Super Admin sees their exclusive menus
-                if (userData.role !== 'Super admin') {
-                    document.querySelectorAll('.super-admin-only').forEach(el => el.style.display = 'none');
-                }
-
-                // Fetch granular perms from matrix
-                window.applyPermissions();
-            }
-        }
+        // 6. Apply Permissions (For all roles!)
+        await window.applyPermissions();
 
         // 6. Modal Fill Logic
         const openModal = () => {

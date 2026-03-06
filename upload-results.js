@@ -41,6 +41,9 @@ document.addEventListener('DOMContentLoaded', async () => {
         sidebar?.classList.toggle('collapsed');
     });
 
+    // Sync sidebar permissions
+    await window.applyPermissions();
+
     const fileInput = document.getElementById('csv-file-input');
     const fileNameDisplay = document.getElementById('file-name-display');
     const processBtn = document.getElementById('process-upload-btn');

@@ -903,6 +903,9 @@
         };
 
         document.addEventListener('DOMContentLoaded', async () => {
+            // Apply sidebar permissions first
+            await window.applyPermissions();
+
             toggleCentreField();
             const usersBody = document.getElementById('users-body');
             const searchInput = document.getElementById('user-search');

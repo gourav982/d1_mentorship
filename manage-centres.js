@@ -39,6 +39,9 @@ document.addEventListener('DOMContentLoaded', async () => {
     document.getElementById('display-role').textContent = userData.role;
     document.getElementById('avatar-circle').textContent = (userData.name || 'A').charAt(0).toUpperCase();
 
+    // Sync sidebar permissions
+    await window.applyPermissions();
+
     const centresBody = document.getElementById('centres-body');
     const addModal = document.getElementById('add-centre-modal');
     const addForm = document.getElementById('add-centre-form');

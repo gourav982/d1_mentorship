@@ -101,6 +101,9 @@ document.addEventListener('DOMContentLoaded', async () => {
                 if (roleDisplay) roleDisplay.textContent = userData.role || 'Super admin';
                 if (avatarCircle) avatarCircle.textContent = (userData.name || 'A').charAt(0).toUpperCase();
 
+                // Sidebar Sync
+                await window.applyPermissions();
+
                 // UI setup
                 const sidebar = document.querySelector('.sidebar');
                 const sidebarToggle = document.getElementById('sidebar-toggle-btn');

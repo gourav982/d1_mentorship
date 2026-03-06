@@ -31,17 +31,20 @@ document.addEventListener('DOMContentLoaded', async () => {
         document.getElementById('display-role').textContent = currentUser.role || 'Member';
         document.getElementById('avatar-circle').textContent = (currentUser.name || 'U').charAt(0).toUpperCase();
 
-        // Admin section visibility
+        // Apply Permissions (For all roles!)
+        await window.applyPermissions();
+
+        // Admin/Mentor specific UI (Permission-driven visibility handles the sidebar, but we handle the page content here)
         const adminRoles = ['Super admin', 'Admin', 'Mentor', 'Academics'];
         if (adminRoles.includes(currentUser.role)) {
             const adminSec = document.getElementById('admin-section');
             if (adminSec) adminSec.style.display = 'block';
-            window.applyPermissions();
 
             // Mentor specific UI
-            mentorTabs.style.display = 'flex';
-            studentActions.style.display = 'none'; // Mentors usually don't post queries
-            document.getElementById('query-board-subtitle').textContent = `Manage student queries for ${currentUser.centre_name || 'your centres'}.`;
+            if (mentorTabs) mentorTabs.style.display = 'flex';
+            if (studentActions) studentActions.style.display = 'none'; // Mentors usually don't post queries
+            const subtitle = document.getElementById('query-board-subtitle');
+            if (subtitle) subtitle.textContent = `Manage student queries for ${currentUser.centre_name || 'your centres'}.`;
         }
 
         await fetchQueries();

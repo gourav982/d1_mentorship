@@ -7,8 +7,9 @@
     --glass-border: rgba(255, 255, 255, 0.1);
 }
 
-.admin-only {
-    display: none;
+.admin-only,
+.perm-hidden {
+    display: none !important;
 }
 
 /* Visibility Utilities - Base State (Desktop) */
