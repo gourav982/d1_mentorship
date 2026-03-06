@@ -13,30 +13,24 @@ document.addEventListener('DOMContentLoaded', async () => {
     const searchBtn = document.getElementById('btn-search-student');
     const emptyState = document.getElementById('empty-state');
     const perfContent = document.getElementById('perf-content');
-    const profileSummary = document.getElementById('student-profile-summary');
+    const studentPill = document.getElementById('student-pill-container');
+    const studentLabel = document.getElementById('summary-student-display');
 
-    // 1. Initialize Mentor Sidebar/Profile
+    const formatChartDate = (dateStr) => {
+        if (!dateStr) return '-';
+        const d = new Date(dateStr);
+        if (isNaN(d.getTime())) return dateStr;
+        const day = d.getDate().toString().padStart(2, '0');
+        const months = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
+        return `${day}-${months[d.getMonth()]}`;
+    };
+
+    // 1. Initialize
     const init = async () => {
-        const { data: { session } } = await supabaseClient.auth.getSession();
-        if (!session) return;
+        currentUser = await window.syncUserProfile();
+        await window.applyPermissions();
 
-        const { data: profile } = await supabaseClient
-            .from('access')
-            .select('*')
-            .ilike('email_id', session.user.email)
-            .single();
-
-        currentUser = profile;
-        if (!currentUser) return;
-
-        // UI Header
-        document.getElementById('display-name').textContent = currentUser.name || 'User';
-        document.getElementById('display-role').textContent = currentUser.role || 'Member';
-        document.getElementById('avatar-circle').textContent = (currentUser.name || 'U').charAt(0).toUpperCase();
-
-        window.applyPermissions();
-
-        // Listeners for Profile Dropdown/Logouts (Standard)
+        // Dropdowns & Sidebar
         const profileBtn = document.getElementById('user-profile-btn');
         profileBtn?.addEventListener('click', (e) => {
             e.stopPropagation();
@@ -53,6 +47,11 @@ document.addEventListener('DOMContentLoaded', async () => {
         const sidebar = document.querySelector('.sidebar');
         const sidebarToggle = document.getElementById('sidebar-toggle-btn');
         sidebarToggle?.addEventListener('click', () => sidebar?.classList.toggle('collapsed'));
+
+        document.getElementById('open-profile-btn')?.addEventListener('click', (e) => {
+            e.preventDefault();
+            document.getElementById('password-modal').classList.add('active');
+        });
     };
 
     // 2. Search Logic
@@ -64,10 +63,9 @@ document.addEventListener('DOMContentLoaded', async () => {
         searchBtn.textContent = 'Searching...';
         emptyState.style.display = 'flex';
         perfContent.classList.remove('active');
-        profileSummary.style.display = 'none';
+        studentPill.style.display = 'none';
 
         try {
-            // Find student by enrolment ID with resilience
             let { data: student, error: fetchError } = await supabaseClient
                 .from('access')
                 .select('*')
@@ -75,156 +73,188 @@ document.addEventListener('DOMContentLoaded', async () => {
                 .single();
 
             if (fetchError || !student) {
-                // Retry with uppercase Access
-                const { data: retryStudent, error: retryError } = await supabaseClient
+                const { data: retryStudent } = await supabaseClient
                     .from('Access')
                     .select('*')
                     .ilike('enrolment_id', query)
                     .single();
-
                 student = retryStudent;
-                if (!student) {
-                    alert('Student not found. Please check the Enrolment ID (e.g. TEST001).');
-                    return;
-                }
             }
 
-            targetStudent = student;
-            await loadStudentPerformance(student);
+            if (!student) {
+                alert('Student not found. Please check the Enrolment ID (e.g. TEST001).');
+            } else {
+                targetStudent = student;
+                await loadPerformanceData(student);
+            }
         } catch (err) {
             console.error('Search Error:', err);
-            alert('Error searching for student. Please try again.');
+            alert('Error searching for student.');
         } finally {
             searchBtn.disabled = false;
             searchBtn.textContent = 'Fetch Performance';
         }
     };
 
-    // 3. Data Loading & Calculation (Adapted from dashboard.js)
-    const loadStudentPerformance = async (student) => {
+    // 3. Performance Logic (Cloned from dashboard.js)
+    const loadPerformanceData = async (student) => {
+        const today = new Date().toISOString().split('T')[0];
+        const enrolmentId = student.enrolment_id;
+        const studentEmail = (student.email_id || '').toLowerCase();
+
         try {
+            // UI Transition
+            studentLabel.textContent = `${student.name} • ${student.enrolment_id} (${student.centre_name})`;
+            studentPill.style.display = 'block';
+            emptyState.style.display = 'none';
+            perfContent.classList.add('active');
+
+            // Fetch Data
             const [schedRes, resRes] = await Promise.all([
-                supabaseClient.from('Schedule').select('*').order('date', { ascending: true }),
-                supabaseClient.from('Test_Results').select('*').ilike('email_id', student.email_id)
+                supabaseClient.from('Schedule').select('*').eq('centre_name', student.centre_name).lte('date', today),
+                supabaseClient.from('Test_Results').select('*').or(`enrolment_id.eq.${enrolmentId},user_email.ilike.${studentEmail}`)
             ]);
 
             globalSchedules = schedRes.data || [];
             globalResults = resRes.data || [];
 
-            // UI Transitions
-            emptyState.style.display = 'none';
-            profileSummary.style.display = 'block';
-            document.getElementById('summary-student-name').textContent = student.name;
-            document.getElementById('summary-student-meta').textContent = `${student.enrolment_id} • ${student.centre_name}`;
+            // Widget Logic Helpers
+            const getPercentiles = (type) => {
+                return globalResults.filter(r => {
+                    const rType = (r.test_type || '').toLowerCase().trim();
+                    const targetType = type.toLowerCase().trim();
+                    let matchesType = (rType === targetType);
+                    if (targetType === 't&d') matchesType = rType.includes('t&d') || rType === 'test & discussion';
+                    if (!matchesType) return false;
+                    const val = String(r.percentile || '').replace(/[^\d.-]/g, '');
+                    return val !== '' && !isNaN(parseFloat(val));
+                }).map(r => parseFloat(String(r.percentile).replace(/[^\d.-]/g, '')));
+            };
 
-            perfContent.classList.add('active');
+            const calculateMedianValue = (arr) => {
+                if (!arr || arr.length === 0) return '-';
+                const nums = arr.map(n => parseFloat(n)).filter(n => !isNaN(n)).sort((a, b) => a - b);
+                if (nums.length === 0) return '-';
+                const mid = Math.floor(nums.length / 2);
+                const median = nums.length % 2 !== 0 ? nums[mid] : (nums[mid - 1] + nums[mid]) / 2;
+                return median % 1 === 0 ? median : median.toFixed(1);
+            };
 
-            calculatePerformance();
+            const countAppeared = (type) => {
+                return globalResults.filter(r => {
+                    const rType = (r.test_type || '').toLowerCase().trim();
+                    const targetType = type.toLowerCase().trim();
+                    let matchesType = (rType === targetType);
+                    if (targetType === 't&d') matchesType = rType.includes('t&d') || rType === 'test & discussion';
+                    const hasVal = (r.score && r.score !== '-') || (r.percentile && r.percentile !== '-');
+                    return matchesType && hasVal;
+                }).length;
+            };
+
+            const countAvailable = (type) => {
+                const targetType = type.toLowerCase().trim();
+                let count = 0;
+                if (targetType === 'custom module') {
+                    count = globalSchedules.filter(s => s.custom_module_code && s.custom_module_code !== '-').length;
+                } else if (targetType === 'marrow gt') {
+                    count = globalSchedules.filter(s => s.marrow_gt && s.marrow_gt !== '-').length;
+                } else if (targetType === 't&d') {
+                    count = globalSchedules.filter(s => {
+                        const combined = `${s.type || ''} ${s.topic || ''}`.toLowerCase();
+                        return combined.includes('t&d') || combined.includes('test & discussion');
+                    }).length;
+                }
+                return count;
+            };
+
+            const updateWidget = (idPrefix, type) => {
+                const appeared = countAppeared(type);
+                const available = countAvailable(type);
+                const median = calculateMedianValue(getPercentiles(type));
+
+                const valEl = document.getElementById(`${idPrefix}-appeared`);
+                const medEl = document.getElementById(`${idPrefix}-median`);
+                const appFill = document.getElementById(`${idPrefix}-app-progress`);
+                const medFill = document.getElementById(`${idPrefix}-med-progress`);
+
+                if (valEl) valEl.textContent = `${appeared}/${available}`;
+                if (medEl) medEl.textContent = median;
+
+                const setProgress = (el, percent) => {
+                    if (!el) return;
+                    el.style.width = `${percent}%`;
+                    el.classList.remove('progress-red', 'progress-yellow', 'progress-green');
+                    if (percent < 50) el.classList.add('progress-red');
+                    else if (percent < 80) el.classList.add('progress-yellow');
+                    else el.classList.add('progress-green');
+                };
+
+                const appPercent = (available > 0) ? (appeared / available) * 100 : 0;
+                const medValue = (median !== '-') ? parseFloat(median) : 0;
+                setProgress(appFill, appPercent);
+                setProgress(medFill, medValue);
+            };
+
+            updateWidget('cm', 'Custom Module');
+            updateWidget('td', 'T&D');
+            updateWidget('gt', 'Marrow GT');
+
             initCharts();
+
         } catch (err) {
-            console.error('Data Load Error:', err);
+            console.error('Performance Calc Error:', err);
         }
     };
 
-    const calculatePerformance = () => {
-        const calculateMedian = (arr) => {
-            if (!arr || arr.length === 0) return '-';
-            const nums = arr.map(n => parseFloat(String(n).replace(/[^\d.-]/g, ''))).filter(n => !isNaN(n)).sort((a, b) => a - b);
-            if (nums.length === 0) return '-';
-            const mid = Math.floor(nums.length / 2);
-            return nums.length % 2 !== 0 ? nums[mid].toFixed(1) : ((nums[mid - 1] + nums[mid]) / 2).toFixed(1);
-        };
-
-        const getPercentiles = (targetType) => {
-            return globalResults.filter(r => {
-                const rType = (r.test_type || '').toLowerCase().trim();
-                const tType = targetType.toLowerCase().trim();
-                if (tType === 't&d') return rType.includes('t&d') || rType === 'test & discussion';
-                return rType === tType;
-            }).map(r => r.percentile);
-        };
-
-        const countAppeared = (targetType) => {
-            return globalResults.filter(r => {
-                const rType = (r.test_type || '').toLowerCase().trim();
-                const tType = targetType.toLowerCase().trim();
-                if (tType === 't&d') return rType.includes('t&d') || rType === 'test & discussion';
-                return rType === tType;
-            }).length;
-        };
-
-        const countAvailable = (targetType) => {
-            if (targetType === 'Custom Module') return globalSchedules.filter(s => s.custom_module_code && s.custom_module_code !== '-').length;
-            if (targetType === 'Marrow GT') return globalSchedules.filter(s => s.marrow_gt && s.marrow_gt !== '-').length;
-            if (targetType === 'T&D') return globalSchedules.filter(s => (s.type || '').toLowerCase().includes('t&d')).length;
-            return 0;
-        };
-
-        const updateWidget = (idPrefix, type) => {
-            const appeared = countAppeared(type);
-            const available = countAvailable(type);
-            const median = calculateMedian(getPercentiles(type));
-
-            document.getElementById(`${idPrefix}-appeared`).textContent = `${appeared}/${available}`;
-            document.getElementById(`${idPrefix}-median`).textContent = median;
-
-            const appFill = document.getElementById(`${idPrefix}-app-progress`);
-            const medFill = document.getElementById(`${idPrefix}-med-progress`);
-
-            const appPercent = (available > 0) ? (appeared / available) * 100 : 0;
-            const medValue = (median !== '-') ? parseFloat(median) : 0;
-
-            if (appFill) {
-                appFill.style.width = `${appPercent}%`;
-                appFill.className = 'progress-fill ' + (appPercent < 50 ? 'progress-red' : appPercent < 80 ? 'progress-yellow' : 'progress-green');
-            }
-            if (medFill) {
-                medFill.style.width = `${medValue}%`;
-                medFill.className = 'progress-fill ' + (medValue < 50 ? 'progress-red' : medValue < 80 ? 'progress-yellow' : 'progress-green');
-            }
-        };
-
-        updateWidget('cm', 'Custom Module');
-        updateWidget('td', 'T&D');
-        updateWidget('gt', 'Marrow GT');
-    };
-
-    // --- CHART LOGIC (Adapted) ---
+    // --- CHART LOGIC (1:1 with dashboard.js) ---
     function initCharts() {
         populateSubjectFilters();
         updateCMChart();
         updateTDChart();
         updateGTChart();
+
+        document.getElementById('cm-chart-date-filter')?.addEventListener('change', updateCMChart);
+        document.getElementById('td-chart-subject-filter')?.addEventListener('change', updateTDChart);
     }
 
     function populateSubjectFilters() {
         const subjects = [...new Set(globalSchedules.map(s => s.subject).filter(Boolean))].sort();
         const options = '<option value="all">All Subjects</option>' + subjects.map(s => `<option value="${s}">${s}</option>`).join('');
-        const tdFilter = document.getElementById('td-chart-subject-filter');
-        if (tdFilter) tdFilter.innerHTML = options;
-    }
-
-    function formatChartDate(dateStr) {
-        if (!dateStr) return '';
-        const d = new Date(dateStr);
-        return `${d.getDate()}-${["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"][d.getMonth()]}`;
+        const filter = document.getElementById('td-chart-subject-filter');
+        if (filter) filter.innerHTML = options;
     }
 
     function getFilteredData(type, days, subject) {
         let filtered = globalResults.filter(r => {
             const rType = (r.test_type || '').toLowerCase().trim();
             const targetType = type.toLowerCase().trim();
-            if (targetType === 't&d') return rType.includes('t&d') || rType === 'test & discussion';
-            return rType === targetType;
+            let matchesType = (rType === targetType);
+            if (targetType === 't&d') matchesType = rType.includes('t&d') || rType === 'test & discussion';
+            return matchesType;
         });
 
         let enriched = filtered.map(r => {
-            const sched = globalSchedules.find(s => (s.custom_module_code === r.custom_module_code && r.test_type === 'Custom Module') ||
-                ((s.topic === r.custom_module_code || s.marrow_gt === r.custom_module_code) && r.test_type !== 'Custom Module'));
-            return { ...r, date: sched ? sched.date : null, subject: sched ? sched.subject : r.custom_module_code };
+            const rCode = (r.custom_module_code || '').trim();
+            const rType = (r.test_type || '').toLowerCase().trim();
+            const sched = globalSchedules.find(s => {
+                const sType = (s.type || '').toLowerCase().trim();
+                const sCode = (s.custom_module_code || '').trim();
+                const sTopic = (s.topic || '').trim();
+                const sGT = (s.marrow_gt || '').trim();
+                const sSubject = (s.subject || '').trim();
+                if (rCode && rCode !== '-' && rCode === sCode) return true;
+                if (rType.includes('t&d') && sType.includes('t&d') && (rCode === sTopic || rCode === sSubject)) return true;
+                if (rType.includes('marrow gt') && (rCode === sGT || rCode === sTopic || rCode === sCode)) return true;
+                return false;
+            });
+            return { ...r, date: sched ? sched.date : null, subject: sched ? sched.subject : (rType.includes('t&d') ? rCode : null) };
         });
 
-        if (days && days !== 'all') enriched = enriched.filter(r => r.date && new Date(r.date) > new Date(Date.now() - (days * 86400000)));
+        if (days !== 'all') {
+            const cutoff = new Date(); cutoff.setDate(cutoff.getDate() - parseInt(days));
+            const cutoffStr = cutoff.toISOString().split('T')[0];
+            enriched = enriched.filter(r => r.date && r.date >= cutoffStr);
+        }
         if (subject && subject !== 'all') enriched = enriched.filter(r => r.subject === subject);
         return enriched;
     }
@@ -233,7 +263,7 @@ document.addEventListener('DOMContentLoaded', async () => {
         const days = document.getElementById('cm-chart-date-filter').value;
         const data = getFilteredData('Custom Module', days, 'all').filter(d => d.date).sort((a, b) => new Date(a.date) - new Date(b.date));
         const labels = data.map(d => formatChartDate(d.date));
-        const values = data.map(d => parseFloat(d.percentile) || 0);
+        const values = data.map(d => parseFloat(String(d.percentile).replace(/[^\d.-]/g, '')) || 0);
 
         if (cmChart) cmChart.destroy();
         const ctx = document.getElementById('cm-performance-chart').getContext('2d');
@@ -248,9 +278,14 @@ document.addEventListener('DOMContentLoaded', async () => {
         const subject = document.getElementById('td-chart-subject-filter').value;
         const data = getFilteredData('T&D', 'all', subject);
         const subjectMap = {};
-        data.forEach(d => { if (d.subject) { if (!subjectMap[d.subject]) subjectMap[d.subject] = []; subjectMap[d.subject].push(parseFloat(d.percentile) || 0); } });
+        data.forEach(d => { if (d.subject) { if (!subjectMap[d.subject]) subjectMap[d.subject] = []; subjectMap[d.subject].push(parseFloat(String(d.percentile).replace(/[^\d.-]/g, '')) || 0); } });
         const labels = Object.keys(subjectMap);
-        const values = labels.map(l => (subjectMap[l].reduce((a, b) => a + b, 0) / subjectMap[l].length).toFixed(1));
+        const values = labels.map(l => {
+            const arr = subjectMap[l];
+            const sorted = arr.sort((a, b) => a - b);
+            const mid = Math.floor(sorted.length / 2);
+            return sorted.length % 2 !== 0 ? sorted[mid] : (sorted[mid - 1] + sorted[mid]) / 2;
+        });
 
         if (tdChart) tdChart.destroy();
         const ctx = document.getElementById('td-performance-chart').getContext('2d');
@@ -264,7 +299,7 @@ document.addEventListener('DOMContentLoaded', async () => {
     function updateGTChart() {
         const data = getFilteredData('Marrow GT', 'all', 'all').filter(d => d.date).sort((a, b) => new Date(a.date) - new Date(b.date));
         const labels = data.map(d => d.custom_module_code);
-        const values = data.map(d => parseFloat(d.percentile) || 0);
+        const values = data.map(d => parseFloat(String(d.percentile).replace(/[^\d.-]/g, '')) || 0);
 
         if (gtChart) gtChart.destroy();
         const ctx = document.getElementById('gt-performance-chart').getContext('2d');
@@ -275,11 +310,9 @@ document.addEventListener('DOMContentLoaded', async () => {
         });
     }
 
-    // UI Wire-up
+    // Handlers
     searchBtn.addEventListener('click', searchStudent);
     searchInput.addEventListener('keypress', (e) => { if (e.key === 'Enter') searchStudent(); });
-    document.getElementById('cm-chart-date-filter')?.addEventListener('change', updateCMChart);
-    document.getElementById('td-chart-subject-filter')?.addEventListener('change', updateTDChart);
 
     init();
 });
