@@ -140,8 +140,7 @@
                                 Interact with your mentors and get your doubts resolved.</p>
                         </div>
                         <div id="student-actions">
-                            <button id="btn-new-query" class="btn-primary"
-                                style="padding: 0.6rem 1.25rem; font-size: 0.85rem; border-radius: 0.75rem;">
+                            <button id="btn-new-query" class="btn-primary">
                                 + New Query
                             </button>
                         </div>
@@ -183,7 +182,7 @@
 
     <!-- New Query Modal -->
     <div class="modal-overlay" id="query-modal">
-        <div class="modal-content" style="max-width: 600px;">
+        <div class="modal-content" style="max-width: 800px;">
             <div class="modal-header">
                 <h2>Post a New Query</h2>
                 <button class="close-modal">&times;</button>
@@ -191,13 +190,12 @@
             <form id="new-query-form" style="margin-top: 1.5rem;">
                 <div class="input-group">
                     <label>What is your doubt? (Be specific)</label>
-                    <textarea id="query-text-input" class="filter-input"
-                        style="min-height: 200px; padding: 1rem; line-height: 1.6; resize: vertical;"
+                    <textarea id="query-text-input" class="filter-input" style="min-height: 400px;"
                         placeholder="Type your query here..." required></textarea>
                 </div>
-                <div style="display: flex; gap: 1rem; margin-top: 1.5rem;">
-                    <button type="button" class="btn-secondary close-modal" style="flex: 1;">Cancel</button>
-                    <button type="submit" id="submit-query-btn" class="btn-primary" style="flex: 1;">Post Query</button>
+                <div class="modal-actions">
+                    <button type="button" class="btn-secondary close-modal">Cancel</button>
+                    <button type="submit" id="submit-query-btn" class="btn-primary">Post Query</button>
                 </div>
             </form>
         </div>
