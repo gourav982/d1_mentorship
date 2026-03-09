@@ -1,6 +1,7 @@
 :root {
     --bg-color: #0d121f;
     --card-bg: rgba(15, 23, 42, 0.6);
+    --glass-bg: rgba(15, 23, 42, 0.75);
     --glass-border: rgba(255, 255, 255, 0.08);
     --text-primary: #f8fafc;
     --text-secondary: #94a3b8;
@@ -45,11 +46,10 @@ body {
         radial-gradient(circle at 20% 20%, rgba(56, 189, 248, 0.05) 0%, transparent 40%),
         radial-gradient(circle at 80% 80%, rgba(56, 189, 248, 0.05) 0%, transparent 40%);
     color: var(--text-primary);
-    height: 100vh;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    overflow: hidden;
+    min-height: 100vh;
+    margin: 0;
+    padding: 0;
+    overflow-x: hidden;
 }
 
 .app-container {
@@ -628,8 +628,7 @@ td:nth-child(13) {
     display: flex;
     align-items: center;
     gap: 0.75rem;
-    padding: 0.5rem 1rem;
-    padding-left: 1.5rem;
+    padding: 0.5rem 1.25rem;
     border-radius: 1rem;
     cursor: pointer;
     transition: all 0.3s ease;
@@ -644,9 +643,9 @@ td:nth-child(13) {
 /* Dropdown Menu */
 .profile-dropdown {
     position: absolute;
-    top: calc(100% + 0.5rem);
+    top: calc(100% + 0.75rem);
     right: 0;
-    width: 200px;
+    width: 220px;
     background: #0f172a;
     border: 1px solid var(--glass-border);
     border-radius: 1rem;
@@ -672,6 +671,11 @@ td:nth-child(13) {
     font-size: 0.9rem;
     font-weight: 500;
     transition: all 0.2s ease;
+    background: none;
+    border: none;
+    width: 100%;
+    cursor: pointer;
+    text-align: left;
 }
 
 .dropdown-item:hover {
@@ -771,15 +775,16 @@ td:nth-child(13) {
     left: 0;
     width: 100%;
     height: 100%;
-    background: rgba(15, 23, 42, 0.8);
-    backdrop-filter: blur(8px);
+    background: rgba(15, 23, 42, 0.82);
+    backdrop-filter: blur(12px);
+    -webkit-backdrop-filter: blur(12px);
     display: flex;
     align-items: center;
     justify-content: center;
     opacity: 0;
     pointer-events: none;
-    transition: opacity 0.4s ease;
-    z-index: 1000;
+    transition: all 0.4s cubic-bezier(0.16, 1, 0.3, 1);
+    z-index: 10001;
 }
 
 .modal-overlay.active {

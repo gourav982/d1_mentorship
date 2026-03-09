@@ -146,10 +146,20 @@ window.syncUserProfile = async () => {
             // Populate profile modal fields if they exist
             const pName = document.getElementById('profile-name');
             const pEmail = document.getElementById('profile-email');
-            const pEnrol = document.getElementById('profile-enrolment');
+            const pExtra = document.getElementById('profile-extra');
+            const pExtraGroup = document.getElementById('profile-extra-group');
+            const pExtraLabel = document.getElementById('profile-extra-label');
+
             if (pName) pName.value = userData.name || '';
             if (pEmail) pEmail.value = userData.email_id || '';
-            if (pEnrol) pEnrol.value = `${userData.enrolment_id || 'N/A'} • ${userData.centre_name || 'N/A'}`;
+
+            if (pExtra && userData.role === 'Students') {
+                pExtra.value = `${userData.enrolment_id || 'N/A'} • ${userData.centre_name || 'N/A'}`;
+                if (pExtraGroup) pExtraGroup.style.display = 'block';
+                if (pExtraLabel) pExtraLabel.textContent = 'Enrolment & Centre';
+            } else if (pExtraGroup) {
+                pExtraGroup.style.display = 'none';
+            }
         }
         return userData;
     } catch (err) {

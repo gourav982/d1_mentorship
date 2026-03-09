@@ -79,6 +79,11 @@ document.addEventListener('DOMContentLoaded', async () => {
         return d ? d.toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric' }) : '-';
     };
 
+    const getMonthName = (dateStr) => {
+        const d = getLocalDate(dateStr);
+        return d ? d.toLocaleDateString('en-GB', { month: 'long', year: 'numeric' }) : 'Unknown';
+    };
+
     const formatTime = (dateStr) => {
         const d = getLocalDate(dateStr);
         return d ? d.toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit', hour12: true }) : '-';
@@ -273,7 +278,7 @@ document.addEventListener('DOMContentLoaded', async () => {
             }
 
             return `
-                <tr>
+                <tr class="schedule-row" data-date="${item.date}">
                     <td style="white-space: nowrap;">${formatDate(item.date)}</td>
                     ${subjectCell}
                     <td style="text-align: center;"><span style="font-size: 0.8rem; padding: 0.2rem 0.5rem; border-radius: 4px; background: rgba(255,255,255,0.05);">${item.type || 'Study Day'}</span></td>
@@ -306,82 +311,107 @@ document.addEventListener('DOMContentLoaded', async () => {
             `;
         }).join('');
 
-        // Mobile Render
+        // Mobile Render: Group by Month
         if (mobileList) {
-            mobileList.innerHTML = schedules.map(item => {
-                const userProg = progressMap[item.id] || { is_done: false, remarks: '' };
-                const result = getResultsForItem(item);
-                const startTime = formatTime(item.start_datetime);
-                const endTime = formatTime(item.end_datetime);
-                const timing = startTime !== '-' ? `${startTime} to ${endTime}` : 'No specific timing';
+            const monthsMap = new Map();
+            schedules.forEach(item => {
+                const monthKey = item.date.substring(0, 7); // YYYY-MM
+                if (!monthsMap.has(monthKey)) {
+                    monthsMap.set(monthKey, []);
+                }
+                monthsMap.get(monthKey).push(item);
+            });
+
+            const sortedMonths = Array.from(monthsMap.keys()).sort();
+            const currentMonth = new Date().toISOString().substring(0, 7);
+
+            mobileList.innerHTML = sortedMonths.map(monthKey => {
+                const monthItems = monthsMap.get(monthKey);
+                const monthLabel = getMonthName(monthItems[0].date);
+                const isCurrent = monthKey === currentMonth;
 
                 return `
-                    <div class="schedule-card ${userProg.is_done ? 'is-done' : ''}" data-date="${item.date}">
-                        <div class="card-row">
-                            <span class="subject-badge">${item.subject || 'Study'}</span>
-                            <span style="font-size: 0.75rem; color: var(--text-secondary); font-weight: 600;">${formatDate(item.date)}</span>
+                    <div class="month-accordion ${isCurrent ? 'active' : ''}" data-month="${monthKey}">
+                        <div class="month-header" onclick="this.parentElement.classList.toggle('active')">
+                            <span>${monthLabel}</span>
+                            <svg class="chevron" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                <polyline points="6 9 12 15 18 9"></polyline>
+                            </svg>
                         </div>
-                        
-                        <div class="card-value" style="font-size: 1.1rem; color: var(--text-primary); margin: 0.15rem 0 0.5rem 0; line-height: 1.3;">${item.topic}</div>
-                        
-                        <!-- Line 1: Type, Code, Timing (All Centered) -->
-                        <div style="display: grid; grid-template-columns: 1fr 1fr 1.2fr; gap: 0.5rem; margin-bottom: 0.75rem; text-align: center;">
-                            <div>
-                                <div class="card-label">Type</div>
-                                <div class="card-value" style="font-size: 0.8rem; opacity: 0.9;">${item.type || '-'}</div>
-                            </div>
-                            <div>
-                                <div class="card-label">Code</div>
-                                <div class="card-value" style="font-family: monospace; font-size: 0.8rem; opacity: 0.9;">${item.custom_module_code || '-'}</div>
-                            </div>
-                            <div>
-                                <div class="card-label">Test Timing</div>
-                                <div class="card-value" style="font-size: 0.75rem; line-height: 1.2;">${timing}</div>
-                            </div>
-                        </div>
+                        <div class="month-content">
+                            ${monthItems.map(item => {
+                    const userProg = progressMap[item.id] || { is_done: false, remarks: '' };
+                    const result = getResultsForItem(item);
+                    const startTime = formatTime(item.start_datetime);
+                    const endTime = formatTime(item.end_datetime);
+                    const timing = startTime !== '-' ? `${startTime} to ${endTime}` : 'No specific timing';
 
-                        ${item.marrow_gt && item.marrow_gt !== '-' ? `
-                            <div style="background: rgba(34, 197, 94, 0.08); padding: 0.6rem; border-radius: 0.5rem; border: 1px solid rgba(34, 197, 94, 0.2); margin-bottom: 0.75rem; text-align: center;">
-                                <div class="card-label" style="color: #22c55e; opacity: 1;">Marrow GT</div>
-                                <div class="card-value" style="color: #22c55e;">${item.marrow_gt}</div>
-                            </div>
-                        ` : ''}
+                    return `
+                                    <div class="schedule-card ${userProg.is_done ? 'is-done' : ''}" data-date="${item.date}">
+                                        <div class="card-row">
+                                            <span class="subject-badge">${item.subject || 'Study'}</span>
+                                            <span style="font-size: 0.75rem; color: var(--text-secondary); font-weight: 600;">${formatDate(item.date)}</span>
+                                        </div>
+                                        
+                                        <div class="card-value" style="font-size: 1.1rem; color: var(--text-primary); margin: 0.15rem 0 0.5rem 0; line-height: 1.3;">${item.topic}</div>
+                                        
+                                        <div style="display: grid; grid-template-columns: 1fr 1fr 1.2fr; gap: 0.5rem; margin-bottom: 0.75rem; text-align: center;">
+                                            <div>
+                                                <div class="card-label">Type</div>
+                                                <div class="card-value" style="font-size: 0.8rem; opacity: 0.9;">${item.type || '-'}</div>
+                                            </div>
+                                            <div>
+                                                <div class="card-label">Code</div>
+                                                <div class="card-value" style="font-family: monospace; font-size: 0.8rem; opacity: 0.9;">${item.custom_module_code || '-'}</div>
+                                            </div>
+                                            <div>
+                                                <div class="card-label">Test Timing</div>
+                                                <div class="card-value" style="font-size: 0.75rem; line-height: 1.2;">${timing}</div>
+                                            </div>
+                                        </div>
 
-                        <!-- Line 2: Results Grid (Left) & Mark Complete (Right) - Two Distinct Containers -->
-                        <div style="display: flex; gap: 0.5rem; margin-bottom: 0.6rem; align-items: stretch;">
-                            <!-- Performance Metrics -->
-                            <div style="flex: 1; display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 0.25rem; background: rgba(255, 255, 255, 0.03); padding: 0.55rem 0.25rem; border-radius: 0.75rem; border: 1px solid rgba(255,255,255,0.05); text-align: center; align-items: center;">
-                                <div>
-                                    <div class="card-label">Score</div>
-                                    <div class="card-value" style="color: var(--accent-color); font-weight: 700; font-size: 0.95rem;">${result.score}</div>
-                                </div>
-                                <div style="border-left: 1px solid rgba(255,255,255,0.08); border-right: 1px solid rgba(255,255,255,0.08);">
-                                    <div class="card-label">Percentile</div>
-                                    <div class="card-value" style="font-weight: 600; font-size: 0.9rem;">${result.percentile}</div>
-                                </div>
-                                <div>
-                                    <div class="card-label">MCQs</div>
-                                    <div class="card-value" style="font-weight: 600; font-size: 0.9rem;">${item.num_questions || '-'}</div>
-                                </div>
-                            </div>
+                                        ${item.marrow_gt && item.marrow_gt !== '-' ? `
+                                            <div style="background: rgba(34, 197, 94, 0.08); padding: 0.6rem; border-radius: 0.5rem; border: 1px solid rgba(34, 197, 94, 0.2); margin-bottom: 0.75rem; text-align: center;">
+                                                <div class="card-label" style="color: #22c55e; opacity: 1;">Marrow GT</div>
+                                                <div class="card-value" style="color: #22c55e;">${item.marrow_gt}</div>
+                                            </div>
+                                        ` : ''}
 
-                            <!-- Done Toggle Group -->
-                            <div style="width: 85px; display: flex; flex-direction: column; justify-content: center; align-items: center; background: rgba(56, 189, 248, 0.04); border: 1px solid rgba(56, 189, 248, 0.1); border-radius: 0.75rem; text-align: center;">
-                                <div class="card-label" style="color: var(--accent-color); opacity: 1; font-size: 0.55rem; margin-bottom: 0.15rem;">MARK DONE</div>
-                                <input type="checkbox" class="checkbox-custom" 
-                                    style="transform: scale(0.9);"
-                                    ${userProg.is_done ? 'checked' : ''} 
-                                    onchange="window.updateProgress('${item.id}', this.checked); this.closest('.schedule-card').classList.toggle('is-done', this.checked)">
-                            </div>
-                        </div>
+                                        <div style="display: flex; gap: 0.5rem; margin-bottom: 0.6rem; align-items: stretch;">
+                                            <div style="flex: 1; display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 0.25rem; background: rgba(255, 255, 255, 0.03); padding: 0.55rem 0.25rem; border-radius: 0.75rem; border: 1px solid rgba(255,255,255,0.05); text-align: center; align-items: center;">
+                                                <div>
+                                                    <div class="card-label">Score</div>
+                                                    <div class="card-value" style="color: var(--accent-color); font-weight: 700; font-size: 0.95rem;">${result.score}</div>
+                                                </div>
+                                                <div style="border-left: 1px solid rgba(255,255,255,0.08); border-right: 1px solid rgba(255,255,255,0.08);">
+                                                    <div class="card-label">Percentile</div>
+                                                    <div class="card-value" style="font-weight: 600; font-size: 0.9rem;">${result.percentile}</div>
+                                                </div>
+                                                <div>
+                                                    <div class="card-label">MCQs</div>
+                                                    <div class="card-value" style="font-weight: 600; font-size: 0.9rem;">${item.num_questions || '-'}</div>
+                                                </div>
+                                            </div>
 
-                        <!-- Line 3: Remarks (Full Width) -->
-                        <div style="width: 100%;">
-                            <textarea class="remarks-input" 
-                                placeholder="Add study remarks..." 
-                                onblur="window.updateRemarks('${item.id}', this.value)"
-                                oninput="this.style.height = 'auto'; this.style.height = (this.scrollHeight) + 'px';"
-                                style="width: 100% !important; max-width: none !important; min-height: 42px; background: rgba(255, 255, 255, 0.02); border: 1px solid var(--glass-border); border-radius: 0.65rem; color: #fff; padding: 0.65rem 0.75rem; font-size: 0.85rem; resize: vertical !important; line-height: 1.4; overflow: hidden; display: block; box-sizing: border-box;">${userProg.remarks || ''}</textarea>
+                                            <div style="width: 85px; display: flex; flex-direction: column; justify-content: center; align-items: center; background: rgba(56, 189, 248, 0.04); border: 1px solid rgba(56, 189, 248, 0.1); border-radius: 0.75rem; text-align: center;">
+                                                <div class="card-label" style="color: var(--accent-color); opacity: 1; font-size: 0.55rem; margin-bottom: 0.15rem;">MARK DONE</div>
+                                                <input type="checkbox" class="checkbox-custom" 
+                                                    style="transform: scale(0.9);"
+                                                    ${userProg.is_done ? 'checked' : ''} 
+                                                    onchange="window.updateProgress('${item.id}', this.checked); this.closest('.schedule-card').classList.toggle('is-done', this.checked)">
+                                            </div>
+                                        </div>
+
+                                        <div style="width: 100%;">
+                                            <textarea class="remarks-input" 
+                                                placeholder="Add study remarks..." 
+                                                onblur="window.updateRemarks('${item.id}', this.value)"
+                                                oninput="this.style.height = 'auto'; this.style.height = (this.scrollHeight) + 'px';"
+                                                style="width: 100% !important; max-width: none !important; min-height: 42px; background: rgba(255, 255, 255, 0.02); border: 1px solid var(--glass-border); border-radius: 0.65rem; color: #fff; padding: 0.65rem 0.75rem; font-size: 0.85rem; resize: vertical !important; line-height: 1.4; overflow: hidden; display: block; box-sizing: border-box;">${userProg.remarks || ''}</textarea>
+                                        </div>
+                                    </div>
+                                `;
+                }).join('')}
                         </div>
                     </div>
                 `;
@@ -395,24 +425,25 @@ document.addEventListener('DOMContentLoaded', async () => {
                 });
             }, 50);
 
-            // Auto-scroll to today
-            if (window.innerWidth <= 1024) {
-                setTimeout(() => {
-                    const today = new Date().toISOString().split('T')[0];
-                    const cards = Array.from(document.querySelectorAll('.schedule-card'));
-                    const target = cards.find(c => c.getAttribute('data-date') >= today);
-                    if (target) {
-                        target.scrollIntoView({ behavior: 'smooth', block: 'center' });
-                        target.style.transition = 'all 0.4s ease';
-                        target.style.borderColor = 'var(--accent-color)';
-                        target.style.boxShadow = '0 0 20px rgba(56, 189, 248, 0.2)';
-                        setTimeout(() => {
-                            target.style.boxShadow = '';
-                            target.style.borderColor = 'var(--glass-border)';
-                        }, 2500);
-                    }
-                }, 400);
-            }
+            // Auto-scroll to today (Both Desktop & Mobile) - Refined to target visible elements
+            setTimeout(() => {
+                const today = new Date().toISOString().split('T')[0];
+                const isMobile = window.innerWidth <= 1024;
+                const selector = isMobile ? '.schedule-card' : '.schedule-row';
+                const cards = Array.from(document.querySelectorAll(selector));
+
+                // Find first card today or in future
+                const target = cards.find(c => c.getAttribute('data-date') >= today);
+
+                if (target) {
+                    console.log('🎯 Scrolling to target:', target.getAttribute('data-date'), isMobile ? '(Mobile)' : '(Desktop)');
+                    target.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                    target.classList.add('highlighted');
+                    setTimeout(() => {
+                        target.classList.remove('highlighted');
+                    }, 3000);
+                }
+            }, 800);
         }
     };
 

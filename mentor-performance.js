@@ -155,9 +155,11 @@ document.addEventListener('DOMContentLoaded', async () => {
                 const targetType = type.toLowerCase().trim();
                 let count = 0;
                 if (targetType === 'custom module') {
-                    count = globalSchedules.filter(s => s.custom_module_code && s.custom_module_code !== '-').length;
+                    const uniqueCM = new Set(globalSchedules.filter(s => s.custom_module_code && s.custom_module_code !== '-').map(s => (s.custom_module_code || '').trim()));
+                    count = uniqueCM.size;
                 } else if (targetType === 'marrow gt') {
-                    count = globalSchedules.filter(s => s.marrow_gt && s.marrow_gt !== '-').length;
+                    const uniqueGT = new Set(globalSchedules.filter(s => s.marrow_gt && s.marrow_gt !== '-').map(s => (s.marrow_gt || '').trim()));
+                    count = uniqueGT.size;
                 } else if (targetType === 't&d') {
                     count = globalSchedules.filter(s => {
                         const combined = `${s.type || ''} ${s.topic || ''}`.toLowerCase();
