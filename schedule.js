@@ -196,6 +196,8 @@ document.addEventListener('DOMContentLoaded', async () => {
 
     const renderSchedule = (schedules, progressMap) => {
         const mobileList = document.getElementById('schedule-mobile-list');
+        const desktopContainer = document.querySelector('.schedule-table-container.desktop-only');
+        const todayStr = new Date().toISOString().split('T')[0];
 
         if (!schedules || schedules.length === 0) {
             const noDataHtml = `
@@ -206,35 +208,21 @@ document.addEventListener('DOMContentLoaded', async () => {
                     <p style="font-size: 1rem; font-weight: 500;">No sessions matching your filters.</p>
                 </div>`;
 
-            scheduleBody.innerHTML = `<tr><td colspan="12" style="text-align:center; padding: 4rem; color: var(--text-secondary);">No sessions match your filters.</td></tr>`;
+            if (desktopContainer) desktopContainer.innerHTML = `<div style="text-align:center; padding: 4rem; color: var(--text-secondary); background: var(--glass-bg); border: 1px solid var(--glass-border); border-radius:1.5rem;">No sessions match your filters.</div>`;
             if (mobileList) mobileList.innerHTML = noDataHtml;
             return;
         }
 
-        // Calculate Rowspan for Subjects
-        const subjectRowspans = [];
-        let curSub = null, subCount = 0, subStart = 0;
-        schedules.forEach((item, index) => {
-            if (item.subject === curSub) { subCount++; }
-            else {
-                if (curSub !== null) subjectRowspans[subStart] = subCount;
-                curSub = item.subject; subCount = 1; subStart = index;
-            }
-        });
-        subjectRowspans[subStart] = subCount;
-
-        // Calculate Rowspan for Marrow GT window
-        const gtRowspans = [];
-        let curGT = null, gtCount = 0, gtStart = 0;
-        schedules.forEach((item, index) => {
+        // Pre-calculate last dates for Marrow GT windows
+        const gtLastDates = {};
+        schedules.forEach(item => {
             const val = (item.marrow_gt && item.marrow_gt !== '-') ? item.marrow_gt : null;
-            if (val && val === curGT) { gtCount++; }
-            else {
-                if (curGT !== null) gtRowspans[gtStart] = gtCount;
-                curGT = val; gtCount = 1; gtStart = index;
+            if (val) {
+                if (!gtLastDates[val] || item.date > gtLastDates[val]) {
+                    gtLastDates[val] = item.date;
+                }
             }
         });
-        if (curGT !== null) gtRowspans[gtStart] = gtCount;
 
         const getResultsForItem = (item) => {
             const itemType = (item.type || '').trim();
@@ -256,195 +244,281 @@ document.addEventListener('DOMContentLoaded', async () => {
             return result;
         };
 
-
-        // Desktop Render
-        scheduleBody.innerHTML = schedules.map((item, index) => {
-            const userProg = progressMap[item.id] || { is_done: false, remarks: '' };
-            const result = getResultsForItem(item);
-
-            const subjectCell = subjectRowspans[index]
-                ? `<td rowspan="${subjectRowspans[index]}" style="vertical-align: middle; border-right: 1px solid var(--glass-border); background: rgba(255,255,255,0.02); font-weight:700; color:var(--accent-color); text-transform:uppercase; font-size:0.8rem; letter-spacing:0.05em; text-align: center;">${item.subject || '-'}</td>`
-                : '';
-
-            const gtCell = gtRowspans[index]
-                ? `<td rowspan="${gtRowspans[index]}" style="vertical-align: middle; background: rgba(34, 197, 94, 0.05); color: #22c55e; font-weight: 600; text-align: center; border-right: 1px solid var(--glass-border);">${item.marrow_gt}</td>`
-                : (item.marrow_gt && item.marrow_gt !== '-' ? '' : '<td>-</td>');
-
-            let timing = '-';
-            const startTime = formatTime(item.start_datetime);
-            const endTime = formatTime(item.end_datetime);
-            if (startTime !== '-' || endTime !== '-') {
-                timing = `<span style="font-weight: 500; color: var(--text-primary);">${startTime} to ${endTime}</span>`;
+        // Group by Month
+        const monthsMap = new Map();
+        schedules.forEach(item => {
+            const monthKey = item.date.substring(0, 7); // YYYY-MM
+            if (!monthsMap.has(monthKey)) {
+                monthsMap.set(monthKey, []);
             }
+            monthsMap.get(monthKey).push(item);
+        });
 
-            return `
-                <tr class="schedule-row" data-date="${item.date}">
-                    <td style="white-space: nowrap;">${formatDate(item.date)}</td>
-                    ${subjectCell}
-                    <td style="text-align: center;"><span style="font-size: 0.8rem; padding: 0.2rem 0.5rem; border-radius: 4px; background: rgba(255,255,255,0.05);">${item.type || 'Study Day'}</span></td>
-                    <td><span style="font-weight: 600;">${item.topic}</span></td>
-                    ${gtCell}
-                    <td>
-                        <code style="background: rgba(255,255,255,0.05); padding: 0.2rem 0.6rem; border-radius: 0.4rem; font-family: monospace; font-size: 0.85rem;">${item.custom_module_code || '-'}</code>
-                    </td>
-                    <td>${timing}</td>
-                    <td style="text-align: center;">
-                        <span class="qs-badge" style="${(!item.num_questions || item.num_questions === 0) ? 'background:none; border:none; opacity:0.5;' : ''}">
-                            ${(item.num_questions && item.num_questions !== 0) ? item.num_questions : '-'}
-                        </span>
-                    </td>
-                    <td style="text-align: center;"><span style="color: var(--accent-color); font-weight: 600;">${result.score}</span></td>
-                    <td style="text-align: center;"><span style="color: var(--text-secondary);">${result.percentile}</span></td>
-                    <td style="text-align: center;">
-                        <input type="checkbox" class="checkbox-custom" 
-                            ${userProg.is_done ? 'checked' : ''} 
-                            onchange="window.updateProgress('${item.id}', this.checked)">
-                    </td>
-                    <td>
-                        <textarea class="remarks-input" 
-                            placeholder="Add remarks..." 
-                            rows="2"
-                            onblur="window.updateRemarks('${item.id}', this.value)"
-                            style="resize: vertical; min-height: 38px;">${userProg.remarks || ''}</textarea>
-                    </td>
-                </tr>
-            `;
-        }).join('');
+        const sortedMonths = Array.from(monthsMap.keys()).sort();
+        const currentMonthDisplay = new Date().toISOString().substring(0, 7);
 
-        // Mobile Render: Group by Month
-        if (mobileList) {
-            const monthsMap = new Map();
-            schedules.forEach(item => {
-                const monthKey = item.date.substring(0, 7); // YYYY-MM
-                if (!monthsMap.has(monthKey)) {
-                    monthsMap.set(monthKey, []);
+        // --- Render Logic ---
+        const renderMonthContent = (monthItems, isMobile) => {
+            // Re-calculate rowspans per month for desktop
+            const subjectRowspans = [];
+            let curSub = null, subCount = 0, subStart = 0;
+            monthItems.forEach((item, index) => {
+                if (item.subject === curSub) { subCount++; }
+                else {
+                    if (curSub !== null) subjectRowspans[subStart] = subCount;
+                    curSub = item.subject; subCount = 1; subStart = index;
                 }
-                monthsMap.get(monthKey).push(item);
             });
+            subjectRowspans[subStart] = subCount;
 
-            const sortedMonths = Array.from(monthsMap.keys()).sort();
-            const currentMonth = new Date().toISOString().substring(0, 7);
+            const gtRowspans = [];
+            let curGT = null, gtCount = 0, gtStart = 0;
+            monthItems.forEach((item, index) => {
+                const val = (item.marrow_gt && item.marrow_gt !== '-') ? item.marrow_gt : null;
+                if (val && val === curGT) { gtCount++; }
+                else {
+                    if (curGT !== null) gtRowspans[gtStart] = gtCount;
+                    curGT = val; gtCount = 1; gtStart = index;
+                }
+            });
+            if (curGT !== null) gtRowspans[gtStart] = gtCount;
 
-            mobileList.innerHTML = sortedMonths.map(monthKey => {
-                const monthItems = monthsMap.get(monthKey);
-                const monthLabel = getMonthName(monthItems[0].date);
-                const isCurrent = monthKey === currentMonth;
-
-                return `
-                    <div class="month-accordion ${isCurrent ? 'active' : ''}" data-month="${monthKey}">
-                        <div class="month-header" onclick="this.parentElement.classList.toggle('active')">
-                            <span>${monthLabel}</span>
-                            <svg class="chevron" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                                <polyline points="6 9 12 15 18 9"></polyline>
-                            </svg>
-                        </div>
-                        <div class="month-content">
-                            ${monthItems.map(item => {
+            if (isMobile) {
+                return monthItems.map(item => {
                     const userProg = progressMap[item.id] || { is_done: false, remarks: '' };
                     const result = getResultsForItem(item);
                     const startTime = formatTime(item.start_datetime);
                     const endTime = formatTime(item.end_datetime);
                     const timing = startTime !== '-' ? `${startTime} to ${endTime}` : 'No specific timing';
+                    const isLastDay = item.marrow_gt && item.marrow_gt !== '-' && item.date === gtLastDates[item.marrow_gt] && item.date === todayStr;
 
                     return `
-                                    <div class="schedule-card ${userProg.is_done ? 'is-done' : ''}" data-date="${item.date}">
-                                        <div class="card-row">
-                                            <span class="subject-badge">${item.subject || 'Study'}</span>
-                                            <span style="font-size: 0.75rem; color: var(--text-secondary); font-weight: 600;">${formatDate(item.date)}</span>
-                                        </div>
-                                        
-                                        <div class="card-value" style="font-size: 1.1rem; color: var(--text-primary); margin: 0.15rem 0 0.5rem 0; line-height: 1.3;">${item.topic}</div>
-                                        
-                                        <div style="display: grid; grid-template-columns: 1fr 1fr 1.2fr; gap: 0.5rem; margin-bottom: 0.75rem; text-align: center;">
-                                            <div>
-                                                <div class="card-label">Type</div>
-                                                <div class="card-value" style="font-size: 0.8rem; opacity: 0.9;">${item.type || '-'}</div>
-                                            </div>
-                                            <div>
-                                                <div class="card-label">Code</div>
-                                                <div class="card-value" style="font-family: monospace; font-size: 0.8rem; opacity: 0.9;">${item.custom_module_code || '-'}</div>
-                                            </div>
-                                            <div>
-                                                <div class="card-label">Test Timing</div>
-                                                <div class="card-value" style="font-size: 0.75rem; line-height: 1.2;">${timing}</div>
-                                            </div>
-                                        </div>
+                        <div class="schedule-card ${userProg.is_done ? 'is-done' : ''}" data-date="${item.date}">
+                            <div class="card-row">
+                                <span class="subject-badge">${item.subject || 'Study'}</span>
+                                <span style="font-size: 0.75rem; color: var(--text-secondary); font-weight: 600;">${formatDate(item.date)}</span>
+                            </div>
+                            
+                            <div class="card-value" style="font-size: 1.1rem; color: var(--text-primary); margin: 0.15rem 0 0.5rem 0; line-height: 1.3;">${item.topic}</div>
+                            
+                            <div style="display: grid; grid-template-columns: 1fr 1fr 1.2fr; gap: 0.5rem; margin-bottom: 0.75rem; text-align: center;">
+                                <div>
+                                    <div class="card-label">Type</div>
+                                    <div class="card-value" style="font-size: 0.8rem; opacity: 0.9;">${item.type || '-'}</div>
+                                </div>
+                                <div>
+                                    <div class="card-label">Code</div>
+                                    <div class="card-value" style="font-family: monospace; font-size: 0.8rem; opacity: 0.9;">${item.custom_module_code || '-'}</div>
+                                </div>
+                                <div>
+                                    <div class="card-label">Test Timing</div>
+                                    <div class="card-value" style="font-size: 0.75rem; line-height: 1.2;">${timing}</div>
+                                </div>
+                            </div>
 
-                                        ${item.marrow_gt && item.marrow_gt !== '-' ? `
-                                            <div style="background: rgba(34, 197, 94, 0.08); padding: 0.6rem; border-radius: 0.5rem; border: 1px solid rgba(34, 197, 94, 0.2); margin-bottom: 0.75rem; text-align: center;">
-                                                <div class="card-label" style="color: #22c55e; opacity: 1;">Marrow GT</div>
-                                                <div class="card-value" style="color: #22c55e;">${item.marrow_gt}</div>
-                                            </div>
-                                        ` : ''}
+                            ${item.marrow_gt && item.marrow_gt !== '-' ? `
+                                <div style="background: rgba(34, 197, 94, 0.08); padding: 0.6rem; border-radius: 0.5rem; border: 1px solid rgba(34, 197, 94, 0.2); margin-bottom: 0.75rem; text-align: center; position: relative;">
+                                    <div class="card-label" style="color: #22c55e; opacity: 1;">Marrow GT</div>
+                                    <div class="card-value" style="color: #22c55e;">${item.marrow_gt}</div>
+                                    ${isLastDay ? `<div style="position: absolute; top: -5px; right: -5px; background: #ef4444; color: white; font-size: 0.6rem; font-weight: 800; padding: 2px 6px; border-radius: 4px; box-shadow: 0 2px 4px rgba(0,0,0,0.3); z-index: 1;">LAST DAY</div>` : ''}
+                                </div>
+                            ` : ''}
 
-                                        <div style="display: flex; gap: 0.5rem; margin-bottom: 0.6rem; align-items: stretch;">
-                                            <div style="flex: 1; display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 0.25rem; background: rgba(255, 255, 255, 0.03); padding: 0.55rem 0.25rem; border-radius: 0.75rem; border: 1px solid rgba(255,255,255,0.05); text-align: center; align-items: center;">
-                                                <div>
-                                                    <div class="card-label">Score</div>
-                                                    <div class="card-value" style="color: var(--accent-color); font-weight: 700; font-size: 0.95rem;">${result.score}</div>
-                                                </div>
-                                                <div style="border-left: 1px solid rgba(255,255,255,0.08); border-right: 1px solid rgba(255,255,255,0.08);">
-                                                    <div class="card-label">Percentile</div>
-                                                    <div class="card-value" style="font-weight: 600; font-size: 0.9rem;">${result.percentile}</div>
-                                                </div>
-                                                <div>
-                                                    <div class="card-label">MCQs</div>
-                                                    <div class="card-value" style="font-weight: 600; font-size: 0.9rem;">${item.num_questions || '-'}</div>
-                                                </div>
-                                            </div>
-
-                                            <div style="width: 85px; display: flex; flex-direction: column; justify-content: center; align-items: center; background: rgba(56, 189, 248, 0.04); border: 1px solid rgba(56, 189, 248, 0.1); border-radius: 0.75rem; text-align: center;">
-                                                <div class="card-label" style="color: var(--accent-color); opacity: 1; font-size: 0.55rem; margin-bottom: 0.15rem;">MARK DONE</div>
-                                                <input type="checkbox" class="checkbox-custom" 
-                                                    style="transform: scale(0.9);"
-                                                    ${userProg.is_done ? 'checked' : ''} 
-                                                    onchange="window.updateProgress('${item.id}', this.checked); this.closest('.schedule-card').classList.toggle('is-done', this.checked)">
-                                            </div>
-                                        </div>
-
-                                        <div style="width: 100%;">
-                                            <textarea class="remarks-input" 
-                                                placeholder="Add study remarks..." 
-                                                onblur="window.updateRemarks('${item.id}', this.value)"
-                                                oninput="this.style.height = 'auto'; this.style.height = (this.scrollHeight) + 'px';"
-                                                style="width: 100% !important; max-width: none !important; min-height: 42px; background: rgba(255, 255, 255, 0.02); border: 1px solid var(--glass-border); border-radius: 0.65rem; color: #fff; padding: 0.65rem 0.75rem; font-size: 0.85rem; resize: vertical !important; line-height: 1.4; overflow: hidden; display: block; box-sizing: border-box;">${userProg.remarks || ''}</textarea>
-                                        </div>
+                            <div style="display: flex; gap: 0.5rem; margin-bottom: 0.6rem; align-items: stretch;">
+                                <div style="flex: 1; display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 0.25rem; background: rgba(255, 255, 255, 0.03); padding: 0.55rem 0.25rem; border-radius: 0.75rem; border: 1px solid rgba(255,255,255,0.05); text-align: center; align-items: center;">
+                                    <div>
+                                        <div class="card-label">Score</div>
+                                        <div class="card-value" style="color: var(--accent-color); font-weight: 700; font-size: 0.95rem;">${result.score}</div>
                                     </div>
-                                `;
-                }).join('')}
-                        </div>
+                                    <div style="border-left: 1px solid rgba(255,255,255,0.08); border-right: 1px solid rgba(255,255,255,0.08);">
+                                        <div class="card-label">Percentile</div>
+                                        <div class="card-value" style="font-weight: 600; font-size: 0.9rem;">${result.percentile}</div>
+                                    </div>
+                                    <div>
+                                        <div class="card-label">MCQs</div>
+                                        <div class="card-value" style="font-weight: 600; font-size: 0.9rem;">${item.num_questions || '-'}</div>
+                                    </div>
+                                </div>
+
+                                <div style="width: 85px; display: flex; flex-direction: column; justify-content: center; align-items: center; background: rgba(56, 189, 248, 0.04); border: 1px solid rgba(56, 189, 248, 0.1); border-radius: 0.75rem; text-align: center;">
+                                    <div class="card-label" style="color: var(--accent-color); opacity: 1; font-size: 0.55rem; margin-bottom: 0.15rem;">MARK DONE</div>
+                                    <input type="checkbox" class="checkbox-custom" 
+                                        style="transform: scale(0.9);"
+                                        ${userProg.is_done ? 'checked' : ''} 
+                                        onchange="window.updateProgress('${item.id}', this.checked); this.closest('.schedule-card').classList.toggle('is-done', this.checked)">
+                                </div>
+                            </div>
+
+                            <div style="width: 100%;">
+                                <textarea class="remarks-input" 
+                                    placeholder="Add study remarks..." 
+                                    onblur="window.updateRemarks('${item.id}', this.value)"
+                                    oninput="this.style.height = 'auto'; this.style.height = (this.scrollHeight) + 'px';"
+                                    style="width: 100% !important; max-width: none !important; min-height: 42px; background: rgba(255, 255, 255, 0.02); border: 1px solid var(--glass-border); border-radius: 0.65rem; color: #fff; padding: 0.65rem 0.75rem; font-size: 0.85rem; resize: vertical !important; line-height: 1.4; overflow: hidden; display: block; box-sizing: border-box;">${userProg.remarks || ''}</textarea>
+                            </div>
+                        </div>`;
+                }).join('');
+            } else {
+                // Desktop Template
+                const tableRows = monthItems.map((item, index) => {
+                    const userProg = progressMap[item.id] || { is_done: false, remarks: '' };
+                    const result = getResultsForItem(item);
+                    const subjectCell = subjectRowspans[index]
+                        ? `<td rowspan="${subjectRowspans[index]}" style="vertical-align: middle; border-right: 1px solid var(--glass-border); background: rgba(255,255,255,0.02); font-weight:700; color:var(--accent-color); text-transform:uppercase; font-size:0.8rem; letter-spacing:0.05em; text-align: center;">${item.subject || '-'}</td>`
+                        : '';
+
+                    const isLastDay = item.marrow_gt && item.marrow_gt !== '-' && item.date === gtLastDates[item.marrow_gt] && item.date === todayStr;
+
+                    const gtCell = gtRowspans[index]
+                        ? `<td rowspan="${gtRowspans[index]}" style="vertical-align: middle; background: rgba(34, 197, 94, 0.05); color: #22c55e; font-weight: 600; text-align: center; border-right: 1px solid var(--glass-border); position: relative;">
+                             ${item.marrow_gt}
+                          </td>`
+                        : (item.marrow_gt && item.marrow_gt !== '-' ? '' : '<td>-</td>');
+
+                    // If row already has a gtCell because it's first in a group, or is a single row GT
+                    let finalGtCell = gtCell;
+                    if (isLastDay) {
+                        // We need the "Last Day" tag to show on the SPECIFIC row that is the last day
+                        // But gtCell might be rowspanned from a previous row.
+                        // Actually, user says: "For Web on the last day of the window the tag can come as 'Last Day'"
+                        // If it spans 5 rows, the tag should ideally be in that last row's GT cell.
+                        // BUT with rowspan, the cell is in the FIRST row.
+                        // Hmm. If I want it on the "last day" of the window, I might need to NOT rowspan if I want the tag there?
+                        // Or just put the tag in the cell regardless.
+                        if (finalGtCell.includes('rowspan')) {
+                            // It's the first row of a multi-day GT. If today IS that first row AND it's the last day (1-day GT), fine.
+                            // If it's a 5-day GT, today won't be the first row on the last day.
+                        }
+                    }
+
+                    // Refined GT cell logic to handle the tag
+                    const rowGtVal = (item.marrow_gt && item.marrow_gt !== '-') ? item.marrow_gt : null;
+                    let gtDisplay = '';
+                    if (rowGtVal) {
+                        if (gtRowspans[index]) {
+                            // Start of a group
+                            gtDisplay = `<td rowspan="${gtRowspans[index]}" style="vertical-align: middle; background: rgba(34, 197, 94, 0.05); color: #22c55e; font-weight: 600; text-align: center; border-right: 1px solid var(--glass-border); position: relative;">${item.marrow_gt}`;
+                            // Check if this window ENDS today. 
+                            // This is tricky with rowspan. If the window ends today, the tag should be visible.
+                            if (gtLastDates[rowGtVal] === todayStr) {
+                                gtDisplay += `<div style="position: absolute; bottom: 5px; left: 50%; transform: translateX(-50%); background: #ef4444; color: white; font-size: 0.6rem; padding: 2px 6px; border-radius: 4px; white-space: nowrap; z-index: 10;">LAST DAY</div>`;
+                            }
+                            gtDisplay += `</td>`;
+                        } else if (index > 0 && monthItems[index - 1].marrow_gt === item.marrow_gt) {
+                            // middle/end of group, skip cell
+                            gtDisplay = '';
+                        } else {
+                            // Single row GT
+                            gtDisplay = `<td style="vertical-align: middle; background: rgba(34, 197, 94, 0.05); color: #22c55e; font-weight: 600; text-align: center; border-right: 1px solid var(--glass-border); position: relative;">${item.marrow_gt}`;
+                            if (gtLastDates[rowGtVal] === todayStr) {
+                                gtDisplay += `<div style="position: absolute; bottom: 5px; left: 50%; transform: translateX(-50%); background: #ef4444; color: white; font-size: 0.6rem; padding: 2px 6px; border-radius: 4px; white-space: nowrap; z-index: 10;">LAST DAY</div>`;
+                            }
+                            gtDisplay += `</td>`;
+                        }
+                    } else {
+                        gtDisplay = '<td>-</td>';
+                    }
+
+                    let timing = '-';
+                    const startTime = formatTime(item.start_datetime);
+                    const endTime = formatTime(item.end_datetime);
+                    if (startTime !== '-' || endTime !== '-') {
+                        timing = `<span style="font-weight: 500; color: var(--text-primary);">${startTime} to ${endTime}</span>`;
+                    }
+
+                    return `
+                        <tr class="schedule-row" data-date="${item.date}">
+                            <td style="white-space: nowrap;">${formatDate(item.date)}</td>
+                            ${subjectCell}
+                            <td style="text-align: center;"><span style="font-size: 0.8rem; padding: 0.2rem 0.5rem; border-radius: 4px; background: rgba(255,255,255,0.05);">${item.type || 'Study Day'}</span></td>
+                            <td><span style="font-weight: 600;">${item.topic}</span></td>
+                            ${gtDisplay}
+                            <td>
+                                <code style="background: rgba(255,255,255,0.05); padding: 0.2rem 0.6rem; border-radius: 0.4rem; font-family: monospace; font-size: 0.85rem;">${item.custom_module_code || '-'}</code>
+                            </td>
+                            <td>${timing}</td>
+                            <td style="text-align: center;">
+                                <span class="qs-badge" style="${(!item.num_questions || item.num_questions === 0) ? 'background:none; border:none; opacity:0.5;' : ''}">
+                                    ${(item.num_questions && item.num_questions !== 0) ? item.num_questions : '-'}
+                                </span>
+                            </td>
+                            <td style="text-align: center;"><span style="color: var(--accent-color); font-weight: 600;">${result.score}</span></td>
+                            <td style="text-align: center;"><span style="color: var(--text-secondary);">${result.percentile}</span></td>
+                            <td style="text-align: center;">
+                                <input type="checkbox" class="checkbox-custom" 
+                                    ${userProg.is_done ? 'checked' : ''} 
+                                    onchange="window.updateProgress('${item.id}', this.checked)">
+                            </td>
+                            <td>
+                                <textarea class="remarks-input" 
+                                    placeholder="Add remarks..." 
+                                    rows="2"
+                                    onblur="window.updateRemarks('${item.id}', this.value)"
+                                    style="resize: vertical; min-height: 38px;">${userProg.remarks || ''}</textarea>
+                            </td>
+                        </tr>`;
+                }).join('');
+
+                return `
+                    <div class="schedule-table-container">
+                        <table>
+                            <thead>
+                                <tr>
+                                    <th>Date</th><th>Subject</th><th>Type</th><th>Topics</th><th>Marrow GT</th><th>Module Code</th><th>Timing</th>
+                                    <th style="text-align: center;">MCQs</th><th style="text-align: center;">Score</th><th style="text-align: center;">Percentile</th><th style="text-align: center;">Done</th><th>Remarks</th>
+                                </tr>
+                            </thead>
+                            <tbody>${tableRows}</tbody>
+                        </table>
+                    </div>`;
+            }
+        };
+
+        const accordionHtml = sortedMonths.map(monthKey => {
+            const monthItems = monthsMap.get(monthKey);
+            const monthLabel = getMonthName(monthItems[0].date);
+            const isCurrent = monthKey === currentMonthDisplay;
+
+            return `
+                <div class="month-accordion ${isCurrent ? 'active' : ''}" data-month="${monthKey}">
+                    <div class="month-header" onclick="this.parentElement.classList.toggle('active')">
+                        <span>${monthLabel}</span>
+                        <svg class="chevron" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <polyline points="6 9 12 15 18 9"></polyline>
+                        </svg>
                     </div>
-                `;
-            }).join('');
+                    <div class="month-content">
+                        <div class="desktop-only">${renderMonthContent(monthItems, false)}</div>
+                        <div class="mobile-only">${renderMonthContent(monthItems, true)}</div>
+                    </div>
+                </div>`;
+        }).join('');
 
-            // Auto-expand remarks initially
-            setTimeout(() => {
-                mobileList.querySelectorAll('.remarks-input').forEach(ta => {
-                    ta.style.height = 'auto';
-                    ta.style.height = ta.scrollHeight + 'px';
-                });
-            }, 50);
+        if (desktopContainer) desktopContainer.innerHTML = accordionHtml;
+        if (mobileList) mobileList.innerHTML = accordionHtml;
 
-            // Auto-scroll to today (Both Desktop & Mobile) - Refined to target visible elements
-            setTimeout(() => {
-                const today = new Date().toISOString().split('T')[0];
-                const isMobile = window.innerWidth <= 1024;
-                const selector = isMobile ? '.schedule-card' : '.schedule-row';
-                const cards = Array.from(document.querySelectorAll(selector));
+        // Auto-expand remarks
+        setTimeout(() => {
+            document.querySelectorAll('.remarks-input').forEach(ta => {
+                ta.style.height = 'auto';
+                ta.style.height = ta.scrollHeight + 'px';
+            });
+        }, 100);
 
-                // Find first card today or in future
-                const target = cards.find(c => c.getAttribute('data-date') >= today);
+        // Scroll to Today logic
+        setTimeout(() => {
+            const today = todayStr;
+            const isMobile = window.innerWidth <= 1024;
+            const selector = isMobile ? '.schedule-card' : '.schedule-row';
+            const cards = Array.from(document.querySelectorAll(selector));
+            const target = cards.find(c => c.getAttribute('data-date') >= today);
 
-                if (target) {
-                    console.log('🎯 Scrolling to target:', target.getAttribute('data-date'), isMobile ? '(Mobile)' : '(Desktop)');
-                    target.scrollIntoView({ behavior: 'smooth', block: 'center' });
-                    target.classList.add('highlighted');
-                    setTimeout(() => {
-                        target.classList.remove('highlighted');
-                    }, 3000);
-                }
-            }, 800);
-        }
+            if (target) {
+                target.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                target.classList.add('highlighted');
+                setTimeout(() => target.classList.remove('highlighted'), 3000);
+            }
+        }, 800);
     };
 
     // Filter Event Listeners
