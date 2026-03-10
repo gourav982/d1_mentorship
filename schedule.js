@@ -373,7 +373,7 @@ document.addEventListener('DOMContentLoaded', async () => {
                         ? `<td rowspan="${gtRowspans[index]}" style="vertical-align: middle; background: rgba(34, 197, 94, 0.05); color: #22c55e; font-weight: 600; text-align: center; border-right: 1px solid var(--glass-border); position: relative;">
                              ${item.marrow_gt}
                           </td>`
-                        : (item.marrow_gt && item.marrow_gt !== '-' ? '' : '<td>-</td>');
+                        : (item.marrow_gt && item.marrow_gt !== '-' ? '' : '<td style="text-align: center; color: var(--text-secondary); opacity: 0.6;">-</td>');
 
                     // If row already has a gtCell because it's first in a group, or is a single row GT
                     let finalGtCell = gtCell;
@@ -416,7 +416,7 @@ document.addEventListener('DOMContentLoaded', async () => {
                             gtDisplay += `</td>`;
                         }
                     } else {
-                        gtDisplay = '<td>-</td>';
+                        gtDisplay = '<td style="text-align: center; color: var(--text-secondary); opacity: 0.6;">-</td>';
                     }
 
                     let timing = '-';
@@ -431,7 +431,7 @@ document.addEventListener('DOMContentLoaded', async () => {
                             <td style="white-space: nowrap;">${formatDate(item.date)}</td>
                             ${subjectCell}
                             <td style="text-align: center;"><span style="font-size: 0.8rem; padding: 0.2rem 0.5rem; border-radius: 4px; background: rgba(255,255,255,0.05);">${item.type || 'Study Day'}</span></td>
-                            <td><span style="font-weight: 600;">${item.topic}</span></td>
+                            <td style="min-width: 320px; max-width: 500px; white-space: normal; padding-right: 1.5rem;"><span style="font-weight: 600; line-height: 1.4; display: block;">${item.topic}</span></td>
                             ${gtDisplay}
                             <td>
                                 <code style="background: rgba(255,255,255,0.05); padding: 0.2rem 0.6rem; border-radius: 0.4rem; font-family: monospace; font-size: 0.85rem;">${item.custom_module_code || '-'}</code>
@@ -464,7 +464,7 @@ document.addEventListener('DOMContentLoaded', async () => {
                         <table>
                             <thead>
                                 <tr>
-                                    <th>Date</th><th>Subject</th><th>Type</th><th>Topics</th><th>Marrow GT</th><th>Module Code</th><th>Timing</th>
+                                    <th>Date</th><th>Subject</th><th>Type</th><th>Topics</th><th style="text-align: center;">Marrow GT</th><th>Module Code</th><th>Timing</th>
                                     <th style="text-align: center;">MCQs</th><th style="text-align: center;">Score</th><th style="text-align: center;">Percentile</th><th style="text-align: center;">Done</th><th>Remarks</th>
                                 </tr>
                             </thead>
