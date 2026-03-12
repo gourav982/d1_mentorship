@@ -59,9 +59,8 @@
                     <button type="submit" class="login-button">
                         Sign In
                     </button>
-                    <div class="form-footer">
-                        <span>Forgot password? Send an email to <a
-                                href="mailto:care@dbmci.one">care@dbmci.one</a></span>
+                    <div class="form-footer" style="margin-top: 1rem; text-align: center;">
+                        <a href="#" id="forgot-password-link" style="color: var(--accent-color); font-size: 0.85rem; text-decoration: none; opacity: 0.8; transition: opacity 0.2s;">Forgot password?</a>
                     </div>
                 </form>
             </div>
@@ -80,6 +79,76 @@
             </div>
         </div>
     </div>
+
+    <!-- Reset Password Modal -->
+    <div id="reset-password-modal" class="modal-overlay">
+        <div class="modal-card" style="max-width: 400px; padding: 2rem;">
+            <div id="step-1-email">
+                <h2 style="margin-top: 0; font-size: 1.5rem; margin-bottom: 0.5rem; font-family: 'Outfit', sans-serif; color: #fff;">Reset Password</h2>
+                <p style="font-size: 0.9rem; color: var(--text-secondary); margin-bottom: 1.5rem;">Enter your email to receive a 6-digit recovery code.</p>
+                <div class="input-group">
+                    <label>Email Address</label>
+                    <input type="email" id="reset-email" placeholder="your@email.com">
+                </div>
+                <button type="button" id="send-otp-btn" class="login-button" style="margin-top: 1.5rem; width: 100%;">Send Code</button>
+                <button type="button" onclick="document.getElementById('reset-password-modal').classList.remove('active')" style="background:none; border:none; color:var(--text-secondary); cursor:pointer; margin-top:1rem; width:100%; font-size: 0.85rem;">Cancel</button>
+            </div>
+
+            <div id="step-2-otp" style="display: none;">
+                <h2 style="margin-top: 0; font-size: 1.5rem; font-family: 'Outfit', sans-serif; color: #fff;">Verify Identity</h2>
+                <p style="font-size: 0.9rem; color: var(--text-secondary); margin-bottom: 2rem;">Enter the 6-digit code sent to your email.</p>
+                <div class="input-group">
+                    <label>6-Digit Code</label>
+                    <input type="text" id="reset-otp" placeholder="123456" maxlength="6" style="text-align: center; letter-spacing: 0.5rem; font-size: 1.5rem; font-weight: bold; background: rgba(255,255,255,0.03);">
+                </div>
+                <button type="button" id="verify-otp-step-btn" class="login-button" style="margin-top: 2rem; width: 100%;">Verify & Continue</button>
+                <button type="button" onclick="document.getElementById('step-1-email').style.display='block'; document.getElementById('step-2-otp').style.display='none';" style="background:none; border:none; color:var(--text-secondary); cursor:pointer; margin-top:1rem; width:100%; font-size: 0.85rem;">Back to Email</button>
+            </div>
+
+            <div id="step-3-password" style="display: none;">
+                <h2 style="margin-top: 0; font-size: 1.5rem; font-family: 'Outfit', sans-serif; color: #fff;">Create Password</h2>
+                
+                <div style="background: rgba(56, 189, 248, 0.05); padding: 1rem; border-radius: 1rem; border: 1px solid rgba(56, 189, 248, 0.1); margin-bottom: 1.5rem;">
+                    <p style="font-size: 0.75rem; color: var(--accent-color); font-weight: 600; margin-bottom: 0.5rem; text-transform: uppercase; letter-spacing: 0.05em;">Security Requirements:</p>
+                    <ul style="list-style: none; padding: 0; margin: 0; display: grid; grid-template-columns: 1fr 1fr; gap: 0.4rem;">
+                        <li id="req-len" style="font-size: 0.75rem; color: #64748b; display: flex; align-items: center; gap: 0.4rem;">
+                            <span class="dot" style="width: 4px; height: 4px; background: currentColor; border-radius: 50%;"></span> 8+ Characters
+                        </li>
+                        <li id="req-up" style="font-size: 0.75rem; color: #64748b; display: flex; align-items: center; gap: 0.4rem;">
+                            <span class="dot" style="width: 4px; height: 4px; background: currentColor; border-radius: 50%;"></span> 1 Uppercase
+                        </li>
+                        <li id="req-num" style="font-size: 0.75rem; color: #64748b; display: flex; align-items: center; gap: 0.4rem;">
+                            <span class="dot" style="width: 4px; height: 4px; background: currentColor; border-radius: 50%;"></span> 1 Number
+                        </li>
+                        <li id="req-spec" style="font-size: 0.75rem; color: #64748b; display: flex; align-items: center; gap: 0.4rem;">
+                            <span class="dot" style="width: 4px; height: 4px; background: currentColor; border-radius: 50%;"></span> 1 Special Char
+                        </li>
+                    </ul>
+                </div>
+
+                <div class="input-group">
+                    <label>New Password</label>
+                    <div class="password-wrapper">
+                        <input type="password" id="new-password-val" placeholder="••••••••">
+                        <button type="button" class="toggle-btn" onclick="togglePasswordVisibility('new-password-val', this)">
+                            <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="eye-icon"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"></path><circle cx="12" cy="12" r="3"></circle></svg>
+                        </button>
+                    </div>
+                </div>
+                <div class="input-group" style="margin-top: 1rem;">
+                    <label>Confirm Password</label>
+                    <div class="password-wrapper">
+                        <input type="password" id="confirm-password-val" placeholder="••••••••">
+                        <button type="button" class="toggle-btn" onclick="togglePasswordVisibility('confirm-password-val', this)">
+                            <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="eye-icon"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"></path><circle cx="12" cy="12" r="3"></circle></svg>
+                        </button>
+                    </div>
+                </div>
+                <button type="button" id="final-reset-btn" class="login-button" style="margin-top: 2rem; width: 100%;">Set New Password</button>
+            </div>
+        </div>
+    </div>
+
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <script src="supabase-init.js"></script>
     <script src="main.js"></script>

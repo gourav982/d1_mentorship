@@ -135,14 +135,33 @@ document.addEventListener('DOMContentLoaded', async () => {
         const submitBtn = document.getElementById('update-pwd-submit');
 
         const updateSubmitState = () => {
-            const hasContent = newPwdInput?.value.trim() !== '' && confirmPwdInput?.value.trim() !== '';
+            const p = newPwdInput?.value || '';
+            const isMatch = p !== '' && p === confirmPwdInput?.value;
+            const isStrong = p.length >= 8 && /[A-Z]/.test(p) && /[0-9]/.test(p) && /[^A-Za-z0-9]/.test(p);
+            
+            const canSubmit = isMatch && isStrong;
+
             if (submitBtn) {
-                submitBtn.disabled = !hasContent;
-                submitBtn.style.opacity = hasContent ? '1' : '0.5';
+                submitBtn.disabled = !canSubmit;
+                submitBtn.style.opacity = canSubmit ? '1' : '0.5';
             }
         };
 
-        newPwdInput?.addEventListener('input', updateSubmitState);
+        newPwdInput?.addEventListener('input', () => {
+            const p = newPwdInput.value;
+            const updateReq = (id, valid) => {
+                const el = document.getElementById(id);
+                if (el) {
+                    el.style.color = valid ? 'var(--success-color)' : '#64748b';
+                    el.querySelector('.dot').style.background = valid ? 'var(--success-color)' : 'currentColor';
+                }
+            };
+            updateReq('prof-req-len', p.length >= 8);
+            updateReq('prof-req-up', /[A-Z]/.test(p));
+            updateReq('prof-req-num', /[0-9]/.test(p));
+            updateReq('prof-req-spec', /[^A-Za-z0-9]/.test(p));
+            updateSubmitState();
+        });
         confirmPwdInput?.addEventListener('input', updateSubmitState);
 
         if (updatePwdForm) {
