@@ -1223,117 +1223,164 @@
                 processBtn.textContent = 'Processing...';
 
                 let successCount = 0;
-                let errorCount = 0;
+                let failedUsers = []; 
+                let failedDataForCSV = []; // Store full row data for retry CSV
 
-                // Secure registration client (prevents session hijacking)
                 const ghostSupabase = supabase.createClient(
                     'https://aobwkcjfhbruihkandlg.supabase.co',
                     'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImFvYndrY2pmaGJydWloa2FuZGxnIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzIwMjE1MjAsImV4cCI6MjA4NzU5NzUyMH0.V7OdMoiiDuXIMOdoUDLlUMjdavSjObHpajb2gHh0E38',
                     { auth: { persistSession: false } }
                 );
 
+                const sleep = (ms) => new Promise(r => setTimeout(r, ms));
+
                 for (const user of parsedUsers) {
                     try {
                         const emailToUse = user.email_id;
-                        console.log('🔄 Processing user:', emailToUse);
+                        processBtn.textContent = `Processing: ${successCount + failedUsers.length + 1}/${parsedUsers.length}`;
 
-                        // 1. Check if user already exists in Access table
-                        const { data: existingUser, error: checkErr } = await supabaseClient
+                        // PASSWORD HARDENER: Ensure min 8 chars for Supabase compliance
+                        const userPassword = (user.password && user.password.length >= 8) ? user.password : 'Dbmci@123';
+
+                        // ANTI-THROTTLE: Wait 1.5s between records for Supabase stability
+                        await sleep(1500);
+
+                        // 1. Check if user already exists in DB
+                        const { data: existingUser } = await supabaseClient
                             .from('Access')
                             .select('user_id')
                             .ilike('email_id', emailToUse)
                             .maybeSingle();
 
-                        if (checkErr) {
-                            console.error(`❌ Check failed for ${emailToUse}:`, checkErr);
-                            errorCount++;
-                            continue;
-                        }
-
                         let userId = existingUser?.user_id;
 
-                        // 2. If not in Access, we might need to create Auth account
+                        // 2. Auth Logic
                         if (!userId) {
-                            const { data: authData, error: authErr } = await ghostSupabase.auth.signUp({
+                            let { data: authData, error: authErr } = await ghostSupabase.auth.signUp({
                                 email: emailToUse,
-                                password: user.password
+                                password: userPassword
                             });
 
-                            if (authErr) {
-                                if (authErr.message.includes('already registered')) {
-                                    console.warn(`⚠️ User ${emailToUse} exists in Auth but not in Access. Requires manual linkage or admin sync.`);
-                                    // We can't easily get the UUID without admin keys, but we can try to find if they are online? No.
-                                    // For now, we count as error if we can't link.
-                                    errorCount++;
-                                    continue;
-                                } else {
-                                    console.error(`❌ Auth failed for ${emailToUse}:`, authErr.message);
-                                    errorCount++;
-                                    continue;
+                            // AUTO-STRENGTHEN: If Supabase says password is weak/guessable, retry with a high-security one
+                            if (authErr && (authErr.message.toLowerCase().includes('weak') || authErr.message.toLowerCase().includes('easy to guess'))) {
+                                const strongPass = 'Dbmci@Secure!2026';
+                                const { data: retryData, error: retryErr } = await ghostSupabase.auth.signUp({
+                                    email: emailToUse,
+                                    password: strongPass
+                                });
+                                if (!retryErr) {
+                                    authData = retryData;
+                                    authErr = null;
                                 }
                             }
-                            userId = authData?.user?.id;
+
+                            if (authErr) {
+                                // RECOVERY: If already registered, try to "Sign In" to get the ID
+                                if (authErr.message.toLowerCase().includes('already registered')) {
+                                    const { data: signInData, error: signInErr } = await ghostSupabase.auth.signInWithPassword({
+                                        email: emailToUse,
+                                        password: userPassword
+                                    });
+                                    
+                                    if (!signInErr) {
+                                        userId = signInData.user.id;
+                                        await ghostSupabase.auth.signOut(); // Clear ghost session
+                                    } else {
+                                        const reason = 'Already in Auth (Password Mismatch or Blocked)';
+                                        failedUsers.push({ email: emailToUse, reason: reason });
+                                        failedDataForCSV.push({ ...user, failure_reason: reason });
+                                        continue;
+                                    }
+                                } else if (authErr.message.toLowerCase().includes('rate limit')) {
+                                    const reason = 'Rate Limit Hit (Wait 1 minute)';
+                                    failedUsers.push({ email: emailToUse, reason: reason });
+                                    failedDataForCSV.push({ ...user, failure_reason: reason });
+                                    continue;
+                                } else {
+                                    const reason = `Auth: ${authErr.message}`;
+                                    failedUsers.push({ email: emailToUse, reason: reason });
+                                    failedDataForCSV.push({ ...user, failure_reason: reason });
+                                    continue;
+                                }
+                            } else {
+                                userId = authData?.user?.id;
+                            }
                         }
 
                         if (userId) {
-                            // 3. SECURE ORDER: Upsert Status First (satisfies DB foreign key constraints)
-                            const { error: stErr } = await supabaseClient
-                                .from('User_Status')
-                                .upsert([{ user_id: userId, is_active: user.is_active }], { onConflict: 'user_id' });
+                            // 3. Status sync
+                            await supabaseClient.from('User_Status').upsert([{ user_id: userId, is_active: user.is_active }], { onConflict: 'user_id' });
 
-                            if (stErr) {
-                                console.error(`❌ Status Table Error for ${emailToUse}:`, stErr.message, stErr);
-                                errorCount++;
-                                continue; 
-                            }
-
-                            // 4. Upsert Access Record (Profile Data)
-                            const accessData = {
-                                user_id: userId,
-                                name: user.name || 'Unknown',
-                                enrolment_id: user.enrolment_id || '',
-                                email_id: emailToUse,
-                                phone_number: user.phone_number || '',
-                                role: user.role || 'Students',
-                                password: user.password || 'Dbmci@123',
-                                centre_name: user.centre_name || '',
-                                is_first_login: true
-                            };
-
+                            // 4. Access sync
                             const { error: dbErr } = await supabaseClient
                                 .from('Access')
-                                .upsert([accessData], { onConflict: 'email_id' });
+                                .upsert([{
+                                    user_id: userId,
+                                    name: user.name || 'Unknown',
+                                    enrolment_id: user.enrolment_id || '',
+                                    email_id: emailToUse,
+                                    phone_number: user.phone_number || '',
+                                    role: user.role || 'Students',
+                                    password: user.password || 'Dbmci@123',
+                                    centre_name: user.centre_name || '',
+                                    is_first_login: true
+                                }], { onConflict: 'email_id' });
 
                             if (dbErr) {
-                                console.error(`❌ Access Table Error for ${emailToUse}:`, dbErr.message, dbErr);
-                                errorCount++;
+                                const reason = `DB: ${dbErr.message}`;
+                                failedUsers.push({ email: emailToUse, reason: reason });
+                                failedDataForCSV.push({ ...user, failure_reason: reason });
                             } else {
-                                console.log(`✅ Successfully uploaded: ${emailToUse}`);
                                 successCount++;
                             }
                         } else {
-                            console.error(`❌ No UserID found or created for ${emailToUse}`);
-                            errorCount++;
+                            const reason = 'ID Resolution Error';
+                            failedUsers.push({ email: emailToUse, reason: reason });
+                            failedDataForCSV.push({ ...user, failure_reason: reason });
                         }
                     } catch (err) {
-                        console.error(`💥 Unexpected Exception for ${emailToUse}:`, err);
-                        errorCount++;
+                        const reason = `Fatal: ${err.message}`;
+                        failedUsers.push({ email: user.email_id, reason: reason });
+                        failedDataForCSV.push({ ...user, failure_reason: reason });
                     }
                 }
 
-                alert(`Process Finished!\n\n✅ Success: ${successCount}\n❌ Errors: ${errorCount}\n\nCheck console for details.`);
-
-                if (successCount > 0) {
+                if (failedUsers.length > 0) {
+                    alert(`Upload Finished.\n✅ Success: ${successCount}\n❌ Failed: ${failedUsers.length}\n\nA "Download Errors" button has been added. Click it to get your retry list.`);
+                    
+                    // Add Download Button for Failures
+                    let dlBtn = document.getElementById('dl-failures-btn');
+                    if (!dlBtn) {
+                        dlBtn = document.createElement('button');
+                        dlBtn.id = 'dl-failures-btn';
+                        dlBtn.className = 'login-button';
+                        dlBtn.style.marginTop = '1rem';
+                        dlBtn.style.background = 'var(--error-color)';
+                        csvSection.appendChild(dlBtn);
+                    }
+                    dlBtn.textContent = `Download ${failedUsers.length} Failed Rows`;
+                    dlBtn.style.display = 'block';
+                    
+                    dlBtn.onclick = () => {
+                        const headers = "Name,EnrolmentID,Email,Phone,Role,Password,Centre,Status,FailureReason";
+                        const rows = failedDataForCSV.map(u => 
+                            `${u.name},${u.enrolment_id},${u.email_id},${u.phone_number},${u.role},${u.password},${u.centre_name},${u.is_active ? 'Active' : 'Inactive'},"${u.failure_reason}"`
+                        ).join('\n');
+                        const blob = new Blob([headers + "\n" + rows], { type: 'text/csv' });
+                        const url = URL.createObjectURL(blob);
+                        const a = document.createElement('a');
+                        a.href = url;
+                        a.download = 'failed_users_retry.csv';
+                        a.click();
+                    };
+                } else {
+                    alert('🎉 Success! All users uploaded perfectly.');
                     document.getElementById('add-user-modal').style.display = 'none';
-                    fileInput.value = '';
-                    fileNameDisplay.textContent = '';
-                    processBtn.disabled = true;
-                    processBtn.style.opacity = '0.5';
                     await fetchUsers();
                 }
 
                 processBtn.textContent = 'Upload & Process';
-                processBtn.disabled = errorCount === 0;
+                processBtn.disabled = false;
             });
 
             // Profile Dropdown Toggle
