@@ -1198,10 +1198,10 @@
                                 return {
                                     name,
                                     enrolment_id: enrolment,
-                                    email_id: email,
+                                    email_id: (email || '').toLowerCase().trim(),
                                     phone_number: phone,
-                                    role,
-                                    password,
+                                    role: role || 'Students',
+                                    password: password || 'Dbmci@123',
                                     centre_name: centre,
                                     is_first_login: true,
                                     is_active: isActive
@@ -1225,82 +1225,103 @@
                 let successCount = 0;
                 let errorCount = 0;
 
-                // For bulk upload, we must create Auth accounts for all.
-                // We do this sequentially to avoid rate limits and session issues.
+                // Secure registration client (prevents session hijacking)
+                const ghostSupabase = supabase.createClient(
+                    'https://aobwkcjfhbruihkandlg.supabase.co',
+                    'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImFvYndrY2pmaGJydWloa2FuZGxnIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzIwMjE1MjAsImV4cCI6MjA4NzU5NzUyMH0.V7OdMoiiDuXIMOdoUDLlUMjdavSjObHpajb2gHh0E38',
+                    { auth: { persistSession: false } }
+                );
+
                 for (const user of parsedUsers) {
                     try {
-                        // 1. Check if user exists
-                        const { data: existingUser } = await supabaseClient
+                        const emailToUse = user.email_id;
+                        console.log('🔄 Processing user:', emailToUse);
+
+                        // 1. Check if user already exists in Access table
+                        const { data: existingUser, error: checkErr } = await supabaseClient
                             .from('Access')
                             .select('user_id')
-                            .ilike('email_id', user.email_id)
+                            .ilike('email_id', emailToUse)
                             .maybeSingle();
 
-                        if (existingUser) {
-                            // UPDATE EXISTING USER
-                            const userId = existingUser.user_id;
-
-                            // Update Access table
-                            const { error: upErr } = await supabaseClient
-                                .from('Access')
-                                .update({
-                                    name: user.name,
-                                    enrolment_id: user.enrolment_id,
-                                    phone_number: user.phone_number,
-                                    role: user.role,
-                                    centre_name: user.centre_name
-                                })
-                                .eq('user_id', userId);
-
-                            // Update Status table
-                            const { error: stErr } = await supabaseClient
-                                .from('User_Status')
-                                .upsert([{ user_id: userId, is_active: user.is_active }]);
-
-                            if (!upErr && !stErr) successCount++;
-                            else errorCount++;
-
-                            continue;
-                        }
-
-                        // 2. CREATE NEW USER
-                        const ghostSupabase = supabase.createClient(
-                            'https://aobwkcjfhbruihkandlg.supabase.co',
-                            'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImFvYndrY2pmaGJydWloa2FuZGxnIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzIwMjE1MjAsImV4cCI6MjA4NzU5NzUyMH0.V7OdMoiiDuXIMOdoUDLlUMjdavSjObHpajb2gHh0E38',
-                            { auth: { persistSession: false } }
-                        );
-
-                        const { data: authData, error: authErr } = await ghostSupabase.auth.signUp({
-                            email: user.email_id,
-                            password: user.password
-                        });
-
-                        if (authErr && !authErr.message.includes('already registered')) {
-                            console.error(`Auth failed for ${user.email_id}:`, authErr.message);
+                        if (checkErr) {
+                            console.error(`❌ Check failed for ${emailToUse}:`, checkErr);
                             errorCount++;
                             continue;
                         }
 
-                        const userId = authData?.user?.id;
-                        if (userId) {
-                            user.user_id = userId;
-                            // Create Access Record
-                            const { error: dbErr } = await supabaseClient.from('Access').insert([user]);
-                            // Create Status Record
-                            await supabaseClient.from('User_Status').insert([{ user_id: userId, is_active: user.is_active }]);
+                        let userId = existingUser?.user_id;
 
-                            if (dbErr) errorCount++;
-                            else successCount++;
+                        // 2. If not in Access, we might need to create Auth account
+                        if (!userId) {
+                            const { data: authData, error: authErr } = await ghostSupabase.auth.signUp({
+                                email: emailToUse,
+                                password: user.password
+                            });
+
+                            if (authErr) {
+                                if (authErr.message.includes('already registered')) {
+                                    console.warn(`⚠️ User ${emailToUse} exists in Auth but not in Access. Requires manual linkage or admin sync.`);
+                                    // We can't easily get the UUID without admin keys, but we can try to find if they are online? No.
+                                    // For now, we count as error if we can't link.
+                                    errorCount++;
+                                    continue;
+                                } else {
+                                    console.error(`❌ Auth failed for ${emailToUse}:`, authErr.message);
+                                    errorCount++;
+                                    continue;
+                                }
+                            }
+                            userId = authData?.user?.id;
+                        }
+
+                        if (userId) {
+                            // 3. SECURE ORDER: Upsert Status First (satisfies DB foreign key constraints)
+                            const { error: stErr } = await supabaseClient
+                                .from('User_Status')
+                                .upsert([{ user_id: userId, is_active: user.is_active }], { onConflict: 'user_id' });
+
+                            if (stErr) {
+                                console.error(`❌ Status Table Error for ${emailToUse}:`, stErr.message, stErr);
+                                errorCount++;
+                                continue; 
+                            }
+
+                            // 4. Upsert Access Record (Profile Data)
+                            const accessData = {
+                                user_id: userId,
+                                name: user.name || 'Unknown',
+                                enrolment_id: user.enrolment_id || '',
+                                email_id: emailToUse,
+                                phone_number: user.phone_number || '',
+                                role: user.role || 'Students',
+                                password: user.password || 'Dbmci@123',
+                                centre_name: user.centre_name || '',
+                                is_first_login: true
+                            };
+
+                            const { error: dbErr } = await supabaseClient
+                                .from('Access')
+                                .upsert([accessData], { onConflict: 'email_id' });
+
+                            if (dbErr) {
+                                console.error(`❌ Access Table Error for ${emailToUse}:`, dbErr.message, dbErr);
+                                errorCount++;
+                            } else {
+                                console.log(`✅ Successfully uploaded: ${emailToUse}`);
+                                successCount++;
+                            }
                         } else {
+                            console.error(`❌ No UserID found or created for ${emailToUse}`);
                             errorCount++;
                         }
                     } catch (err) {
-                        console.error('Batch error:', err);
+                        console.error(`💥 Unexpected Exception for ${emailToUse}:`, err);
                         errorCount++;
                     }
                 }
 
-                alert(`Process Finished!\nSuccess: ${successCount}\nErrors: ${errorCount}`);
+                alert(`Process Finished!\n\n✅ Success: ${successCount}\n❌ Errors: ${errorCount}\n\nCheck console for details.`);
 
                 if (successCount > 0) {
                     document.getElementById('add-user-modal').style.display = 'none';
