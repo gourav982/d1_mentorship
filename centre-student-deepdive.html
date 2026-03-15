@@ -11,7 +11,7 @@
             color: #fff;
         }
     </style>
-    <title>DBMCI One | Student Performance</title>
+    <title>DBMCI One | Student Deepdive</title>
     <link rel="icon" type="image/png" href="favicon.png">
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -53,14 +53,14 @@
             let { data: perms } = await tempSupabase.from('role_permissions')
                 .select('is_granted')
                 .eq('role_name', userData.role)
-                .eq('permission_key', 'page_student_performance')
+                .eq('permission_key', 'page_centre_student_deepdive')
                 .single();
 
             if (!perms) {
                 const retryPerm = await tempSupabase.from('Role_Permissions')
                     .select('is_granted')
                     .eq('role_name', userData.role)
-                    .eq('permission_key', 'page_student_performance')
+                    .eq('permission_key', 'page_centre_student_deepdive')
                     .single();
                 perms = retryPerm.data;
             }
@@ -212,13 +212,13 @@
                     <div class="nav-group" style="margin-top: 1.5rem;">Mentor's Corner</div>
                     <a href="mentor-queries.html" class="nav-item" data-permission="page_mentor_queries">Student's
                         Query</a>
-                    <a href="mentor-performance.html" class="nav-item active"
+                    <a href="mentor-performance.html" class="nav-item"
                         data-permission="page_student_performance">Student Performance</a>
 
                     <!-- Centre Corner -->
                     <div class="nav-group" style="margin-top: 1.5rem;">Centre's Corner</div>
                     <a href="centre-performance.html" class="nav-item" data-permission="page_centre_batch_performance">Batch Performance</a>
-                    <a href="centre-student-deepdive.html" class="nav-item" data-permission="page_centre_student_deepdive">Student Deepdive</a>
+                    <a href="centre-student-deepdive.html" class="nav-item active" data-permission="page_centre_student_deepdive">Student Deepdive</a>
 
                     <div class="admin-only" id="admin-section">
                         <div class="nav-group" style="margin-top: 1.5rem;">Admin Corner</div>
@@ -240,7 +240,7 @@
                     <div
                         style="display: flex; justify-content: space-between; align-items: flex-end; margin-bottom: 2rem;">
                         <div>
-                            <h1>Student Performance Analysis</h1>
+                            <h1>Student Deepdive</h1>
                             <p>Search and track progress for any student in your assigned centers.</p>
                         </div>
                         <div id="student-pill-container" style="display: none;">
@@ -441,7 +441,7 @@
     </div>
 
     <script src="supabase-init.js"></script>
-    <script src="mentor-performance.js"></script>
+    <script src="centre-student-deepdive.js"></script>
 </body>
 
 </html>

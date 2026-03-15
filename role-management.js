@@ -25,8 +25,10 @@ document.addEventListener('DOMContentLoaded', async () => {
                         { key: 'page_dashboard', label: 'Performance Homepage', desc: 'Main student dashboard & charts' },
                         { key: 'page_schedule', label: 'Schedule Roadmap', desc: 'View classes and tests roadmap' },
                         { key: 'page_queries', label: 'Put your Query (Student)', desc: 'Access to post queries for students' },
-                        { key: 'page_mentor_queries', label: 'Student\'s Query (Mentor)', desc: 'Mentor view to manage student queries' },
-                        { key: 'page_student_performance', label: 'Student Performance (Mentor)', desc: 'Mentor view to search and see student stats' }
+                        { key: 'page_mentor_queries', label: 'Mentor Queries', desc: 'Mentor view to access student queries' },
+                        { key: 'page_student_performance', label: 'Student Performance (Mentor)', desc: 'Mentor view to search and see student stats' },
+                        { key: 'page_centre_batch_performance', label: 'Batch Performance (Centre)', desc: 'Centre admin view to see holistic batch performance' },
+                        { key: 'page_centre_student_deepdive', label: 'Student Deepdive (Centre)', desc: 'Centre admin view to deeply analyze individual students' }
                     ]
                 },
                 {
