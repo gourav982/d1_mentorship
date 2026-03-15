@@ -233,30 +233,25 @@ window.applyPermissions = async () => {
         }
 
         // 6. COUPLED SECTION LOGIC: Hide Nav Group if NO permitted functional items are visible inside it.
-        document.querySelectorAll('.nav-group').forEach(group => {
-            let next = group.nextElementSibling;
-            let sectionHasFunctionalAccess = false;
-            let sectionItems = [];
+        document.querySelectorAll('.nav-section').forEach(section => {
+            const group = section.querySelector('.nav-group');
+            const container = section.querySelector('.nav-items-container');
+            if (!group || !container) return;
 
-            // Traverse siblings until next group or admin corner
-            while (next && !next.classList.contains('nav-group') && !next.classList.contains('admin-only')) {
-                if (next.classList.contains('nav-item')) {
-                    sectionItems.push(next);
-                    const key = next.getAttribute('data-permission');
-                    // A section is "Open" only if an item with a PERMISSION KEY is granted and visible
-                    if (key && next.style.display !== 'none') {
-                        sectionHasFunctionalAccess = true;
-                    }
+            let sectionHasFunctionalAccess = false;
+            const items = container.querySelectorAll('.nav-item');
+
+            items.forEach(item => {
+                const key = item.getAttribute('data-permission');
+                if (key && item.style.display !== 'none') {
+                    sectionHasFunctionalAccess = true;
                 }
-                next = next.nextElementSibling;
-            }
+            });
 
             if (!sectionHasFunctionalAccess && !isSuperAdmin) {
-                group.style.display = 'none';
-                sectionItems.forEach(item => item.style.display = 'none');
+                section.style.display = 'none';
             } else {
-                group.style.display = 'block';
-                // Items themselves maintain their display state from step 4
+                section.style.display = 'block';
             }
         });
 
@@ -267,8 +262,30 @@ window.applyPermissions = async () => {
             adminSec.style.display = (visibleItems.length > 0 || isSuperAdmin) ? 'block' : 'none';
         }
 
+        // 7. Auto-expand the active section
+        const activeLink = document.querySelector('.nav-item.active');
+        if (activeLink) {
+            const container = activeLink.closest('.nav-items-container');
+            if (container && container.style.display !== 'none') {
+                container.classList.add('expanded');
+                const section = container.closest('.nav-section');
+                if (section) section.classList.add('expanded');
+            }
+        }
+
     } catch (err) {
         console.error('Apply Permissions Error:', err);
+    }
+};
+
+window.toggleNavGroup = (element) => {
+    const container = element.nextElementSibling;
+    if (container && container.classList.contains('nav-items-container')) {
+        container.classList.toggle('expanded');
+    }
+    const section = element.closest('.nav-section');
+    if (section) {
+        section.classList.toggle('expanded');
     }
 };
 

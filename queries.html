@@ -126,40 +126,66 @@
         <div class="dashboard-container">
             <aside class="sidebar">
                 <nav class="sidebar-nav">
-                    <div class="nav-group">Main Menu</div>
-                    <a href="dashboard.html" class="nav-item" data-permission="page_dashboard">Performance Homepage</a>
-                    <a href="schedule.html" class="nav-item" data-permission="page_schedule">Schedule</a>
+                    <div class="nav-section">
+                        <div class="nav-group" onclick="toggleNavGroup(this)">
+                            <span>Main Menu</span>
+                            <svg class="nav-chevron" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 12 15 18 9"></polyline></svg>
+                        </div>
+                        <div class="nav-items-container">
+                            <a href="dashboard.html" class="nav-item" data-permission="page_dashboard">Performance Homepage</a>
+                            <a href="schedule.html" class="nav-item" data-permission="page_schedule">Schedule</a>
+                        </div>
+                    </div>
 
-                    <div class="nav-group" style="margin-top: 1.5rem;">Mentorship</div>
-                    <a href="queries.html" class="nav-item active" data-permission="page_queries">Put your Query</a>
-                    <a href="#" class="nav-item disabled">Book a Session <span class="coming-soon-tag">Coming
-                            Soon</span></a>
-                    <a href="#" class="nav-item disabled">Session History <span class="coming-soon-tag">Coming
-                            Soon</span></a>
+                    <div class="nav-section">
+                        <div class="nav-group" onclick="toggleNavGroup(this)">
+                            <span>Mentorship</span>
+                            <svg class="nav-chevron" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 12 15 18 9"></polyline></svg>
+                        </div>
+                        <div class="nav-items-container">
+                            <a href="queries.html" class="nav-item active" data-permission="page_queries">Put your Query</a>
+                            <a href="#" class="nav-item disabled">Book a Session <span class="coming-soon-tag">Coming Soon</span></a>
+                            <a href="#" class="nav-item disabled">Session History <span class="coming-soon-tag">Coming Soon</span></a>
+                        </div>
+                    </div>
 
-                    <div class="nav-group" style="margin-top: 1.5rem;">Mentor's Corner</div>
-                    <a href="mentor-queries.html" class="nav-item" data-permission="page_mentor_queries">Student's
-                        Query</a>
-                    <a href="mentor-performance.html" class="nav-item"
-                        data-permission="page_student_performance">Student Performance</a>
+                    <div class="nav-section">
+                        <div class="nav-group" onclick="toggleNavGroup(this)">
+                            <span>Mentor's Corner</span>
+                            <svg class="nav-chevron" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 12 15 18 9"></polyline></svg>
+                        </div>
+                        <div class="nav-items-container">
+                            <a href="mentor-queries.html" class="nav-item" data-permission="page_mentor_queries">Student's Query</a>
+                            <a href="mentor-performance.html" class="nav-item" data-permission="page_student_performance">Student Performance</a>
+                        </div>
+                    </div>
 
-                    <!-- Centre Corner -->
-                    <div class="nav-group" style="margin-top: 1.5rem;">Centre's Corner</div>
-                    <a href="centre-performance.html" class="nav-item" data-permission="page_centre_batch_performance">Batch Performance</a>
-                    <a href="centre-student-deepdive.html" class="nav-item" data-permission="page_centre_student_deepdive">Student Deepdive</a>
-                    <a href="centre-analytics.html" class="nav-item" data-permission="page_centre_analytics">Centre Analytics</a>
+                    <div class="nav-section">
+                        <div class="nav-group" onclick="toggleNavGroup(this)">
+                            <span>Centre's Corner</span>
+                            <svg class="nav-chevron" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 12 15 18 9"></polyline></svg>
+                        </div>
+                        <div class="nav-items-container">
+                            <a href="centre-performance.html" class="nav-item" data-permission="page_centre_batch_performance">Batch Performance</a>
+                            <a href="centre-student-deepdive.html" class="nav-item" data-permission="page_centre_student_deepdive">Student Deepdive</a>
+                            <a href="centre-analytics.html" class="nav-item" data-permission="page_centre_analytics">Centre Analytics</a>
+                        </div>
+                    </div>
 
                     <div class="admin-only" id="admin-section">
-                        <div class="nav-group" style="margin-top: 1.5rem;">Admin Corner</div>
-                        <a href="admin-users.html" class="nav-item" data-permission="page_users">Users & Roles</a>
-                        <a href="role-management.html" class="nav-item super-admin-only"
-                            data-permission="page_permissions">Role Permissions</a>
-                        <a href="upload-schedule.html" class="nav-item" data-permission="page_upload_schedule">Upload
-                            Schedule</a>
-                        <a href="upload-results.html" class="nav-item" data-permission="page_upload_results">Upload
-                            Results</a>
-                        <a href="manage-centres.html" class="nav-item" data-permission="page_manage_centres">Manage
-                            Centres</a>
+                        <div class="nav-section">
+                            <div class="nav-group" onclick="toggleNavGroup(this)">
+                                <span>Admin Corner</span>
+                                <svg class="nav-chevron" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 12 15 18 9"></polyline></svg>
+                            </div>
+                            <div class="nav-items-container">
+                                <a href="admin-users.html" class="nav-item" data-permission="page_users">Users & Roles</a>
+                                <a href="role-management.html" class="nav-item super-admin-only" data-permission="page_permissions">Role Permissions</a>
+                                <a href="upload-schedule.html" class="nav-item" data-permission="page_upload_schedule">Upload Schedule</a>
+                                <a href="upload-results.html" class="nav-item" data-permission="page_upload_results">Upload Results</a>
+                                <a href="manage-centres.html" class="nav-item" data-permission="page_manage_centres">Manage Centres</a>
+                            </div>
+                        </div>
                     </div>
                 </nav>
             </aside>

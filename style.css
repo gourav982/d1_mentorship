@@ -374,15 +374,50 @@ select option {
 }
 
 .nav-group {
-    margin-top: 1.5rem;
-    margin-bottom: 0.5rem;
-    padding: 0 1rem;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-top: 0.5rem;
+    padding: 0.5rem 1rem;
     font-size: 0.65rem;
     font-weight: 700;
     text-transform: uppercase;
     letter-spacing: 0.1em;
     color: var(--text-secondary);
     opacity: 0.6;
+    cursor: pointer;
+    transition: opacity 0.2s ease, background 0.2s ease;
+    border-radius: 0.5rem;
+}
+
+.nav-group:hover {
+    opacity: 1;
+    background: rgba(255, 255, 255, 0.05);
+}
+
+.nav-chevron {
+    transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    opacity: 0.5;
+}
+
+.nav-items-container {
+    max-height: 0;
+    opacity: 0;
+    overflow: hidden;
+    transition: max-height 0.3s cubic-bezier(0.4, 0, 0.2, 1), opacity 0.3s ease;
+}
+
+.nav-items-container.expanded {
+    max-height: 800px;
+    opacity: 1;
+}
+
+.nav-section:has(.nav-items-container.expanded) .nav-chevron {
+    transform: rotate(180deg);
+}
+
+.nav-section {
+    margin-bottom: 0.5rem;
 }
 
 .nav-item {
@@ -396,6 +431,7 @@ select option {
     font-weight: 500;
     transition: all 0.2s ease;
     white-space: nowrap;
+    margin: 0.25rem 0;
 }
 
 .dashboard-main {
