@@ -235,10 +235,9 @@ document.addEventListener('DOMContentLoaded', async () => {
                     currentResultsMap[`${itemType}:${itemCode}`] ||
                     result;
             }
-            if (result.score === '-' && (itemType === 'T&D' || itemType === 'Marrow GT' || item.marrow_gt)) {
+            if (result.score === '-' && (itemType === 'T&D' || itemType.toLowerCase().includes('t&d'))) {
                 result = currentResultsMap[`T&D:${itemTopic}`] ||
-                    currentResultsMap[`Marrow GT:${itemTopic}`] ||
-                    currentResultsMap[`Marrow GT:${item.marrow_gt}`] ||
+                    currentResultsMap[`T&D:${itemCode}`] ||
                     result;
             }
             return result;

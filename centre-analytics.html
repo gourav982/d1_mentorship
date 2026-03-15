@@ -1,0 +1,644 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <style>
+        html,
+        body {
+            background: #0d121f !important;
+            color: #fff;
+        }
+    </style>
+    <title>DBMCI One | Centre Analytics</title>
+    <link rel="icon" type="image/png" href="favicon.png">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link
+        href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600&family=Outfit:wght@300;400;700&display=swap"
+        rel="stylesheet">
+    <link rel="stylesheet" href="style.css">
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <script>
+        const checkPageAccess = async () => {
+            const SUPABASE_URL = 'https://aobwkcjfhbruihkandlg.supabase.co';
+            const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImFvYndrY2pmaGJydWloa2FuZGxnIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzIwMjE1MjAsImV4cCI6MjA4NzU5NzUyMH0.V7OdMoiiDuXIMOdoUDLlUMjdavSjObHpajb2gHh0E38';
+            const tempSupabase = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+            const { data: { session } } = await tempSupabase.auth.getSession();
+
+            if (!session) {
+                window.location.replace('index.html');
+                return;
+            }
+
+            let { data: userData } = await tempSupabase.from('access').select('role').ilike('email_id', session.user.email).single();
+            if (!userData) {
+                const retry = await tempSupabase.from('Access').select('role').ilike('email_id', session.user.email).single();
+                userData = retry.data;
+            }
+
+            if (!userData) {
+                window.location.replace('index.html');
+                return;
+            }
+
+            if (userData.role === 'Super admin') {
+                document.body.style.display = 'block';
+                return;
+            }
+
+            let { data: perms } = await tempSupabase.from('role_permissions')
+                .select('is_granted')
+                .eq('role_name', userData.role)
+                .eq('permission_key', 'page_centre_analytics')
+                .single();
+
+            if (!perms) {
+                const retryPerm = await tempSupabase.from('Role_Permissions')
+                    .select('is_granted')
+                    .eq('role_name', userData.role)
+                    .eq('permission_key', 'page_centre_analytics')
+                    .single();
+                perms = retryPerm?.data;
+            }
+
+            if (perms && perms.is_granted) {
+                document.body.style.display = 'block';
+            } else {
+                window.location.replace('dashboard.html');
+            }
+        };
+        checkPageAccess();
+    </script>
+    <style>
+        body {
+            display: none;
+        }
+
+        .tabs-container {
+            display: flex;
+            gap: 0.5rem;
+            background: rgba(15, 23, 42, 0.4);
+            padding: 0.5rem;
+            border-radius: 1rem;
+            border: 1px solid var(--glass-border);
+            margin-bottom: 2rem;
+            width: fit-content;
+        }
+
+        .tab-btn {
+            background: transparent;
+            border: none;
+            color: var(--text-secondary);
+            padding: 0.75rem 1.5rem;
+            border-radius: 0.75rem;
+            font-size: 0.9rem;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+
+        .tab-btn:hover {
+            color: #fff;
+            background: rgba(255, 255, 255, 0.05);
+        }
+
+        .tab-btn.active {
+            background: var(--accent-color);
+            color: #0f172a;
+        }
+
+        .analytics-content {
+            display: none;
+            opacity: 0;
+            transition: opacity 0.5s ease;
+        }
+
+        .analytics-content.active {
+            display: block;
+            opacity: 1;
+        }
+
+        .filter-bar {
+            background: rgba(15, 23, 42, 0.4);
+            border: 1px solid var(--glass-border);
+            border-radius: 1rem;
+            padding: 1rem 1.5rem;
+            margin-bottom: 2rem;
+            display: flex;
+            align-items: center;
+            gap: 1.5rem;
+            backdrop-filter: blur(10px);
+        }
+
+        .filter-select {
+            flex: 1;
+            background: rgba(15, 23, 42, 0.6);
+            border: 1px solid var(--glass-border);
+            border-radius: 0.75rem;
+            padding: 0.75rem 1rem;
+            color: #fff;
+            font-family: inherit;
+            outline: none;
+            cursor: pointer;
+            appearance: none;
+        }
+
+        .stats-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 1.5rem;
+            margin-bottom: 2rem;
+        }
+
+        .stat-card {
+            background: rgba(15, 23, 42, 0.4);
+            border: 1px solid var(--glass-border);
+            border-radius: 1rem;
+            padding: 1.5rem;
+            backdrop-filter: blur(10px);
+            text-align: center;
+        }
+
+        .stat-value {
+            font-size: 2rem;
+            font-weight: 700;
+            color: #fff;
+            font-family: 'Outfit', sans-serif;
+            margin-bottom: 0.5rem;
+        }
+
+        .stat-label {
+            font-size: 0.85rem;
+            color: var(--text-secondary);
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+        }
+
+        .stat-value.accent { color: var(--accent-color); }
+        .stat-value.success { color: #22c55e; }
+        .stat-value.danger { color: #ef4444; }
+
+        .leaderboard-section {
+            background: rgba(15, 23, 42, 0.4);
+            border: 1px solid var(--glass-border);
+            border-radius: 1rem;
+            padding: 1.5rem;
+            margin-bottom: 2rem;
+        }
+
+        .leaderboard-title {
+            font-size: 1.25rem;
+            font-family: 'Outfit', sans-serif;
+            color: #fff;
+            margin-bottom: 1.5rem;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+
+        .leaderboard-list {
+            display: flex;
+            flex-direction: column;
+            gap: 0.75rem;
+            max-height: 280px;
+            overflow-y: auto;
+            padding-right: 0.5rem;
+        }
+        
+        /* Custom subtle scrollbar for leaderboard */
+        .leaderboard-list::-webkit-scrollbar {
+            width: 4px;
+        }
+        .leaderboard-list::-webkit-scrollbar-track {
+            background: rgba(255, 255, 255, 0.02); 
+            border-radius: 4px;
+        }
+        .leaderboard-list::-webkit-scrollbar-thumb {
+            background: rgba(255, 255, 255, 0.1); 
+            border-radius: 4px;
+        }
+
+        .leaderboard-item {
+            display: flex;
+            align-items: center;
+            padding: 0.75rem 1rem;
+            background: rgba(255, 255, 255, 0.02);
+            border: 1px solid rgba(255, 255, 255, 0.05);
+            border-radius: 0.75rem;
+            gap: 1rem;
+        }
+
+        .rank-badge {
+            width: 32px;
+            height: 32px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: 700;
+            font-size: 0.9rem;
+            background: rgba(255,255,255,0.1);
+            color: #fff;
+        }
+
+        .rank-1 { background: linear-gradient(135deg, #fbbf24, #f59e0b); color: #000; }
+        .rank-2 { background: linear-gradient(135deg, #e2e8f0, #94a3b8); color: #000; }
+        .rank-3 { background: linear-gradient(135deg, #fcd34d, #d97706); color: #000; } /* Bronze approx */
+
+        .student-info { flex: 1; }
+        .student-name { font-weight: 600; color: #fff; font-size: 0.95rem; }
+        .student-id { font-size: 0.8rem; color: var(--text-secondary); }
+        .student-score { font-weight: 700; font-family: 'Outfit', sans-serif; font-size: 1.1rem; color: var(--accent-color); }
+
+        .table-container {
+            background: rgba(15, 23, 42, 0.4);
+            border: 1px solid var(--glass-border);
+            border-radius: 1rem;
+            backdrop-filter: blur(10px);
+        }
+
+        table { width: 100%; border-collapse: collapse; text-align: left; }
+        th {
+            background: #0d121f; /* Solid background to prevent text bleed */
+            padding: 1rem;
+            font-size: 0.75rem;
+            font-weight: 700;
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+            color: var(--text-secondary);
+            border-bottom: 2px solid rgba(255,255,255,0.05); /* Slightly stronger border to define header */
+            position: sticky;
+            top: -0.5rem; /* Offsets dashboard padding to prevent gap above */
+            z-index: 10;
+        }
+        td {
+            padding: 1rem;
+            font-size: 0.9rem;
+            color: var(--text-primary);
+            border-bottom: 1px solid var(--glass-border);
+        }
+        tr:hover td { background: rgba(56, 189, 248, 0.03); }
+        .sort-icon { display: inline-block; margin-left: 0.25rem; font-size: 0.8rem; }
+        th[data-sort] { cursor: pointer; transition: background 0.2s; }
+        th[data-sort]:hover { background: rgba(30, 41, 59, 1); }
+        .status-pill {
+            padding: 0.25rem 0.75rem;
+            border-radius: 2rem;
+            font-size: 0.75rem;
+            font-weight: 600;
+            display: inline-block;
+        }
+        .status-present { background: rgba(34, 197, 94, 0.1); color: #22c55e; border: 1px solid rgba(34, 197, 94, 0.2); }
+        .status-absent { background: rgba(239, 68, 68, 0.1); color: #ef4444; border: 1px solid rgba(239, 68, 68, 0.2); }
+    </style>
+</head>
+
+<body>
+    <div class="dashboard-wrapper">
+        <header class="top-header">
+            <div class="header-left">
+                <button id="sidebar-toggle-btn" class="sidebar-toggle">
+                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <line x1="3" y1="12" x2="21" y2="12"></line>
+                        <line x1="3" y1="6" x2="21" y2="6"></line>
+                        <line x1="3" y1="18" x2="21" y2="18"></line>
+                    </svg>
+                </button>
+                <div class="sidebar-logo">DBMCI One Mentorship</div>
+            </div>
+            <div class="header-actions">
+                <div class="user-profile" id="user-profile-btn">
+                    <div class="avatar" id="avatar-circle">?</div>
+                    <div class="profile-info">
+                        <span class="name" id="display-name">Loading...</span>
+                        <span class="role" id="display-role">...</span>
+                    </div>
+                    <div class="profile-dropdown">
+                        <a href="#" id="open-profile-btn" class="dropdown-item">
+                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="18"
+                                height="18">
+                                <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"></path>
+                                <circle cx="12" cy="7" r="4"></circle>
+                            </svg>
+                            My Profile
+                        </a>
+                        <div class="dropdown-divider"></div>
+                        <a href="#" id="logout-btn" class="dropdown-item logout">
+                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="18"
+                                height="18">
+                                <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"></path>
+                                <polyline points="16 17 21 12 16 7"></polyline>
+                                <line x1="21" y1="12" x2="9" y2="12"></line>
+                            </svg>
+                            Logout
+                        </a>
+                    </div>
+                </div>
+            </div>
+        </header>
+
+        <div class="dashboard-container">
+            <aside class="sidebar">
+                <nav class="sidebar-nav">
+                    <div class="nav-group">Main Menu</div>
+                    <a href="dashboard.html" class="nav-item" data-permission="page_dashboard">Performance Homepage</a>
+                    <a href="schedule.html" class="nav-item" data-permission="page_schedule">Schedule</a>
+
+                    <div class="nav-group" style="margin-top: 1.5rem;">Mentorship</div>
+                    <a href="queries.html" class="nav-item" data-permission="page_queries">Put your Query</a>
+                    <a href="#" class="nav-item disabled">Book a Session <span class="coming-soon-tag">Coming
+                            Soon</span></a>
+                    <a href="#" class="nav-item disabled">Session History <span class="coming-soon-tag">Coming
+                            Soon</span></a>
+
+                    <div class="nav-group" style="margin-top: 1.5rem;">Mentor's Corner</div>
+                    <a href="mentor-queries.html" class="nav-item" data-permission="page_mentor_queries">Student's
+                        Query</a>
+                    <a href="mentor-performance.html" class="nav-item"
+                        data-permission="page_student_performance">Student Performance</a>
+
+                    <!-- Centre Corner -->
+                    <div class="nav-group" style="margin-top: 1.5rem;">Centre's Corner</div>
+                    <a href="centre-performance.html" class="nav-item" data-permission="page_centre_batch_performance">Batch Performance</a>
+                    <a href="centre-student-deepdive.html" class="nav-item" data-permission="page_centre_student_deepdive">Student Deepdive</a>
+                    <a href="centre-analytics.html" class="nav-item active" data-permission="page_centre_analytics">Centre Analytics</a>
+
+                    <div class="admin-only" id="admin-section">
+                        <div class="nav-group" style="margin-top: 1.5rem;">Admin Corner</div>
+                        <a href="admin-users.html" class="nav-item" data-permission="page_users">Users & Roles</a>
+                        <a href="role-management.html" class="nav-item super-admin-only"
+                            data-permission="page_permissions">Role Permissions</a>
+                        <a href="upload-schedule.html" class="nav-item" data-permission="page_upload_schedule">Upload
+                            Schedule</a>
+                        <a href="upload-results.html" class="nav-item" data-permission="page_upload_results">Upload
+                            Results</a>
+                        <a href="manage-centres.html" class="nav-item" data-permission="page_manage_centres">Manage
+                            Centres</a>
+                    </div>
+                </nav>
+            </aside>
+
+            <main class="dashboard-main">
+                <div class="dashboard-content">
+                    <div style="margin-bottom: 2rem;">
+                        <h1 id="centre-analytics-title">Centre Analytics</h1>
+                        <p style="color: var(--text-secondary); margin-top: 0.5rem;" id="centre-analytics-subtitle">Track batch-wide summary and performance for individual tests.</p>
+                    </div>
+
+                    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 2rem; flex-wrap: wrap; gap: 1rem;">
+                        <div class="tabs-container" style="margin-bottom: 0;">
+                            <button class="tab-btn active" data-tab="tab-daily">Daily Tests</button>
+                            <button class="tab-btn" data-tab="tab-td">T&D Tests</button>
+                            <button class="tab-btn" data-tab="tab-gt">Marrow GTs</button>
+                        </div>
+                        
+                        <div id="admin-centre-filter-container" style="display: none; align-items: center; gap: 1rem;">
+                            <span style="color: var(--text-secondary); font-size: 0.9rem;">Centre:</span>
+                            <select id="admin-centre-filter" class="filter-select" style="padding: 0.5rem 1rem; font-size: 0.9rem; min-width: 250px;">
+                                <option value="">Loading centres...</option>
+                            </select>
+                        </div>
+                    </div>
+
+                    <!-- DAILY TESTS TAB -->
+                    <div id="tab-daily" class="analytics-content active">
+                        <div class="filter-bar" style="flex-wrap: wrap;">
+                            <div style="display: flex; flex-direction: column; gap: 0.5rem;">
+                                <label style="font-size: 0.75rem; font-weight: 700; color: var(--text-secondary); letter-spacing: 0.05em; text-transform: uppercase;">Date Filter</label>
+                                <div style="display: flex; align-items: center; gap: 0.5rem; flex-wrap: wrap;">
+                                    <select id="daily-date-filter" class="filter-select" style="flex: 0 0 160px;">
+                                        <option value="all">All Dates</option>
+                                        <option value="on">On</option>
+                                        <option value="before">Before</option>
+                                        <option value="after">After</option>
+                                        <option value="between">Between</option>
+                                        <option value="since">Since</option>
+                                    </select>
+                                    
+                                    <div id="date-inputs-container" style="display: none; align-items: center; gap: 0.5rem;">
+                                        <input type="date" id="date-input-1" class="filter-select" style="flex: 0 0 160px; color-scheme: dark;">
+                                        <span id="date-separator" style="display: none; color: var(--text-secondary);">to</span>
+                                        <input type="date" id="date-input-2" class="filter-select" style="display: none; flex: 0 0 160px; color-scheme: dark;">
+                                    </div>
+                                </div>
+                            </div>
+                            
+                            <div style="display: flex; flex-direction: column; gap: 0.5rem; flex: 1; min-width: 250px;">
+                                <label style="font-size: 0.75rem; font-weight: 700; color: var(--text-secondary); letter-spacing: 0.05em; text-transform: uppercase;">Select Test</label>
+                                <select id="daily-select" class="filter-select">
+                                    <option value="">Loading Daily Tests...</option>
+                                </select>
+                            </div>
+                        </div>
+                        
+                        <div class="stats-grid">
+                            <div class="stat-card">
+                                <div class="stat-value success" id="daily-present">-</div>
+                                <div class="stat-label">Present</div>
+                            </div>
+                            <div class="stat-card">
+                                <div class="stat-value danger" id="daily-absent">-</div>
+                                <div class="stat-label">Absent</div>
+                            </div>
+                            <div class="stat-card">
+                                <div class="stat-value accent" id="daily-avg-score">-</div>
+                                <div class="stat-label">Avg. Score</div>
+                            </div>
+                            <div class="stat-card">
+                                <div class="stat-value" id="daily-pass">-</div>
+                                <div class="stat-label">Pass %</div>
+                            </div>
+                        </div>
+
+                        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1rem; margin-top: 2rem;">
+                            <h3 style="font-family: 'Outfit', sans-serif; font-size: 1.1rem;">Student List</h3>
+                            <div style="display: flex; gap: 1rem;">
+                                <select id="daily-table-filter" class="filter-select" style="padding: 0.5rem 1rem; flex: none; width: auto; font-size: 0.85rem;">
+                                    <option value="all">All Students</option>
+                                    <option value="present">Present Only</option>
+                                    <option value="absent">Absent Only</option>
+                                </select>
+                            </div>
+                        </div>
+
+                        <div class="table-container">
+                            <table>
+                                <thead>
+                                    <tr>
+                                        <th data-sort="enrolment_id" style="width: 15%">Enrolment ID <span class="sort-icon"></span></th>
+                                        <th data-sort="name" style="width: 40%">Name <span class="sort-icon"></span></th>
+                                        <th data-sort="status" style="text-align: center; width: 15%">Status <span class="sort-icon"></span></th>
+                                        <th data-sort="score" style="text-align: center; width: 15%">Score <span class="sort-icon"></span></th>
+                                        <th data-sort="percentile" style="text-align: center; width: 15%">Percentile <span class="sort-icon"></span></th>
+                                    </tr>
+                                </thead>
+                                <tbody id="daily-tbody">
+                                    <tr><td colspan="5" style="text-align: center; padding: 2rem;">Select a test to view students</td></tr>
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+
+                    <!-- T&D TESTS TAB -->
+                    <div id="tab-td" class="analytics-content">
+                        <div class="filter-bar">
+                            <select id="td-select" class="filter-select">
+                                <option value="">Loading T&D Tests...</option>
+                            </select>
+                        </div>
+
+                        <div style="display: grid; grid-template-columns: 2fr 1fr; gap: 2rem; margin-bottom: 2rem;">
+                            <div class="leaderboard-section">
+                                <h3 class="leaderboard-title">
+                                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="8" r="7"></circle><polyline points="8.21 13.89 7 23 12 20 17 23 15.79 13.88"></polyline></svg>
+                                    Top 10 Performers
+                                </h3>
+                                <div class="leaderboard-list" id="td-leaderboard">
+                                    <div style="text-align: center; color: var(--text-secondary); padding: 1rem;">Select a test to view top performers</div>
+                                </div>
+                            </div>
+                            <div style="display: flex; flex-direction: column; gap: 1rem;">
+                                <div class="stat-card">
+                                    <div class="stat-value success" id="td-present">-</div>
+                                    <div class="stat-label">Total Present</div>
+                                </div>
+                                <div class="stat-card">
+                                    <div class="stat-value danger" id="td-absent">-</div>
+                                    <div class="stat-label">Total Absent</div>
+                                </div>
+                                <div class="stat-card">
+                                    <div class="stat-value accent" id="td-avg-percentile">-</div>
+                                    <div class="stat-label">Avg. Percentile</div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1rem; margin-top: 2rem;">
+                            <h3 style="font-family: 'Outfit', sans-serif; font-size: 1.1rem;">Student List</h3>
+                            <div style="display: flex; gap: 1rem;">
+                                <select id="td-table-filter" class="filter-select" style="padding: 0.5rem 1rem; flex: none; width: auto; font-size: 0.85rem;">
+                                    <option value="all">All Students</option>
+                                    <option value="present">Present Only</option>
+                                    <option value="absent">Absent Only</option>
+                                </select>
+                            </div>
+                        </div>
+
+                        <div class="table-container">
+                            <table>
+                                <thead>
+                                    <tr>
+                                        <th data-sort="enrolment_id" style="width: 15%">Enrolment ID <span class="sort-icon"></span></th>
+                                        <th data-sort="name" style="width: 40%">Name <span class="sort-icon"></span></th>
+                                        <th data-sort="status" style="text-align: center; width: 15%">Status <span class="sort-icon"></span></th>
+                                        <th data-sort="score" style="text-align: center; width: 15%">Score <span class="sort-icon"></span></th>
+                                        <th data-sort="percentile" style="text-align: center; width: 15%">Percentile <span class="sort-icon"></span></th>
+                                    </tr>
+                                </thead>
+                                <tbody id="td-tbody">
+                                    <tr><td colspan="5" style="text-align: center; padding: 2rem;">Select a test to view students</td></tr>
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+
+                    <!-- MARROW GT TAB -->
+                    <div id="tab-gt" class="analytics-content">
+                        <div class="filter-bar">
+                            <select id="gt-select" class="filter-select">
+                                <option value="">Loading Marrow GTs...</option>
+                            </select>
+                        </div>
+
+                        <div style="display: grid; grid-template-columns: 2fr 1fr; gap: 2rem; margin-bottom: 2rem;">
+                            <div class="leaderboard-section">
+                                <h3 class="leaderboard-title">
+                                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"></polygon></svg>
+                                    Top 10 Performers
+                                </h3>
+                                <div class="leaderboard-list" id="gt-leaderboard">
+                                    <div style="text-align: center; color: var(--text-secondary); padding: 1rem;">Select a test to view top performers</div>
+                                </div>
+                            </div>
+                            <div style="display: flex; flex-direction: column; gap: 1rem;">
+                                <div class="stat-card">
+                                    <div class="stat-value success" id="gt-present">-</div>
+                                    <div class="stat-label">Total Present</div>
+                                </div>
+                                <div class="stat-card">
+                                    <div class="stat-value danger" id="gt-absent">-</div>
+                                    <div class="stat-label">Total Absent</div>
+                                </div>
+                                <div class="stat-card">
+                                    <div class="stat-value accent" id="gt-avg-percentile">-</div>
+                                    <div class="stat-label">Avg. Percentile</div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1rem; margin-top: 2rem;">
+                            <h3 style="font-family: 'Outfit', sans-serif; font-size: 1.1rem;">Student List</h3>
+                            <div style="display: flex; gap: 1rem;">
+                                <select id="gt-table-filter" class="filter-select" style="padding: 0.5rem 1rem; flex: none; width: auto; font-size: 0.85rem;">
+                                    <option value="all">All Students</option>
+                                    <option value="present">Present Only</option>
+                                    <option value="absent">Absent Only</option>
+                                </select>
+                            </div>
+                        </div>
+
+                        <div class="table-container">
+                            <table>
+                                <thead>
+                                    <tr>
+                                        <th data-sort="enrolment_id" style="width: 15%">Enrolment ID <span class="sort-icon"></span></th>
+                                        <th data-sort="name" style="width: 40%">Name <span class="sort-icon"></span></th>
+                                        <th data-sort="status" style="text-align: center; width: 15%">Status <span class="sort-icon"></span></th>
+                                        <th data-sort="score" style="text-align: center; width: 15%">Score <span class="sort-icon"></span></th>
+                                        <th data-sort="percentile" style="text-align: center; width: 15%">Percentile <span class="sort-icon"></span></th>
+                                    </tr>
+                                </thead>
+                                <tbody id="gt-tbody">
+                                    <tr><td colspan="5" style="text-align: center; padding: 2rem;">Select a test to view students</td></tr>
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+
+                </div>
+            </main>
+        </div>
+    </div>
+
+    <!-- Profile Modal (Read Only) -->
+    <div id="password-modal" class="modal-overlay">
+        <div class="login-card" style="max-width: 450px;">
+            <div class="modal-header">
+                <h2>My Profile</h2>
+                <button class="close-modal"
+                    onclick="document.getElementById('password-modal').classList.remove('active')">&times;</button>
+            </div>
+            <div style="margin-top: 1.5rem; display: flex; flex-direction: column; gap: 1rem;">
+                <div class="input-group">
+                    <label>Name</label>
+                    <input type="text" id="profile-name" class="filter-input" readonly>
+                </div>
+                <div class="input-group">
+                    <label>Email</label>
+                    <input type="text" id="profile-email" class="filter-input" readonly>
+                </div>
+                <div class="input-group">
+                    <label>Enrolment / Centre</label>
+                    <input type="text" id="profile-enrolment" class="filter-input" readonly>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script src="supabase-init.js"></script>
+    <script src="centre-analytics.js"></script>
+</body>
+
+</html>
