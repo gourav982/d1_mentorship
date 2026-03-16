@@ -288,17 +288,24 @@ document.addEventListener('DOMContentLoaded', async () => {
         
         let presentCount = 0;
         let totalScore = 0;
+        let passCount = 0;
 
         rows.forEach(r => {
             if (r.status === 'Present') {
                 presentCount++;
                 totalScore += parseFloat(r.score) || 0;
+                
+                // For Custom Modules, the 'percentile' column actually contains the Percentage score
+                const percentageScore = parseFloat(r.percentile);
+                if (!isNaN(percentageScore) && percentageScore >= 50) {
+                    passCount++;
+                }
             }
         });
 
         const absentCount = rows.length - presentCount;
         const avgScore = presentCount > 0 ? (totalScore / presentCount).toFixed(1) : '-';
-        const passPercent = rows.length > 0 ? Math.round((presentCount / rows.length) * 100) + '%' : '0%';
+        const passPercent = presentCount > 0 ? Math.round((passCount / presentCount) * 100) + '%' : '-';
 
         document.getElementById('daily-present').textContent = presentCount;
         document.getElementById('daily-absent').textContent = absentCount;
