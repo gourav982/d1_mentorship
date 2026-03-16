@@ -95,18 +95,46 @@ document.addEventListener('DOMContentLoaded', async () => {
                 const lines = text.split(/\r?\n/).filter(line => line.trim() !== '');
                 if (lines.length < 2) throw new Error('CSV file is empty or missing headers.');
 
+                // Simple robust CSV line splitter helper
+                const splitCSVLine = (line) => {
+                    const parts = [];
+                    let cur = '';
+                    let inQuotes = false;
+                    for (let i = 0; i < line.length; i++) {
+                        const char = line[i];
+                        if (char === '"') {
+                            if (inQuotes && line[i + 1] === '"') {
+                                cur += '"'; // Doubled quote
+                                i++;
+                            } else {
+                                inQuotes = !inQuotes;
+                            }
+                        } else if (char === ',' && !inQuotes) {
+                            parts.push(cur.trim());
+                            cur = '';
+                        } else {
+                            cur += char;
+                        }
+                    }
+                    parts.push(cur.trim());
+                    return parts;
+                };
+
                 // Expected Headers: Enrolment ID, Test Type, Test Code, Score, Percentile
                 const results = [];
                 for (let i = 1; i < lines.length; i++) {
-                    const columns = lines[i].split(',').map(c => c.trim());
+                    const columns = splitCSVLine(lines[i]);
                     if (columns.length < 3) continue; // Skip malformed lines
 
+                    // Remove possible surrounding quotes
+                    const cleanId = columns[0].replace(/^"|"$/g, '');
+
                     results.push({
-                        enrolment_id: columns[0],
-                        test_type: columns[1] || 'Custom Module',
-                        custom_module_code: columns[2], // We use this internal column name for 'Test Code'
-                        score: columns[3] || '-',
-                        percentile: columns[4] || '-'
+                        enrolment_id: cleanId,
+                        test_type: columns[1] ? columns[1].replace(/^"|"$/g, '') : 'Custom Module',
+                        custom_module_code: columns[2] ? columns[2].replace(/^"|"$/g, '') : '', 
+                        score: columns[3] ? columns[3].replace(/^"|"$/g, '') : '-',
+                        percentile: columns[4] ? columns[4].replace(/^"|"$/g, '') : '-'
                     });
                 }
 
