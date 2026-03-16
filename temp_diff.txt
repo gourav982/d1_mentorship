@@ -1,0 +1,153 @@
+diff --git a/admin-users.html b/admin-users.html
+index 082830f..f8878a5 100644
+--- a/admin-users.html
++++ b/admin-users.html
+@@ -389,10 +389,14 @@
+                     <div class="nav-section">
+                         <div class="nav-group" onclick="toggleNavGroup(this)">
+                             <span>Main Menu</span>
+-                            <svg class="nav-chevron" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 12 15 18 9"></polyline></svg>
++                            <svg class="nav-chevron" width="16" height="16" viewBox="0 0 24 24" fill="none"
++                                stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
++                                <polyline points="6 9 12 15 18 9"></polyline>
++                            </svg>
+                         </div>
+                         <div class="nav-items-container">
+-                            <a href="dashboard.html" class="nav-item" data-permission="page_dashboard">Performance Homepage</a>
++                            <a href="dashboard.html" class="nav-item" data-permission="page_dashboard">Performance
++                                Homepage</a>
+                             <a href="schedule.html" class="nav-item" data-permission="page_schedule">Schedule</a>
+                         </div>
+                     </div>
+@@ -400,35 +404,51 @@
+                     <div class="nav-section">
+                         <div class="nav-group" onclick="toggleNavGroup(this)">
+                             <span>Mentorship</span>
+-                            <svg class="nav-chevron" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 12 15 18 9"></polyline></svg>
++                            <svg class="nav-chevron" width="16" height="16" viewBox="0 0 24 24" fill="none"
++                                stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
++                                <polyline points="6 9 12 15 18 9"></polyline>
++                            </svg>
+                         </div>
+                         <div class="nav-items-container">
+                             <a href="queries.html" class="nav-item" data-permission="page_queries">Put your Query</a>
+-                            <a href="#" class="nav-item disabled">Book a Session <span class="coming-soon-tag">Coming Soon</span></a>
+-                            <a href="#" class="nav-item disabled">Session History <span class="coming-soon-tag">Coming Soon</span></a>
++                            <a href="#" class="nav-item disabled">Book a Session <span class="coming-soon-tag">Coming
++                                    Soon</span></a>
++                            <a href="#" class="nav-item disabled">Session History <span class="coming-soon-tag">Coming
++                                    Soon</span></a>
+                         </div>
+                     </div>
+ 
+                     <div class="nav-section">
+                         <div class="nav-group" onclick="toggleNavGroup(this)">
+                             <span>Mentor's Corner</span>
+-                            <svg class="nav-chevron" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 12 15 18 9"></polyline></svg>
++                            <svg class="nav-chevron" width="16" height="16" viewBox="0 0 24 24" fill="none"
++                                stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
++                                <polyline points="6 9 12 15 18 9"></polyline>
++                            </svg>
+                         </div>
+                         <div class="nav-items-container">
+-                            <a href="mentor-queries.html" class="nav-item" data-permission="page_mentor_queries">Student's Query</a>
+-                            <a href="mentor-performance.html" class="nav-item" data-permission="page_student_performance">Student Performance</a>
++                            <a href="mentor-queries.html" class="nav-item"
++                                data-permission="page_mentor_queries">Student's Query</a>
++                            <a href="mentor-performance.html" class="nav-item"
++                                data-permission="page_student_performance">Student Performance</a>
+                         </div>
+                     </div>
+ 
+                     <div class="nav-section">
+                         <div class="nav-group" onclick="toggleNavGroup(this)">
+                             <span>Centre's Corner</span>
+-                            <svg class="nav-chevron" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 12 15 18 9"></polyline></svg>
++                            <svg class="nav-chevron" width="16" height="16" viewBox="0 0 24 24" fill="none"
++                                stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
++                                <polyline points="6 9 12 15 18 9"></polyline>
++                            </svg>
+                         </div>
+                         <div class="nav-items-container">
+-                            <a href="centre-performance.html" class="nav-item" data-permission="page_centre_batch_performance">Batch Performance</a>
+-                            <a href="centre-student-deepdive.html" class="nav-item" data-permission="page_centre_student_deepdive">Student Deepdive</a>
+-                            <a href="centre-analytics.html" class="nav-item" data-permission="page_centre_analytics">Centre Analytics</a>
++                            <a href="centre-performance.html" class="nav-item"
++                                data-permission="page_centre_batch_performance">Batch Performance</a>
++                            <a href="centre-student-deepdive.html" class="nav-item"
++                                data-permission="page_centre_student_deepdive">Student Deepdive</a>
++                            <a href="centre-analytics.html" class="nav-item"
++                                data-permission="page_centre_analytics">Centre Analytics</a>
+                         </div>
+                     </div>
+ 
+@@ -436,14 +456,23 @@
+                         <div class="nav-section">
+                             <div class="nav-group" onclick="toggleNavGroup(this)">
+                                 <span>Admin Corner</span>
+-                                <svg class="nav-chevron" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 12 15 18 9"></polyline></svg>
++                                <svg class="nav-chevron" width="16" height="16" viewBox="0 0 24 24" fill="none"
++                                    stroke="currentColor" stroke-width="2" stroke-linecap="round"
++                                    stroke-linejoin="round">
++                                    <polyline points="6 9 12 15 18 9"></polyline>
++                                </svg>
+                             </div>
+                             <div class="nav-items-container">
+-                                <a href="admin-users.html" class="nav-item active" data-permission="page_users">Users & Roles</a>
+-                                <a href="role-management.html" class="nav-item super-admin-only" data-permission="page_permissions">Role Permissions</a>
+-                                <a href="upload-schedule.html" class="nav-item" data-permission="page_upload_schedule">Upload Schedule</a>
+-                                <a href="upload-results.html" class="nav-item" data-permission="page_upload_results">Upload Results</a>
+-                                <a href="manage-centres.html" class="nav-item" data-permission="page_manage_centres">Manage Centres</a>
++                                <a href="admin-users.html" class="nav-item active" data-permission="page_users">Users &
++                                    Roles</a>
++                                <a href="role-management.html" class="nav-item super-admin-only"
++                                    data-permission="page_permissions">Role Permissions</a>
++                                <a href="upload-schedule.html" class="nav-item"
++                                    data-permission="page_upload_schedule">Upload Schedule</a>
++                                <a href="upload-results.html" class="nav-item"
++                                    data-permission="page_upload_results">Upload Results</a>
++                                <a href="manage-centres.html" class="nav-item"
++                                    data-permission="page_manage_centres">Manage Centres</a>
+                             </div>
+                         </div>
+                     </div>
+@@ -1254,7 +1283,7 @@
+                 processBtn.textContent = 'Processing...';
+ 
+                 let successCount = 0;
+-                let failedUsers = []; 
++                let failedUsers = [];
+                 let failedDataForCSV = []; // Store full row data for retry CSV
+ 
+                 const ghostSupabase = supabase.createClient(
+@@ -1312,7 +1341,7 @@
+                                         email: emailToUse,
+                                         password: userPassword
+                                     });
+-                                    
++
+                                     if (!signInErr) {
+                                         userId = signInData.user.id;
+                                         await ghostSupabase.auth.signOut(); // Clear ghost session
+@@ -1378,7 +1407,7 @@
+ 
+                 if (failedUsers.length > 0) {
+                     alert(`Upload Finished.\n✅ Success: ${successCount}\n❌ Failed: ${failedUsers.length}\n\nA "Download Errors" button has been added. Click it to get your retry list.`);
+-                    
++
+                     // Add Download Button for Failures
+                     let dlBtn = document.getElementById('dl-failures-btn');
+                     if (!dlBtn) {
+@@ -1391,10 +1420,10 @@
+                     }
+                     dlBtn.textContent = `Download ${failedUsers.length} Failed Rows`;
+                     dlBtn.style.display = 'block';
+-                    
++
+                     dlBtn.onclick = () => {
+                         const headers = "Name,EnrolmentID,Email,Phone,Role,Password,Centre,Status,FailureReason";
+-                        const rows = failedDataForCSV.map(u => 
++                        const rows = failedDataForCSV.map(u =>
+                             `${u.name},${u.enrolment_id},${u.email_id},${u.phone_number},${u.role},${u.password},${u.centre_name},${u.is_active ? 'Active' : 'Inactive'},"${u.failure_reason}"`
+                         ).join('\n');
+                         const blob = new Blob([headers + "\n" + rows], { type: 'text/csv' });
