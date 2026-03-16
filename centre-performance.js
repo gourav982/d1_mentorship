@@ -318,6 +318,7 @@ document.addEventListener('DOMContentLoaded', async () => {
             return {
                 enrolment_id: student.enrolment_id || '-',
                 name: student.name || '-',
+                email_id: student.email_id || '',
                 cm_percent: elapsedCMSize > 0 ? renderPercent(metrics.cmCount, elapsedCMSize) : '-',
                 cm_median: metrics.cmMedian,
                 td_percent: elapsedTDSize > 0 ? renderPercent(metrics.tdCount, elapsedTDSize) : '-',
@@ -367,8 +368,9 @@ document.addEventListener('DOMContentLoaded', async () => {
                 <td style="text-align: center; font-weight: 600;">${r.td_median !== '-' ? r.td_median + '%' : '-'}</td>
                 <td style="text-align: center;">${r.gt_percent}</td>
                 <td style="text-align: center; font-weight: 600;">${r.gt_median !== '-' ? r.gt_median + '%' : '-'}</td>
-                <td style="text-align: center;">
-                    <button class="add-remark-btn" style="background: rgba(56, 189, 248, 0.1); color: #38bdf8; border: 1px solid rgba(56, 189, 248, 0.3); padding: 0.3rem 0.6rem; border-radius: 0.4rem; font-size: 0.8rem; cursor: pointer; transition: all 0.2s;" data-id="${r.enrolment_id}" data-name="${r.name}">Add Remarks</button>
+                <td style="text-align: center; display: flex; flex-direction: column; align-items: center; gap: 0.5rem; padding-top: 0.6rem; padding-bottom: 0.6rem;">
+                    <button class="add-remark-btn" style="background: rgba(56, 189, 248, 0.1); color: #38bdf8; border: 1px solid rgba(56, 189, 248, 0.3); padding: 0.35rem 0.5rem; border-radius: 0.4rem; font-size: 0.75rem; cursor: pointer; transition: all 0.2s; width: 120px;" data-id="${r.enrolment_id}" data-name="${r.name}">Add Remarks</button>
+                    <button class="view-onboarding-btn" style="background: rgba(56, 189, 248, 0.1); color: #38bdf8; border: 1px solid rgba(56, 189, 248, 0.3); padding: 0.35rem 0.5rem; border-radius: 0.4rem; font-size: 0.75rem; cursor: pointer; transition: all 0.2s; width: 120px;" data-email="${r.email_id}" data-id="${r.enrolment_id}" data-name="${r.name}">Onboarding Form</button>
                 </td>
             </tr>
         `).join('');
@@ -379,6 +381,17 @@ document.addEventListener('DOMContentLoaded', async () => {
                 const id = e.target.getAttribute('data-id');
                 const name = e.target.getAttribute('data-name');
                 openRemarksModal(id, name);
+            });
+        });
+
+        // Attach click listeners to Onboarding views
+        document.querySelectorAll('.view-onboarding-btn').forEach(btn => {
+            btn.addEventListener('click', (e) => {
+                e.preventDefault();
+                const id = e.target.getAttribute('data-id');
+                const name = e.target.getAttribute('data-name');
+                const email = e.target.getAttribute('data-email');
+                openOnboardingModal(id, name, email);
             });
         });
     };
@@ -407,6 +420,84 @@ document.addEventListener('DOMContentLoaded', async () => {
         const initTh = document.querySelector(`th[data-sort="${currentSortColumn}"]`);
         if(initTh) initTh.querySelector('.sort-icon').textContent = currentSortAsc ? '↑' : '↓';
     };
+
+    // --- ONBOARDING MODAL LOGIC ---
+    const openOnboardingModal = async (enrolmentId, studentName, emailId) => {
+        document.getElementById('onboarding-view-name').textContent = studentName;
+        document.getElementById('onboarding-view-id').textContent = enrolmentId;
+        const listDiv = document.getElementById('onboarding-view-content');
+        listDiv.innerHTML = `<div style="text-align: center; font-size: 0.8rem; color: var(--text-secondary); padding: 1rem;">Loading profile...</div>`;
+        
+        document.getElementById('onboarding-view-modal-overlay').classList.add('active');
+
+        try {
+            const { data, error } = await supabaseClient
+                .from('Onboarding_Data')
+                .select('*')
+                .eq('email_id', emailId)
+                .limit(1)
+                .maybeSingle();
+
+            if (error) throw error;
+            
+            if (!data) {
+                // fallback to finding by user_id using enrolment_id because sometimes people sign up matching enrolment to user_id
+                const { data: fallbackData } = await supabaseClient
+                    .from('Onboarding_Data')
+                    .select('*')
+                    .eq('user_id', enrolmentId)
+                    .limit(1)
+                    .maybeSingle();
+
+                if (!fallbackData) {
+                    listDiv.innerHTML = `<div style="text-align: center; color: var(--text-secondary); font-size: 0.85rem; padding: 1rem; border: 1px dashed var(--glass-border); border-radius: 0.5rem;">This student has not completed the onboarding form yet.</div>`;
+                    return;
+                } else {
+                    renderOnboardingData(listDiv, fallbackData);
+                }
+            } else {
+                renderOnboardingData(listDiv, data);
+            }
+        } catch (err) {
+            console.error("Error fetching onboarding data:", err);
+            listDiv.innerHTML = `<div style="color: #ef4444; font-size: 0.8rem; text-align: center;">Error loading profile. Check table permissions.</div>`;
+        }
+    };
+
+    const renderOnboardingData = (container, data) => {
+        container.innerHTML = `
+            <div style="display: flex; flex-direction: column; gap: 1rem;">
+                <div style="background: rgba(255,255,255,0.02); border: 1px solid var(--glass-border); padding: 1rem; border-radius: 0.5rem;">
+                    <span style="font-size: 0.75rem; color: var(--text-secondary); text-transform: uppercase; font-weight: 600; display: block; margin-bottom: 0.2rem;">Target Exam</span>
+                    <span style="font-size: 1rem; color: #fff;">${data.target_exam || '-'}</span>
+                </div>
+                <div style="display: flex; gap: 1rem;">
+                    <div style="flex: 1; background: rgba(255,255,255,0.02); border: 1px solid var(--glass-border); padding: 1rem; border-radius: 0.5rem;">
+                        <span style="font-size: 0.75rem; color: var(--text-secondary); text-transform: uppercase; font-weight: 600; display: block; margin-bottom: 0.2rem;">Target Rank</span>
+                        <span style="font-size: 1rem; color: #fff;">${data.target_rank || '-'}</span>
+                    </div>
+                    <div style="flex: 1; background: rgba(255,255,255,0.02); border: 1px solid var(--glass-border); padding: 1rem; border-radius: 0.5rem;">
+                        <span style="font-size: 0.75rem; color: var(--text-secondary); text-transform: uppercase; font-weight: 600; display: block; margin-bottom: 0.2rem;">Latest GT Score</span>
+                        <span style="font-size: 1rem; color: #fff;">${data.latest_gt_score !== null ? data.latest_gt_score : '-'} (${data.latest_gt_percentile ? data.latest_gt_percentile + '%ile' : '-'})</span>
+                    </div>
+                </div>
+                <div style="background: rgba(255,255,255,0.02); border: 1px solid var(--glass-border); padding: 1rem; border-radius: 0.5rem;">
+                    <span style="font-size: 0.75rem; color: var(--text-secondary); text-transform: uppercase; font-weight: 600; display: block; margin-bottom: 0.5rem;">Biggest Challenge</span>
+                    <span style="font-size: 0.9rem; color: #cbd5e1; white-space: pre-wrap;">${data.biggest_challenge || '-'}</span>
+                </div>
+                <div style="background: rgba(255,255,255,0.02); border: 1px solid var(--glass-border); padding: 1rem; border-radius: 0.5rem;">
+                    <span style="font-size: 0.75rem; color: var(--text-secondary); text-transform: uppercase; font-weight: 600; display: block; margin-bottom: 0.5rem;">Mentorship Expectation</span>
+                    <span style="font-size: 0.9rem; color: #cbd5e1; white-space: pre-wrap;">${data.mentorship_expectation || '-'}</span>
+                </div>
+            </div>
+        `;
+    };
+
+    const closeOnboardingModal = () => document.getElementById('onboarding-view-modal-overlay').classList.remove('active');
+    document.getElementById('close-onboarding-view-modal').addEventListener('click', closeOnboardingModal);
+    document.getElementById('onboarding-view-modal-overlay').addEventListener('click', (e) => {
+        if (e.target.id === 'onboarding-view-modal-overlay') closeOnboardingModal();
+    });
 
     // --- REMARKS MODAL LOGIC ---
     let currentRemarkStudentId = null;
