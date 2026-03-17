@@ -228,10 +228,15 @@ document.addEventListener('DOMContentLoaded', async () => {
             if (error) throw error;
 
             // If it was 'done', bring it back to 'new' on new comment
-            await supabaseClient.from('queries').update({
+            const { error: updateError } = await supabaseClient.from('queries').update({
                 status: 'new',
                 last_activity_at: new Date().toISOString()
             }).eq('id', queryId);
+
+            if (updateError) {
+                console.error("Failed to update query status to 'new' (possible RLS issue):", updateError);
+                // We don't throw here to ensure the comment still shows up even if status update fails
+            }
 
             input.value = '';
             await fetchQueries();
