@@ -29,7 +29,8 @@ document.addEventListener('DOMContentLoaded', async () => {
                         { key: 'page_student_performance', label: 'Student Performance (Mentor)', desc: 'Mentor view to search and see student stats' },
                         { key: 'page_centre_batch_performance', label: 'Batch Performance (Centre)', desc: 'Centre admin view to see holistic batch performance' },
                         { key: 'page_centre_student_deepdive', label: 'Student Deepdive (Centre)', desc: 'Centre admin view to deeply analyze individual students' },
-                        { key: 'page_centre_analytics', label: 'Centre Analytics', desc: 'Detailed statistical tracking across Daily/TD/GT for a centre' }
+                        { key: 'page_centre_analytics', label: 'Centre Analytics', desc: 'Detailed statistical tracking across Daily/TD/GT for a centre' },
+                        { key: 'page_centre_test_summary', label: 'Test Summary', desc: 'Batch-wide summary of all tests conducted at the centre' }
                     ]
                 },
                 {
