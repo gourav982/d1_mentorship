@@ -1,0 +1,537 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <style>
+        html,
+        body {
+            background: #0d121f !important;
+            color: #fff;
+        }
+    </style>
+    <title>DBMCI One | Mentor Profile</title>
+    <link rel="icon" type="image/png" href="favicon.png">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600&family=Outfit:wght@300;400;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="style.css?v=2">
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <style>
+        body {
+            display: none; /* hidden until auth clears */
+        }
+
+        .admin-page-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 2.5rem;
+        }
+
+        .admin-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 2rem;
+            align-items: start;
+        }
+        
+        @media (max-width: 1024px) {
+            .admin-grid {
+                grid-template-columns: 1fr;
+            }
+        }
+
+        .card-panel {
+            background: var(--glass-bg);
+            border: 1px solid var(--glass-border);
+            border-radius: 1.5rem;
+            backdrop-filter: blur(10px);
+            padding: 2rem;
+        }
+
+        .card-title {
+            font-size: 1.25rem;
+            font-weight: 600;
+            margin-bottom: 0.5rem;
+            color: #fff;
+        }
+        
+        .card-desc {
+            font-size: 0.85rem;
+            color: var(--text-secondary);
+            margin-bottom: 1.5rem;
+        }
+
+        /* Table Styles */
+        .table-wrapper {
+            overflow-x: auto;
+        }
+        table {
+            width: 100%;
+            border-collapse: collapse;
+        }
+        th {
+            text-align: left;
+            padding: 1rem 0.5rem;
+            border-bottom: 1px solid rgba(255,255,255,0.1);
+            color: var(--text-secondary);
+            font-size: 0.85rem;
+            font-weight: 600;
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+        }
+        td {
+            padding: 1rem 0.5rem;
+            border-bottom: 1px solid rgba(255,255,255,0.05);
+            color: var(--text-primary);
+            font-size: 0.9rem;
+            vertical-align: middle;
+        }
+        tr:last-child td { border-bottom: none; }
+        
+        .mentor-cell {
+            display: flex;
+            align-items: center;
+            gap: 1rem;
+        }
+        .mentor-thumb {
+            width: 40px;
+            height: 40px;
+            border-radius: 50%;
+            object-fit: cover;
+            background: rgba(255,255,255,0.1);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: bold;
+            color: #fff;
+            flex-shrink: 0;
+        }
+        .mentor-name { font-weight: 600; line-height: 1.2; }
+        .mentor-centre { font-size: 0.75rem; color: var(--text-secondary); }
+
+        .btn-action {
+            background: rgba(255, 255, 255, 0.05);
+            color: var(--text-primary);
+            border: 1px solid var(--glass-border);
+            padding: 0.4rem 0.8rem;
+            border-radius: 0.5rem;
+            cursor: pointer;
+            font-size: 0.8rem;
+            font-weight: 500;
+            transition: all 0.2s;
+        }
+        .btn-action:hover {
+            background: rgba(255, 255, 255, 0.1);
+            border-color: var(--text-primary);
+        }
+
+        .badge-active {
+            background: rgba(34, 197, 94, 0.15);
+            color: #4ade80;
+            padding: 0.25rem 0.6rem;
+            border-radius: 1rem;
+            font-size: 0.75rem;
+            font-weight: 600;
+            border: 1px solid rgba(34, 197, 94, 0.3);
+        }
+        .badge-inactive {
+            background: rgba(239, 68, 68, 0.15);
+            color: #f87171;
+            padding: 0.25rem 0.6rem;
+            border-radius: 1rem;
+            font-size: 0.75rem;
+            font-weight: 600;
+            border: 1px solid rgba(239, 68, 68, 0.3);
+        }
+
+        /* Form Styles */
+        .input-group {
+            margin-bottom: 1.5rem;
+        }
+        .input-group label {
+            display: block;
+            margin-bottom: 0.5rem;
+            font-size: 0.85rem;
+            color: var(--text-secondary);
+            font-weight: 600;
+        }
+        .input-group input[type="text"],
+        .input-group input[type="url"],
+        .input-group input[type="number"],
+        .input-group select,
+        .input-group textarea {
+            width: 100%;
+            background: var(--glass-bg);
+            border: 1px solid var(--glass-border);
+            border-radius: 0.75rem;
+            padding: 0.875rem 1rem;
+            color: var(--text-primary);
+            font-family: inherit;
+            transition: all 0.3s ease;
+        }
+        .input-group input:focus,
+        .input-group select:focus,
+        .input-group textarea:focus {
+            outline: none;
+            border-color: var(--accent-color);
+            background: rgba(255, 255, 255, 0.05);
+        }
+        .input-group textarea {
+            resize: vertical;
+            min-height: 100px;
+        }
+
+        .btn-submit {
+            background: var(--accent-color);
+            color: #000;
+            border: none;
+            padding: 1rem 2rem;
+            border-radius: 0.75rem;
+            font-weight: 700;
+            cursor: pointer;
+            width: 100%;
+            font-family: 'Outfit', sans-serif;
+            transition: all 0.2s;
+            margin-top: 1rem;
+        }
+        .btn-submit:hover:not(:disabled) {
+            transform: translateY(-2px);
+            box-shadow: 0 4px 12px rgba(56, 189, 248, 0.3);
+        }
+        .btn-submit:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+        }
+        
+        .photo-upload-zone {
+            border: 2px dashed var(--glass-border);
+            border-radius: 1rem;
+            padding: 2rem;
+            text-align: center;
+            transition: all 0.3s ease;
+            cursor: pointer;
+            background: rgba(255, 255, 255, 0.02);
+        }
+        .photo-upload-zone:hover {
+            border-color: var(--accent-color);
+            background: rgba(56, 189, 248, 0.05);
+        }
+        .photo-preview {
+            width: 80px;
+            height: 80px;
+            border-radius: 50%;
+            object-fit: cover;
+            margin-top: 1rem;
+            display: none;
+            border: 2px solid var(--glass-border);
+        }
+
+        .switch-container {
+            display: flex;
+            align-items: center;
+            gap: 1rem;
+        }
+        .switch {
+            position: relative;
+            display: inline-block;
+            width: 44px;
+            height: 24px;
+            flex-shrink: 0;
+        }
+        .switch input { opacity: 0; width: 0; height: 0; }
+        .slider {
+            position: absolute;
+            cursor: pointer;
+            top: 0; left: 0; right: 0; bottom: 0;
+            background-color: var(--glass-border);
+            transition: .4s;
+            border-radius: 34px;
+        }
+        .slider:before {
+            position: absolute;
+            content: "";
+            height: 16px; width: 16px;
+            left: 4px; bottom: 4px;
+            background-color: white;
+            transition: .4s;
+            border-radius: 50%;
+        }
+        input:checked + .slider { background-color: var(--accent-color); }
+        input:checked + .slider:before {
+            transform: translateX(20px);
+            background-color: #000;
+        }
+        
+        #url-container {
+            display: none;
+            margin-top: 1rem;
+        }
+
+        .grid-2-col {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 1rem;
+        }
+
+        .empty-state {
+            text-align: center;
+            padding: 3rem 1rem;
+            color: var(--text-secondary);
+        }
+    </style>
+</head>
+
+<body>
+    <div class="dashboard-wrapper">
+        <header class="top-header">
+            <div class="header-left">
+                <button id="sidebar-toggle-btn" class="sidebar-toggle">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none"
+                        stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                        <line x1="3" y1="12" x2="21" y2="12"></line>
+                        <line x1="3" y1="6" x2="21" y2="6"></line>
+                        <line x1="3" y1="18" x2="21" y2="18"></line>
+                    </svg>
+                </button>
+                <div class="sidebar-logo">DBMCI One Mentorship</div>
+            </div>
+            <div class="header-actions">
+                <div class="user-profile" id="user-profile-btn">
+                    <div class="avatar" id="avatar-circle">?</div>
+                    <div class="profile-info">
+                        <span class="name" id="display-name">Loading...</span>
+                        <span class="role" id="display-role">Verifying...</span>
+                    </div>
+                </div>
+            </div>
+        </header>
+
+        <div class="dashboard-container">
+            <aside class="sidebar">
+                <nav class="sidebar-nav">
+                    <!-- Standard Nav Elements -->
+                    <div class="nav-section">
+                        <div class="nav-group" onclick="toggleNavGroup(this)">
+                            <span>Main Menu</span>
+                            <svg class="nav-chevron" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 12 15 18 9"></polyline></svg>
+                        </div>
+                        <div class="nav-items-container">
+                            <a href="dashboard.html" class="nav-item" data-permission="page_dashboard">Performance Homepage</a>
+                            <a href="schedule.html" class="nav-item" data-permission="page_schedule">Schedule</a>
+                        </div>
+                    </div>
+
+                    <div class="nav-section">
+                        <div class="nav-group" onclick="toggleNavGroup(this)">
+                            <span>Mentorship</span>
+                            <svg class="nav-chevron" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 12 15 18 9"></polyline></svg>
+                        </div>
+                        <div class="nav-items-container">
+                            <a href="queries.html" class="nav-item" data-permission="page_queries">Put your Query</a>
+                            <a href="#" class="nav-item disabled">Book a Session <span class="coming-soon-tag">Coming Soon</span></a>
+                            <a href="#" class="nav-item disabled">Session History <span class="coming-soon-tag">Coming Soon</span></a>
+                        </div>
+                    </div>
+
+                    <div class="nav-section">
+                        <div class="nav-group" onclick="toggleNavGroup(this)">
+                            <span>Mentor's Corner</span>
+                            <svg class="nav-chevron" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 12 15 18 9"></polyline></svg>
+                        </div>
+                        <div class="nav-items-container">
+                            <a href="mentor-queries.html" class="nav-item" data-permission="page_mentor_queries">Student's Query</a>
+                            <a href="mentor-performance.html" class="nav-item" data-permission="page_student_performance">Student Performance</a>
+                        </div>
+                    </div>
+
+                    <div class="nav-section">
+                        <div class="nav-group" onclick="toggleNavGroup(this)">
+                            <span>Centre's Corner</span>
+                            <svg class="nav-chevron" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 12 15 18 9"></polyline></svg>
+                        </div>
+                        <div class="nav-items-container">
+                            <a href="centre-performance.html" class="nav-item" data-permission="page_centre_batch_performance">Batch Performance</a>
+                            <a href="centre-student-deepdive.html" class="nav-item" data-permission="page_centre_student_deepdive">Student Deepdive</a>
+                            <a href="centre-analytics.html" class="nav-item" data-permission="page_centre_analytics">Centre Analytics</a>
+                            <a href="centre-test-summary.html" class="nav-item" data-permission="page_centre_test_summary">Test Summary</a>
+                        </div>
+                    </div>
+
+                    <div class="admin-only" id="admin-section">
+                        <div class="nav-section">
+                            <div class="nav-group" onclick="toggleNavGroup(this)">
+                                <span>Admin Corner</span>
+                                <svg class="nav-chevron" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 12 15 18 9"></polyline></svg>
+                            </div>
+                            <div class="nav-items-container">
+                                <a href="admin-users.html" class="nav-item" data-permission="page_users">Users & Roles</a>
+                                <a href="role-management.html" class="nav-item super-admin-only" data-permission="page_permissions">Role Permissions</a>
+                                <a href="upload-schedule.html" class="nav-item" data-permission="page_upload_schedule">Upload Schedule</a>
+                                <a href="upload-results.html" class="nav-item" data-permission="page_upload_results">Upload Results</a>
+                                <a href="manage-centres.html" class="nav-item" data-permission="page_manage_centres">Manage Centres</a>
+                                <a href="admin-mentor-profile.html" class="nav-item active" data-permission="page_mentor_profile">Mentor Profile</a>
+                            </div>
+                        </div>
+                    </div>
+                </nav>
+            </aside>
+
+            <main class="dashboard-main">
+                <div class="admin-page-header">
+                    <div>
+                        <h1>Mentor Profiles</h1>
+                        <p style="color: var(--text-secondary);">Manage public profiles, sequence order, and visibility for center Mentors.</p>
+                    </div>
+                    <div>
+                        <button class="btn-action" style="background: var(--accent-color); color: #000; font-weight: 700;" onclick="clearFormAndFocus()">+ New Profile</button>
+                    </div>
+                </div>
+
+                <div class="admin-grid">
+                    <!-- Left: List panel -->
+                    <div class="card-panel">
+                        <div class="card-title">Onboarded Mentors</div>
+                        <div class="card-desc">Active public profiles available in the system.</div>
+                        
+                        <div class="input-group" style="margin-bottom: 1.5rem;">
+                            <select id="centre-filter">
+                                <option value="all">All Centres</option>
+                            </select>
+                        </div>
+                        
+                        <div class="table-wrapper">
+                            <table>
+                                <thead>
+                                    <tr>
+                                        <th>Mentor Info</th>
+                                        <th style="width: 80px; text-align: center;">Order</th>
+                                        <th style="width: 100px; text-align: center;">Status</th>
+                                        <th style="width: 80px; text-align: right;">Action</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="mentor-list-body">
+                                    <tr>
+                                        <td colspan="4">
+                                            <div class="empty-state">Loading mentors...</div>
+                                        </td>
+                                    </tr>
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+
+                    <!-- Right: Form panel -->
+                    <div class="card-panel">
+                        <div class="card-title">Profile Configuration</div>
+                        <div class="card-desc">Configure details, bio, and features for a selected mentor.</div>
+
+                        <form id="mentor-profile-form">
+                            <div class="input-group">
+                                <label>Target Mentor Account <span style="color: #ef4444;">*</span></label>
+                                <select id="mentor-select" required>
+                                    <option value="">Loading mentors...</option>
+                                </select>
+                            </div>
+                            
+                            <div class="input-group">
+                                <label>Associated Centre <span style="color: #ef4444;">*</span></label>
+                                <select id="mentor-centre" required>
+                                    <option value="">Select Centre...</option>
+                                </select>
+                            </div>
+
+                            <div class="input-group">
+                                <label>Display Name <span style="color: #ef4444;">*</span></label>
+                                <input type="text" id="mentor-name" placeholder="e.g. Dr. Jane Doe" required>
+                            </div>
+
+                            <div class="input-group">
+                                <label>Subtitle / Designation <span style="color: #ef4444;">*</span></label>
+                                <input type="text" id="mentor-subtitle" placeholder="e.g. Senior Academic Director, Anatomy Specialist" required>
+                            </div>
+
+                            <div class="grid-2-col">
+                                <div class="input-group">
+                                    <label>Languages <span style="color: #ef4444;">*</span></label>
+                                    <input type="text" id="mentor-languages" placeholder="English, Hindi" required>
+                                </div>
+                                <div class="input-group">
+                                    <label>Display Sequence <span style="color: #ef4444;">*</span></label>
+                                    <input type="number" id="mentor-order" placeholder="0" value="0" min="0" required>
+                                </div>
+                            </div>
+                            
+                            <div class="input-group">
+                                <label>Intro Biography <span style="color: #ef4444;">*</span></label>
+                                <textarea id="mentor-intro" placeholder="A short engaging introduction about the mentor's experience and style..." required></textarea>
+                            </div>
+
+                            <div class="input-group">
+                                <label>Achievements / Milestones</label>
+                                <textarea id="mentor-achievements" placeholder="Exam ranks, awards, notable alumni..."></textarea>
+                            </div>
+
+                            <div class="input-group" style="padding: 1.5rem; border-radius: 1rem; border: 1px dashed var(--glass-border); background: rgba(0,0,0,0.2);">
+                                <div class="switch-container" style="justify-content: space-between;">
+                                    <div>
+                                        <label style="margin-bottom: 0; font-size: 1rem; color: #fff;">Enable Public Profile</label>
+                                        <p style="font-size: 0.8rem; color: var(--text-secondary); margin: 0.25rem 0 0 0;">Toggle to show or hide this mentor on the public facing directory.</p>
+                                    </div>
+                                    <label class="switch">
+                                        <input type="checkbox" id="profile-enabled-toggle" checked>
+                                        <span class="slider"></span>
+                                    </label>
+                                </div>
+                            </div>
+
+                            <div class="input-group">
+                                <label>Profile Photo Upload</label>
+                                <div class="photo-upload-zone" onclick="document.getElementById('photo-input').click()">
+                                    <svg xmlns="http://www.w3.org/2000/svg" width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="var(--accent-color)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="margin-bottom: 0.5rem;">
+                                        <rect x="3" y="3" width="18" height="18" rx="2" ry="2"></rect>
+                                        <circle cx="8.5" cy="8.5" r="1.5"></circle>
+                                        <polyline points="21 15 16 10 5 21"></polyline>
+                                    </svg>
+                                    <p style="font-size: 0.85rem; color: var(--text-secondary);">Click to browse and upload a photo (JPG, PNG)</p>
+                                    <input type="file" id="photo-input" accept="image/*" style="display: none;">
+                                    
+                                    <center>
+                                        <img id="photo-preview" class="photo-preview" src="" alt="Preview">
+                                    </center>
+                                </div>
+                            </div>
+
+                            <div class="input-group" style="background: rgba(255,255,255,0.02); padding: 1.5rem; border-radius: 1rem; border: 1px solid rgba(255,255,255,0.05);">
+                                <div class="switch-container" style="justify-content: space-between;">
+                                    <div>
+                                        <label style="margin-bottom: 0; font-size: 1rem; color: #fff;">Book a Slot Option</label>
+                                        <p style="font-size: 0.8rem; color: var(--text-secondary); margin: 0.25rem 0 0 0;">Enable users to book 1-1 sessions.</p>
+                                    </div>
+                                    <label class="switch">
+                                        <input type="checkbox" id="book-slot-toggle">
+                                        <span class="slider"></span>
+                                    </label>
+                                </div>
+
+                                <div id="url-container">
+                                    <label style="margin-top: 1.25rem;">Booking URL <span style="color: #ef4444;">*</span></label>
+                                    <input type="url" id="book-slot-url" placeholder="https://calendly.com/... ">
+                                </div>
+                            </div>
+
+                            <button type="submit" id="process-upload-btn" class="btn-submit">Save Profile Document</button>
+                        </form>
+                    </div>
+                </div>
+            </main>
+        </div>
+    </div>
+
+    <script src="supabase-init.js"></script>
+    <script src="admin-mentor-profile.js?v=2"></script>
+</body>
+
+</html>
