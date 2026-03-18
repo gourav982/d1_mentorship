@@ -33,7 +33,9 @@ document.addEventListener('DOMContentLoaded', async () => {
 
         await window.applyPermissions();
 
-        if (currentUser.role === 'Student' && !currentUser.centre_name) {
+        const isStudentRecord = currentUser.role && currentUser.role.toLowerCase().includes('student');
+
+        if (isStudentRecord && !currentUser.centre_name) {
             mentorsContainer.innerHTML = `<div class="empty-state">No centre assigned to your account.</div>`;
             headerText.textContent = "Please contact administration to assign a centre.";
             return;
@@ -43,7 +45,7 @@ document.addEventListener('DOMContentLoaded', async () => {
         headerText.textContent = `Available Mentors for ${targetCentre}`;
 
         // Enable centre toggle for non-students
-        if (currentUser.role !== 'Student') {
+        if (!isStudentRecord) {
             document.getElementById('centre-toggle-container').style.display = 'flex';
             await loadCentresDropdown(targetCentre);
             
