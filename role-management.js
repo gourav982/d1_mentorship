@@ -25,6 +25,7 @@ document.addEventListener('DOMContentLoaded', async () => {
                         { key: 'page_dashboard', label: 'Performance Homepage', desc: 'Main student dashboard & charts' },
                         { key: 'page_schedule', label: 'Schedule Roadmap', desc: 'View classes and tests roadmap' },
                         { key: 'page_queries', label: 'Put your Query (Student)', desc: 'Access to post queries for students' },
+                        { key: 'page_book_session', label: 'Book a Session', desc: 'View and book mentor slots' },
                         { key: 'page_mentor_queries', label: 'Mentor Queries', desc: 'Mentor view to access student queries' },
                         { key: 'page_student_performance', label: 'Student Performance (Mentor)', desc: 'Mentor view to search and see student stats' },
                         { key: 'page_centre_batch_performance', label: 'Batch Performance (Centre)', desc: 'Centre admin view to see holistic batch performance' },
@@ -38,7 +39,8 @@ document.addEventListener('DOMContentLoaded', async () => {
                     permissions: [
                         { key: 'page_users', label: 'Users & Roles', desc: 'Manage user accounts and platform roles' },
                         { key: 'page_permissions', label: 'Role Permissions', desc: 'Access to this permission matrix' },
-                        { key: 'page_manage_centres', label: 'Manage Centres', desc: 'CRUD operations for mentorship centres' }
+                        { key: 'page_manage_centres', label: 'Manage Centres', desc: 'CRUD operations for mentorship centres' },
+                        { key: 'page_mentor_profile', label: 'Mentor Profile', desc: 'Manage mentor directory and profiles' }
                     ]
                 },
                 {
