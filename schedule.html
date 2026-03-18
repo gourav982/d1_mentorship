@@ -26,9 +26,14 @@
         }
 
         /* Hidden until auth */
+        
+        .dashboard-main {
+            padding-top: 0 !important;
+        }
 
         .schedule-header {
             margin-bottom: 1rem;
+            margin-top: 0.5rem;
         }
 
         .filter-section {
@@ -61,8 +66,8 @@
             background: var(--glass-bg);
             border: 1px solid var(--glass-border);
             border-radius: 1.5rem;
-            backdrop-filter: blur(10px);
-            overflow-x: auto;
+            /* Removed backdrop-filter to prevent CSS stacking context isolation, exposing the raw table child Z-index! */
+            /* Removed overflow-x: auto to allow position: sticky children to stick to the page */
         }
 
         table {
@@ -72,7 +77,7 @@
         }
 
         th {
-            background: rgba(255, 255, 255, 0.02);
+            background: rgba(13, 18, 31, 0.98) !important; 
             padding: 1.25rem 1rem;
             font-size: 0.75rem;
             font-weight: 700;
@@ -81,6 +86,10 @@
             color: var(--text-secondary);
             border-bottom: 1px solid var(--glass-border);
             white-space: nowrap;
+            /* Sticky Header */
+            position: sticky !important;
+            top: 64px !important; /* Exactly beneath the month header */
+            z-index: 20 !important; /* Overriden high enough over rows, but under month header */
         }
 
         td {
@@ -200,19 +209,29 @@
             border: 1px solid var(--glass-border);
             border-radius: 1.25rem;
             background: rgba(15, 23, 42, 0.3);
-            overflow: hidden;
             transition: all 0.3s ease;
         }
 
         .month-header {
-            padding: 1.25rem 1.5rem;
+            height: 64px;
+            padding: 0 1.5rem;
             display: flex;
             justify-content: space-between;
             align-items: center;
-            background: rgba(15, 23, 42, 0.6);
+            background: rgba(13, 18, 31, 0.98); /* Opaque background */
             cursor: pointer;
             user-select: none;
             transition: background 0.2s ease;
+            position: sticky;
+            top: 0;
+            z-index: 30; /* Highest so it covers table elements */
+            border-radius: 1.25rem;
+        }
+
+        .month-accordion.active .month-header {
+            border-bottom-left-radius: 0;
+            border-bottom-right-radius: 0;
+            border-bottom: 1px solid var(--glass-border);
         }
 
         .month-header:hover {
