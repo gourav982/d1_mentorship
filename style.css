@@ -19,9 +19,11 @@ body {
     padding: 0;
 }
 
-.admin-only,
-.perm-hidden {
-    display: none;
+.admin-only:not(.perm-verified),
+.perm-hidden,
+[data-permission]:not(.perm-verified),
+.nav-section:not(.perm-verified) {
+    display: none !important;
 }
 
 /* Visibility Utilities - Base State (Desktop) */

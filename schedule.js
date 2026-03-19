@@ -140,42 +140,23 @@ document.addEventListener('DOMContentLoaded', async () => {
 
     const fetchSchedule = async () => {
         try {
-            // Re-verify allowed centres for security bypass prevention
-            const allowed = await window.getAllowedCentres();
-            if (!allowed.includes(selectedCentre)) {
-                console.warn('Unauthorized centre selection detected. Resetting...');
-                selectedCentre = allowed[0] || 'Delhi';
-            }
+            // Execute all table fetches synchronously in parallel
+            const [schedRes, progRes, resultsRes] = await Promise.all([
+                supabaseClient.from('Schedule').select('*').eq('centre_name', selectedCentre).order('date', { ascending: true }),
+                supabaseClient.from('Schedule_Progress').select('*').eq('user_id', session.user.id),
+                supabaseClient.from('Test_Results').select('*').or(`user_email.eq.${session.user.email}${currentUser.enrolment_id ? `,enrolment_id.eq.${currentUser.enrolment_id}` : ''}`)
+            ]);
 
-            // Fetch Schedules for selected centre
-            const { data: schedules, error: schedError } = await supabaseClient
-                .from('Schedule')
-                .select('*')
-                .eq('centre_name', selectedCentre)
-                .order('date', { ascending: true });
+            if (schedRes.error) throw schedRes.error;
+            if (progRes.error) throw progRes.error;
 
-            if (schedError) throw schedError;
-
-            // Fetch User's Progress
-            const { data: progress, error: progError } = await supabaseClient
-                .from('Schedule_Progress')
-                .select('*')
-                .eq('user_id', session.user.id);
-
-            if (progError) throw progError;
-
-            allSchedules = schedules || [];
+            allSchedules = schedRes.data || [];
+            
             currentProgressMap = {};
-            progress?.forEach(p => currentProgressMap[p.schedule_id] = p);
-
-            // 3. Fetch Test Results for current user using Email or Enrolment ID
-            const { data: resultsData } = await supabaseClient
-                .from('Test_Results')
-                .select('*')
-                .or(`user_email.eq.${session.user.email}${currentUser.enrolment_id ? `,enrolment_id.eq.${currentUser.enrolment_id}` : ''}`);
+            progRes.data?.forEach(p => currentProgressMap[p.schedule_id] = p);
 
             currentResultsMap = {};
-            resultsData?.forEach(r => {
+            resultsRes.data?.forEach(r => {
                 // Store results with a composite key of type and identifier
                 const typeKey = (r.test_type || 'Custom Module').trim();
                 const codeKey = (r.custom_module_code || '').trim();
@@ -567,24 +548,9 @@ document.addEventListener('DOMContentLoaded', async () => {
 
     // Initial Load
     try {
-        // Fetch Profile with resilience
-        let { data: userData, error: fetchError } = await supabaseClient
-            .from('Access')
-            .select('*')
-            .ilike('email_id', session.user.email)
-            .single();
-
-        if (fetchError && (fetchError.message?.includes('not find') || fetchError.code === '42P01')) {
-            const { data: retryData, error: retryError } = await supabaseClient
-                .from('access')
-                .select('*')
-                .ilike('email_id', session.user.email)
-                .single();
-            userData = retryData;
-            fetchError = retryError;
-        }
-
-        if (fetchError || !userData) throw fetchError || new Error('Profile not found');
+        // Fetch Profile with cache-verified resilience instantly
+        let userData = await window.syncUserProfile(false);
+        if (!userData) throw new Error('Profile not found');
 
         currentUser = userData;
         document.body.style.display = 'block';

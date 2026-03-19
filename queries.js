@@ -16,14 +16,8 @@ document.addEventListener('DOMContentLoaded', async () => {
         const { data: { session } } = await supabaseClient.auth.getSession();
         if (!session) return;
 
-        // Fetch profile
-        const { data: profile } = await supabaseClient
-            .from('Access')
-            .select('*, User_Status(*)')
-            .ilike('email_id', session.user.email)
-            .single();
-
-        currentUser = profile;
+        // Instantly load from new sessionStorage cache token
+        currentUser = await window.syncUserProfile(false);
         if (!currentUser) return;
 
         // UI Header

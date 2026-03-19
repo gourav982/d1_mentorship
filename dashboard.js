@@ -58,29 +58,15 @@ document.addEventListener('DOMContentLoaded', async () => {
     });
 
     try {
-        // 3. Fetch User Profile with resilience
-        let { data: userData, error: fetchError } = await supabaseClient
-            .from('Access')
-            .select('*, User_Status(is_active)')
-            .ilike('email_id', session.user.email)
-            .single();
+        // 3. Fetch User Profile with instant cache
+        let userData = await window.syncUserProfile(false);
 
-        if (fetchError && (fetchError.message?.includes('not find') || fetchError.code === '42P01')) {
-            const { data: retryData, error: retryError } = await supabaseClient
-                .from('access')
-                .select('*, User_Status(is_active)')
-                .ilike('email_id', session.user.email)
-                .single();
-            userData = retryData;
-            fetchError = retryError;
-        }
-
-        if (fetchError || !userData) {
+        if (!userData) {
             console.warn('Profile not found for:', session.user.email);
             nameDisplay.textContent = session.user.email.split('@')[0];
             roleDisplay.textContent = 'Account Pending';
             avatarCircle.textContent = '?';
-            return; // Profiles details below won't load, but logout stays active!
+            return; 
         }
 
         // 4. Auto-Sync & Status
@@ -218,7 +204,7 @@ document.addEventListener('DOMContentLoaded', async () => {
                 try {
                     const { error: onboardingError } = await supabaseClient
                         .from('Onboarding_Data')
-                        .insert([{
+                        .upsert([{
                             user_id: userData.user_id,
                             email_id: userData.email_id,
                             target_exam: exam,
@@ -227,7 +213,7 @@ document.addEventListener('DOMContentLoaded', async () => {
                             latest_gt_percentile: gtPercentile ? parseFloat(gtPercentile) : null,
                             biggest_challenge: challenge,
                             mentorship_expectation: expectation
-                        }]);
+                        }], { onConflict: 'email_id' });
 
                     if (onboardingError) throw onboardingError;
 

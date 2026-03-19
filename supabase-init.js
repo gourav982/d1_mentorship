@@ -118,20 +118,43 @@ window.hasPermission = async (permissionKey) => {
 
 // Auto-apply permissions to all elements with [data-permission]
 // 2. Global Profile Sync (Fixes "Loading..." issue)
-window.syncUserProfile = async () => {
+window.getCachedAuth = (email) => {
+    try {
+        const cache = JSON.parse(sessionStorage.getItem('dbmci_auth_cache_v2'));
+        if (cache && cache.email === email && (Date.now() - cache.timestamp < 3600000)) return cache;
+    } catch(e) {}
+    return null;
+};
+
+window.setCachedAuth = (email, userData, permMap) => {
+    sessionStorage.setItem('dbmci_auth_cache_v2', JSON.stringify({ email, userData, permMap, timestamp: Date.now() }));
+};
+
+// 2. Global Profile Sync
+window.syncUserProfile = async (forceRefetch = false) => {
     try {
         const { data: { session } } = await window.supabaseClient.auth.getSession();
         if (!session) return;
+        const email = session.user.email;
 
-        let { data: userData } = await window.supabaseClient
-            .from('Access')
-            .select('role, name, email_id, enrolment_id, centre_name')
-            .ilike('email_id', session.user.email)
-            .single();
+        let cache = window.getCachedAuth(email);
+        let userData = cache && !forceRefetch ? cache.userData : null;
 
         if (!userData) {
-            const retry = await window.supabaseClient.from('access').select('role, name, email_id, enrolment_id, centre_name').ilike('email_id', session.user.email).single();
-            userData = retry.data;
+            let { data: res } = await window.supabaseClient
+                .from('Access')
+                .select('*') // Grabs EVERYTHING so pages don't need to rebuild it
+                .eq('email_id', email) // Substantially faster index scan
+                .single();
+
+            if (!res) {
+                const retry = await window.supabaseClient.from('access').select('*').ilike('email_id', email).single();
+                res = retry.data;
+            }
+            userData = res;
+            if (userData) {
+                window.setCachedAuth(email, userData, cache ? cache.permMap : null);
+            }
         }
 
         if (userData) {
@@ -190,26 +213,33 @@ window.redirectToDefaultPage = async (userData) => {
     }
 };
 
-window.applyPermissions = async () => {
+window.applyPermissions = async (forceRefetch = false) => {
     const elements = document.querySelectorAll('[data-permission]');
 
     try {
-        // Sync profile first
-        const userData = await window.syncUserProfile();
+        const { data: { session } } = await window.supabaseClient.auth.getSession();
+        if (!session) return;
+        const email = session.user.email;
+
+        // Sync profile instantly via cache
+        const userData = await window.syncUserProfile(forceRefetch);
         if (!userData) return;
 
         // Auto-redirect if on wrong page for role
         await window.redirectToDefaultPage(userData);
 
         const isSuperAdmin = userData.role === 'Super admin';
+        let cache = window.getCachedAuth(email) || { email, userData };
+        let permMap = cache.permMap;
 
-        // 3. Fetch permissions (Skip if super admin to allow all)
-        let permMap = {};
-        if (!isSuperAdmin) {
+        // 3. Fetch permissions (Skip if super admin to allow all, skip if cached)
+        if (!isSuperAdmin && (!permMap || forceRefetch)) {
             let res = await window.supabaseClient.from('Role_Permissions').select('permission_key, is_granted').eq('role_name', userData.role);
             if (res.error) res = await window.supabaseClient.from('role_permissions').select('permission_key, is_granted').eq('role_name', userData.role);
             const perms = res.data;
             permMap = perms ? Object.fromEntries(perms.map(p => [p.permission_key, p.is_granted])) : {};
+            cache.permMap = permMap;
+            window.setCachedAuth(email, cache.userData, permMap);
         }
 
         // 4. Apply Individual Item Visibility
@@ -219,15 +249,20 @@ window.applyPermissions = async () => {
             if (!isSuperAdmin && (permMap[key] === false || permMap[key] === undefined)) {
                 el.style.display = 'none';
                 el.classList.add('perm-hidden');
+                el.classList.remove('perm-verified');
             } else {
-                el.style.display = ''; // Restore default
+                el.style.display = ''; // Restore default flex/block layout
                 el.classList.remove('perm-hidden');
+                el.classList.add('perm-verified'); // Disables native CSS stealth lock
             }
         });
 
         // 5. Special Unhide for Super Admin (Admin sections & tabs)
         if (isSuperAdmin) {
-            document.querySelectorAll('.admin-only').forEach(el => el.style.display = 'block');
+            document.querySelectorAll('.admin-only').forEach(el => {
+                el.style.display = 'block';
+                el.classList.add('perm-verified');
+            });
             const mTabs = document.getElementById('mentor-tabs');
             if (mTabs) mTabs.style.display = 'flex';
         }
@@ -243,23 +278,32 @@ window.applyPermissions = async () => {
 
             items.forEach(item => {
                 const key = item.getAttribute('data-permission');
-                if (key && item.style.display !== 'none') {
-                    sectionHasFunctionalAccess = true;
+                // Check if it legally exists under the verification class instead of just style
+                if (item.classList.contains('perm-verified') || item.style.display !== 'none') {
+                    if (key) sectionHasFunctionalAccess = true;
                 }
             });
 
             if (!sectionHasFunctionalAccess && !isSuperAdmin) {
                 section.style.display = 'none';
+                section.classList.remove('perm-verified');
             } else {
                 section.style.display = 'block';
+                section.classList.add('perm-verified');
             }
         });
 
         // 6. Handle Admin Corner separately
         const adminSec = document.getElementById('admin-section');
         if (adminSec) {
-            const visibleItems = adminSec.querySelectorAll('.nav-item:not([style*="display: none"])');
-            adminSec.style.display = (visibleItems.length > 0 || isSuperAdmin) ? 'block' : 'none';
+            const visibleItems = adminSec.querySelectorAll('.nav-item.perm-verified, .nav-item:not([style*="display: none"])');
+            if (visibleItems.length > 0 || isSuperAdmin) {
+                adminSec.style.display = 'block';
+                adminSec.classList.add('perm-verified');
+            } else {
+                adminSec.style.display = 'none';
+                adminSec.classList.remove('perm-verified');
+            }
         }
 
         // 7. Auto-expand the active section
@@ -297,10 +341,19 @@ window.getAllowedCentres = async () => {
         const { data: { session } } = await window.supabaseClient.auth.getSession();
         if (!session) return [];
 
+        const cacheKey = 'dbmci_centres_cache';
+        try {
+            const cStr = sessionStorage.getItem(cacheKey);
+            if (cStr) {
+                const cMap = JSON.parse(cStr);
+                if (cMap.email === session.user.email && (Date.now() - cMap.timestamp < 3600000)) return cMap.centres;
+            }
+        } catch(e) {}
+
         let { data: userData, error: fetchErr } = await window.supabaseClient
             .from('Access')
             .select('role, centre_name')
-            .ilike('email_id', session.user.email)
+            .eq('email_id', session.user.email)
             .single();
 
         if (fetchErr || !userData) {
@@ -310,37 +363,36 @@ window.getAllowedCentres = async () => {
 
         if (!userData) return [];
 
+        let finalCentres = [];
+
         // Special Case: Super admin sees everything
         if (userData.role === 'Super admin') {
             const { data: all } = await window.supabaseClient.from('Centres').select('name');
-            return all ? all.map(c => c.name) : [];
+            finalCentres = all ? all.map(c => c.name) : [];
+        } else if (userData.role === 'Students') {
+            // Special Case: Students ONLY see their own centre
+            finalCentres = userData.centre_name ? [userData.centre_name] : [];
+        } else {
+            // Standard Case: Check Role_Centres mapping
+            let res = await window.supabaseClient.from('Role_Centres').select('centre_name').eq('role_name', userData.role);
+            if (res.error && (res.error.message?.includes('not find') || res.error.message?.includes('cache') || res.error.code === '42P01' || res.error.code === 'PGRST116')) {
+                res = await window.supabaseClient.from('role_centres').select('centre_name').eq('role_name', userData.role);
+            }
+            const allowed = res.data ? res.data.map(rc => rc.centre_name) : [];
+            
+            if (allowed.length === 0 && userData.centre_name) {
+                console.warn(`No Role_Centres mapping for ${userData.role}. Falling back to profile centre: ${userData.centre_name}`);
+                finalCentres = [userData.centre_name];
+            } else {
+                finalCentres = allowed;
+            }
         }
 
-        // Special Case: Students ONLY see their own centre
-        if (userData.role === 'Students') {
-            return userData.centre_name ? [userData.centre_name] : [];
-        }
-
-        // Standard Case: Check Role_Centres mapping
-        let res = await window.supabaseClient.from('Role_Centres').select('centre_name').eq('role_name', userData.role);
-
-        // Lowercase fallback resilience
-        if (res.error && (res.error.message?.includes('not find') || res.error.message?.includes('cache') || res.error.code === '42P01' || res.error.code === 'PGRST116')) {
-            res = await window.supabaseClient.from('role_centres').select('centre_name').eq('role_name', userData.role);
-        }
-
-        const allowed = res.data ? res.data.map(rc => rc.centre_name) : [];
-
-        // Critical Security logic: If mapping exists, it MUST be followed.
-        // Fallback to profile centre ONLY if no Role_Centres mapping is defined at all.
-        if (allowed.length === 0 && userData.centre_name) {
-            console.warn(`No Role_Centres mapping for ${userData.role}. Falling back to profile centre: ${userData.centre_name}`);
-            return [userData.centre_name];
-        }
-
-        return allowed;
+        sessionStorage.setItem(cacheKey, JSON.stringify({ email: session.user.email, centres: finalCentres, timestamp: Date.now() }));
+        return finalCentres;
     } catch (err) {
         console.error('Centre Access Error:', err);
         return [];
     }
 };
+

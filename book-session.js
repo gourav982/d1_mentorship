@@ -12,13 +12,8 @@ document.addEventListener('DOMContentLoaded', async () => {
             return;
         }
 
-        const { data: p } = await supabaseClient
-            .from('Access')
-            .select('*, User_Status(*)')
-            .ilike('email_id', session.user.email)
-            .single();
-
-        currentUser = p;
+        // Instantly load from new sessionStorage cache token
+        currentUser = await window.syncUserProfile(false);
         if (!currentUser) {
             window.location.replace('dashboard.html');
             return;
