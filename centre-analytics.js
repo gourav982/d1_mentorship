@@ -85,11 +85,15 @@ document.addEventListener('DOMContentLoaded', async () => {
                 const uniqueCentres = [...new Set(centres.map(c => c.name))].sort();
                 const ctFilter = document.getElementById('admin-centre-filter');
                 if (ctFilter) {
-                    ctFilter.innerHTML = `<option value="">All Centres</option>` + uniqueCentres.map(c => `<option value="${c}">${c}</option>`).join('');
+                    ctFilter.innerHTML = `<option value="">All Centres (May Load Slowly)</option>` + uniqueCentres.map(c => `<option value="${c}">${c}</option>`).join('');
+                    ctFilter.value = uniqueCentres[0];
                     ctFilter.addEventListener('change', (e) => fetchGlobalData(e.target.value || null));
                 }
+                
+                queryCentre = uniqueCentres[0];
+            } else {
+                queryCentre = null;
             }
-             queryCentre = null; 
         }
 
         await fetchGlobalData(queryCentre);
@@ -119,13 +123,24 @@ document.addEventListener('DOMContentLoaded', async () => {
             centreSchedules = schedData || [];
 
             // FETCH RESULTS
-            // Results map via email or enrolment_id.
-            const { data: resData } = await client.from('Test_Results').select('*');
-            centreResults = resData || [];
+            let resData = [];
+            let rFrom = 0;
+            const rStep = 4000; // Chunking optimally
+            while (true) {
+                const { data, error } = await client.from('Test_Results').select('*').range(rFrom, rFrom + rStep - 1);
+                if (error) throw error;
+                if (!data || data.length === 0) break;
+                resData = resData.concat(data);
+                if (data.length < rStep) break;
+                rFrom += rStep;
+            }
+            centreResults = resData;
 
             buildFilters();
         } catch (e) {
             console.error(e);
+            const b = document.getElementById('perf-content');
+            if(b) b.insertAdjacentHTML('afterbegin', `<div style="color:red; padding:2rem; text-align:center;">Fatal UI Fetch Crash: ${e.message || e}</div>`);
         }
     };
 
@@ -234,31 +249,29 @@ document.addEventListener('DOMContentLoaded', async () => {
     const getMatchingResults = (code, type) => {
         const cleanCode = (code || '').trim().toLowerCase();
 
-        // Find which students appeared. We cross map centerStudents array with centreResults.
+        const relevantResults = centreResults.filter(r => {
+            const rModCode = (r.custom_module_code || '').trim().toLowerCase();
+            const rTestName = (r.test_name || '').trim().toLowerCase();
+            const rType = (r.test_type || '').trim().toLowerCase();
+            if (type === 'daily') return rModCode === cleanCode || rTestName === cleanCode;
+            if (type === 'td') return (rType.includes('t&d') || rType === 'test & discussion') && (rModCode === cleanCode || rTestName === cleanCode);
+            if (type === 'gt') return rType.includes('marrow gt') && (rModCode === cleanCode || rTestName === cleanCode);
+            return false;
+        });
+
+        const resultMap = {};
+        for (let r of relevantResults) {
+            const rEmail = (r.user_email || '').trim().toLowerCase();
+            const rEnrolment = (r.enrolment_id || '').trim().toLowerCase();
+            if (rEmail) resultMap[rEmail] = r;
+            if (rEnrolment) resultMap[rEnrolment] = r;
+        }
+
         return centreStudents.map(student => {
             const studentEmail = (student.email_id || '').trim().toLowerCase();
             const studentEnrolment = (student.enrolment_id || '').trim().toLowerCase();
 
-            const result = centreResults.find(r => {
-                const rEmail = (r.user_email || '').trim().toLowerCase();
-                const rEnrolment = (r.enrolment_id || '').trim().toLowerCase();
-                
-                const isUserMatch = (studentEnrolment && rEnrolment === studentEnrolment) || (studentEmail && rEmail === studentEmail);
-                if (!isUserMatch) return false;
-
-                const rModCode = (r.custom_module_code || '').trim().toLowerCase();
-                const rTestName = (r.test_name || '').trim().toLowerCase();
-                const rType = (r.test_type || '').trim().toLowerCase();
-
-                if (type === 'daily') {
-                    return rModCode === cleanCode || rTestName === cleanCode;
-                } else if (type === 'td') {
-                    return (rType.includes('t&d') || rType === 'test & discussion') && (rModCode === cleanCode || rTestName === cleanCode);
-                } else if (type === 'gt') {
-                    return rType.includes('marrow gt') && (rModCode === cleanCode || rTestName === cleanCode);
-                }
-                return false;
-            });
+            const result = resultMap[studentEnrolment] || resultMap[studentEmail] || null;
 
             let score = '-';
             let percentile = '-';

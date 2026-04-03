@@ -98,42 +98,53 @@ document.addEventListener('DOMContentLoaded', async () => {
             centreSchedules = schedData || [];
 
             // FETCH RESULTS
-            const { data: resData } = await client.from('Test_Results').select('*');
-            centreResults = resData || [];
+            let resData = [];
+            let rFrom = 0;
+            const rStep = 4000;
+            while (true) {
+                const { data, error } = await client.from('Test_Results').select('*').range(rFrom, rFrom + rStep - 1);
+                if (error) throw error;
+                if (!data || data.length === 0) break;
+                resData = resData.concat(data);
+                if (data.length < rStep) break;
+                rFrom += rStep;
+            }
+            centreResults = resData;
 
             renderTables();
         } catch (e) {
             console.error(e);
+            const b = document.getElementById('daily-tbody');
+            if(b) b.insertAdjacentHTML('afterbegin', `<div style="color:red; padding:1rem; position:absolute; left:0; right:0; text-align:center;">Fatal Crash: ${e.message || e}</div>`);
         }
     };
 
     const getMatchingResults = (code, type) => {
         const cleanCode = (code || '').trim().toLowerCase();
 
+        const relevantResults = centreResults.filter(r => {
+            const rModCode = (r.custom_module_code || '').trim().toLowerCase();
+            const rTestName = (r.test_name || '').trim().toLowerCase();
+            const rType = (r.test_type || '').trim().toLowerCase();
+            if (type === 'daily') return rModCode === cleanCode || rTestName === cleanCode;
+            if (type === 'td') return (rType.includes('t&d') || rType === 'test & discussion') && (rModCode === cleanCode || rTestName === cleanCode);
+            if (type === 'gt') return rType.includes('marrow gt') && (rModCode === cleanCode || rTestName === cleanCode);
+            return false;
+        });
+
+        const resultMap = {};
+        for (let r of relevantResults) {
+            const rEmail = (r.user_email || '').trim().toLowerCase();
+            const rEnrolment = (r.enrolment_id || '').trim().toLowerCase();
+            if (rEmail) resultMap[rEmail] = r;
+            if (rEnrolment) resultMap[rEnrolment] = r;
+        }
+
         return centreStudents.map(student => {
             const studentEmail = (student.email_id || '').trim().toLowerCase();
             const studentEnrolment = (student.enrolment_id || '').trim().toLowerCase();
 
-            const result = centreResults.find(r => {
-                const rEmail = (r.user_email || '').trim().toLowerCase();
-                const rEnrolment = (r.enrolment_id || '').trim().toLowerCase();
-                
-                const isUserMatch = (studentEnrolment && rEnrolment === studentEnrolment) || (studentEmail && rEmail === studentEmail);
-                if (!isUserMatch) return false;
-
-                const rModCode = (r.custom_module_code || '').trim().toLowerCase();
-                const rTestName = (r.test_name || '').trim().toLowerCase();
-                const rType = (r.test_type || '').trim().toLowerCase();
-
-                if (type === 'daily') {
-                    return rModCode === cleanCode || rTestName === cleanCode;
-                } else if (type === 'td') {
-                    return (rType.includes('t&d') || rType === 'test & discussion') && (rModCode === cleanCode || rTestName === cleanCode);
-                } else if (type === 'gt') {
-                    return rType.includes('marrow gt') && (rModCode === cleanCode || rTestName === cleanCode);
-                }
-                return false;
-            });
+            const result = resultMap[studentEnrolment] || resultMap[studentEmail] || null;
 
             let score = '-';
             let percentile = '-';

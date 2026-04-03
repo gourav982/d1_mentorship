@@ -114,13 +114,24 @@ document.addEventListener('DOMContentLoaded', async () => {
             students = resStudents.data || [];
 
             // Fetch Global Test Results & Schedules (so we can filter by date)
-            const [resSched, resRes] = await Promise.all([
-                supabaseClient.from('Schedule').select('custom_module_code, marrow_gt, topic, subject, date, type, centre_name'),
-                supabaseClient.from('Test_Results').select('*')
+            const [resSched] = await Promise.all([
+                supabaseClient.from('Schedule').select('custom_module_code, marrow_gt, topic, subject, date, type, centre_name')
             ]);
             
+            let allRes = [];
+            let rFrom = 0;
+            const rStep = 4000;
+            while (true) {
+                const { data, error } = await supabaseClient.from('Test_Results').select('*').range(rFrom, rFrom + rStep - 1);
+                if (error) throw error;
+                if (!data || data.length === 0) break;
+                allRes = allRes.concat(data);
+                if (data.length < rStep) break;
+                rFrom += rStep;
+            }
+
             schedules = resSched.data || [];
-            testResults = resRes.data || [];
+            testResults = allRes;
             
             processData();
             renderTable();
@@ -132,15 +143,31 @@ document.addEventListener('DOMContentLoaded', async () => {
     };
 
     const processData = () => {
+        const resultsByEmail = {};
+        const resultsByEnrolment = {};
+
+        for (let r of testResults) {
+            const rEmail = (r.user_email || '').toLowerCase().trim();
+            const rID = (r.enrolment_id || '').toLowerCase().trim();
+            if (rEmail) {
+                if (!resultsByEmail[rEmail]) resultsByEmail[rEmail] = [];
+                resultsByEmail[rEmail].push(r);
+            }
+            if (rID) {
+                if (!resultsByEnrolment[rID]) resultsByEnrolment[rID] = [];
+                resultsByEnrolment[rID].push(r);
+            }
+        }
+
         processedData = students.map(student => {
-            // Filter results for this student
-            const sEmail = (student.email_id || '').toLowerCase();
-            const sID = (student.enrolment_id || '').toLowerCase();
+            const sEmail = (student.email_id || '').toLowerCase().trim();
+            const sID = (student.enrolment_id || '').toLowerCase().trim();
             
-            const studentResults = testResults.filter(r => 
-                (r.user_email || '').toLowerCase() === sEmail || 
-                (r.enrolment_id || '').toLowerCase() === sID
-            );
+            let combined = [];
+            if (sEmail && resultsByEmail[sEmail]) combined = combined.concat(resultsByEmail[sEmail]);
+            if (sID && resultsByEnrolment[sID]) combined = combined.concat(resultsByEnrolment[sID]);
+            
+            const studentResults = [...new Set(combined)];
             
             // Enrich with date from schedule
             const enrichedResults = studentResults.map(r => {
