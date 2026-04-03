@@ -92,26 +92,35 @@ document.addEventListener('DOMContentLoaded', async () => {
                 }
             }
 
-            // Fetch Students (If Centre Admin, only their centre, or all if Super Admin)
-            let studentsQuery = supabaseClient.from('access').select('enrolment_id, name, email_id, centre_name').eq('role', 'Students');
-            
-            // Allow Super admin all access, others restricted by centre_name
-            if (!isAdmin) {
-                if (currentUser && currentUser.centre_name) {
-                    studentsQuery = studentsQuery.eq('centre_name', currentUser.centre_name);
+            // Fetch Students Paginated (Bypass 1000 row API limit cap)
+            let allStudents = [];
+            let sFrom = 0;
+            const sStep = 1000;
+            let useCapital = false;
+
+            while (true) {
+                let studentsQuery = supabaseClient.from(useCapital ? 'Access' : 'access').select('enrolment_id, name, email_id, centre_name').eq('role', 'Students').range(sFrom, sFrom + sStep - 1);
+                
+                if (!isAdmin) {
+                    if (currentUser && currentUser.centre_name) {
+                        studentsQuery = studentsQuery.eq('centre_name', currentUser.centre_name);
+                    }
                 }
-            }
-            
-            let resStudents = await studentsQuery;
-            if (resStudents.error) {
-                // Try capitalized table
-                studentsQuery = supabaseClient.from('Access').select('enrolment_id, name, email_id, centre_name').eq('role', 'Students');
-                if (!isAdmin && currentUser && currentUser.centre_name) {
-                    studentsQuery = studentsQuery.eq('centre_name', currentUser.centre_name);
+                
+                const { data: stdData, error: stdErr } = await studentsQuery;
+
+                if (stdErr && !useCapital) {
+                    useCapital = true;
+                    continue; // Seamlessly retry with capitalized table name and re-run chunk
                 }
-                resStudents = await studentsQuery;
+                if (stdErr) throw stdErr;
+                
+                if (!stdData || stdData.length === 0) break;
+                allStudents = allStudents.concat(stdData);
+                if (stdData.length < sStep) break;
+                sFrom += sStep;
             }
-            students = resStudents.data || [];
+            students = allStudents;
 
             // Fetch Global Test Results & Schedules (so we can filter by date)
             const [resSched] = await Promise.all([
@@ -120,7 +129,7 @@ document.addEventListener('DOMContentLoaded', async () => {
             
             let allRes = [];
             let rFrom = 0;
-            const rStep = 4000;
+            const rStep = 1000;
             while (true) {
                 const { data, error } = await supabaseClient.from('Test_Results').select('*').range(rFrom, rFrom + rStep - 1);
                 if (error) throw error;

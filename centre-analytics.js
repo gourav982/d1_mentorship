@@ -101,20 +101,30 @@ document.addEventListener('DOMContentLoaded', async () => {
 
     const fetchGlobalData = async (centreStr) => {
         try {
-            // FETCH STUDENTS
-            let q = client.from('access').select('enrolment_id, name, email_id, centre_name').ilike('role', 'student%');
-            if (centreStr) q = q.ilike('centre_name', centreStr);
-            const { data: stdData, error: stdErr } = await q;
+            // FETCH STUDENTS PAGINATED
+            let allStudents = [];
+            let sFrom = 0;
+            const sStep = 1000;
+            let useCapital = false;
 
-            // Handle capitalization mismatch for `Access`
-            if (stdErr || !stdData) {
-                let q2 = client.from('Access').select('enrolment_id, name, email_id, centre_name').ilike('role', 'student%');
-                if (centreStr) q2 = q2.ilike('centre_name', centreStr);
-                const retry = await q2;
-                centreStudents = retry.data || [];
-            } else {
-                centreStudents = stdData;
+            while (true) {
+                let q = client.from(useCapital ? 'Access' : 'access').select('enrolment_id, name, email_id, centre_name').ilike('role', 'student%').range(sFrom, sFrom + sStep - 1);
+                if (centreStr) q = q.ilike('centre_name', centreStr);
+                
+                const { data: stdData, error: stdErr } = await q;
+
+                if (stdErr && !useCapital) {
+                    useCapital = true;
+                    continue; // Seamlessly retry with capitalized table name and re-run chunk
+                }
+                if (stdErr) throw stdErr;
+                
+                if (!stdData || stdData.length === 0) break;
+                allStudents = allStudents.concat(stdData);
+                if (stdData.length < sStep) break;
+                sFrom += sStep;
             }
+            centreStudents = allStudents;
 
             // FETCH SCHEDULES
             let sQ = client.from('Schedule').select('*');
@@ -125,7 +135,7 @@ document.addEventListener('DOMContentLoaded', async () => {
             // FETCH RESULTS
             let resData = [];
             let rFrom = 0;
-            const rStep = 4000; // Chunking optimally
+            const rStep = 1000; // Chunking optimally against DB cap
             while (true) {
                 const { data, error } = await client.from('Test_Results').select('*').range(rFrom, rFrom + rStep - 1);
                 if (error) throw error;
