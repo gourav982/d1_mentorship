@@ -498,90 +498,67 @@ select option {
     table-layout: fixed;
     border-collapse: collapse;
     width: 100%;
-    min-width: 1400px;
-    /* Increased to accommodate more columns */
 }
 
-/* Specific column control */
-th:nth-child(1),
-td:nth-child(1) {
-    width: 110px;
-}
-
-/* Date */
-th:nth-child(2),
-td:nth-child(2) {
-    width: 130px;
+/* Specific proportional column control using ONLY <th> */
+th:nth-child(1) {
+    width: 8%;
 }
 
 /* Subject */
-th:nth-child(3),
-td:nth-child(3) {
-    width: 120px;
+th:nth-child(2) {
+    width: 8%;
 }
 
 /* Type */
-th:nth-child(4),
-td:nth-child(4) {
-    width: auto;
-    min-width: 200px;
-    max-width: 300px;
+th:nth-child(3) {
+    width: 8%;
 }
 
 /* Topics */
-th:nth-child(5),
-td:nth-child(5) {
-    width: 130px;
+th:nth-child(4) {
+    width: 20%;
 }
 
 /* Marrow GT */
-th:nth-child(6),
-td:nth-child(6) {
-    width: 150px;
+th:nth-child(5) {
+    width: 9%;
 }
 
 /* Module Code */
-th:nth-child(7),
-td:nth-child(7) {
-    width: 160px;
+th:nth-child(6) {
+    width: 10%;
 }
 
 /* Timing */
-th:nth-child(8),
-td:nth-child(8) {
-    width: 70px;
+th:nth-child(7) {
+    width: 9%;
 }
 
 /* MCQs */
-th:nth-child(9),
-td:nth-child(9) {
-    width: 80px;
+th:nth-child(8) {
+    width: 4%;
 }
 
 /* Score */
-th:nth-child(10),
-td:nth-child(10) {
-    width: 90px;
+th:nth-child(9) {
+    width: 4%;
 }
 
 /* Percentile */
-th:nth-child(11),
-td:nth-child(11) {
-    width: 130px;
+th:nth-child(10) {
+    width: 5%;
 }
 
 /* Mark Complete */
-th:nth-child(12),
-td:nth-child(12) {
-    width: 200px;
+th:nth-child(11) {
+    width: 5%;
 }
 
 /* Remarks */
-th:nth-child(13),
-td:nth-child(13) {
-    width: 240px;
+th:nth-child(12) {
+    width: 10%;
     padding-right: 1.5rem !important;
-    /* Increase space at the end */
 }
 
 .schedule-table-container th {
@@ -593,9 +570,8 @@ td:nth-child(13) {
     z-index: 100;
     padding: 1rem 0.75rem;
     white-space: normal;
-    word-wrap: normal;
-    /* Don't break mid-word */
-    overflow-wrap: normal;
+    word-wrap: break-word;
+    overflow-wrap: break-word;
     min-width: 110px;
     /* Room for "PERCENTILE" */
     vertical-align: middle;
@@ -605,8 +581,8 @@ td:nth-child(13) {
 
 .schedule-table-container td {
     padding: 0.75rem 0.5rem;
-    word-wrap: normal;
-    overflow-wrap: normal;
+    word-wrap: break-word;
+    overflow-wrap: break-word;
     white-space: normal;
     vertical-align: middle;
     line-height: 1.4;

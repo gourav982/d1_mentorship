@@ -239,17 +239,6 @@ document.addEventListener('DOMContentLoaded', async () => {
 
         // --- Render Logic ---
         const renderMonthContent = (monthItems, isMobile) => {
-            // Re-calculate rowspans per month for desktop
-            const subjectRowspans = [];
-            let curSub = null, subCount = 0, subStart = 0;
-            monthItems.forEach((item, index) => {
-                if (item.subject === curSub) { subCount++; }
-                else {
-                    if (curSub !== null) subjectRowspans[subStart] = subCount;
-                    curSub = item.subject; subCount = 1; subStart = index;
-                }
-            });
-            subjectRowspans[subStart] = subCount;
 
             const gtRowspans = [];
             let curGT = null, gtCount = 0, gtStart = 0;
@@ -343,9 +332,8 @@ document.addEventListener('DOMContentLoaded', async () => {
                 const tableRows = monthItems.map((item, index) => {
                     const userProg = progressMap[item.id] || { is_done: false, remarks: '' };
                     const result = getResultsForItem(item);
-                    const subjectCell = subjectRowspans[index]
-                        ? `<td rowspan="${subjectRowspans[index]}" style="vertical-align: middle; border-right: 1px solid var(--glass-border); background: rgba(255,255,255,0.02); font-weight:700; color:var(--accent-color); text-transform:uppercase; font-size:0.8rem; letter-spacing:0.05em; text-align: center;">${item.subject || '-'}</td>`
-                        : '';
+                    
+                    const subjectCell = `<td style="vertical-align: middle; border-right: 1px solid var(--glass-border); background: rgba(255,255,255,0.02); font-weight:700; color:var(--accent-color); text-transform:uppercase; font-size:0.8rem; letter-spacing:0.05em; text-align: center; word-break: break-word; hyphens: auto;">${item.subject || '-'}</td>`;
 
                     const isLastDay = item.marrow_gt && item.marrow_gt !== '-' && item.date === gtLastDates[item.marrow_gt] && item.date === todayStr;
 
@@ -408,7 +396,7 @@ document.addEventListener('DOMContentLoaded', async () => {
 
                     return `
                         <tr class="schedule-row" data-date="${item.date}">
-                            <td style="white-space: nowrap;">${formatDate(item.date)}</td>
+                            <td style="word-break: break-word;">${formatDate(item.date)}</td>
                             ${subjectCell}
                             <td style="text-align: center;"><span style="font-size: 0.8rem; padding: 0.2rem 0.5rem; border-radius: 4px; background: rgba(255,255,255,0.05);">${item.type || 'Study Day'}</span></td>
                             <td style="min-width: 320px; max-width: 500px; white-space: normal; padding-right: 1.5rem;"><span style="font-weight: 600; line-height: 1.4; display: block;">${item.topic}</span></td>
