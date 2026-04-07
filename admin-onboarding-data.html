@@ -1,0 +1,285 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <style>
+        html,
+        body {
+            background: #0d121f !important;
+            color: #fff;
+            margin: 0;
+            height: 100vh;
+            overflow: hidden;
+        }
+    </style>
+    <title>DBMCI One | Onboarding Data</title>
+    <link rel="icon" type="image/png" href="favicon.png">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link
+        href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600&family=Outfit:wght@300;400;700&display=swap"
+        rel="stylesheet">
+    <link rel="stylesheet" href="style.css">
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <style>
+        body {
+            display: none;
+        }
+
+        .dashboard-wrapper {
+            height: 100vh;
+            display: flex;
+            flex-direction: column;
+        }
+
+        .dashboard-container {
+            flex: 1;
+            display: flex;
+            overflow: hidden;
+        }
+
+        .dashboard-main {
+            flex: 1;
+            overflow-y: auto;
+            padding: 2rem;
+            display: flex;
+            flex-direction: column;
+        }
+
+        /* Hidden until auth */
+        .onboarding-table-container table {
+            width: 100%;
+            border-collapse: collapse;
+            table-layout: fixed;
+            min-width: 1600px;
+        }
+
+        .onboarding-table-container th {
+            padding: 0.75rem 0.5rem;
+            text-align: center;
+            vertical-align: middle;
+            font-size: 0.75rem;
+            color: var(--text-secondary);
+            background: rgba(15, 23, 42, 0.98);
+            font-weight: 700;
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+            position: sticky;
+            top: 0;
+            z-index: 10;
+            backdrop-filter: blur(10px);
+            border-bottom: 2px solid var(--accent-color);
+        }
+
+        .sort-icon {
+            display: inline-block;
+            margin-left: 4px;
+            width: 0;
+            height: 0;
+            border-left: 4px solid transparent;
+            border-right: 4px solid transparent;
+            vertical-align: middle;
+            opacity: 0.5;
+        }
+
+        .sort-asc { border-bottom: 5px solid var(--accent-color); border-top: none; opacity: 1; }
+        .sort-desc { border-top: 5px solid var(--accent-color); border-bottom: none; opacity: 1; }
+
+        .loading-spinner {
+            width: 18px;
+            height: 18px;
+            border: 2px solid rgba(255,255,255,0.1);
+            border-top-color: var(--accent-color);
+            border-radius: 50%;
+            animation: spin 0.8s linear infinite;
+        }
+
+        @keyframes spin { to { transform: rotate(360deg); } }
+
+        .onboarding-table-container td {
+            padding: 0.75rem 0.5rem;
+            border-bottom: 1px solid var(--glass-border);
+            font-size: 0.8rem;
+            color: var(--text-primary);
+            vertical-align: middle;
+            text-align: center;
+            word-wrap: break-word;
+            overflow-wrap: break-word;
+            height: 70px; /* SLEEK HEIGHT */
+        }
+
+        .details-wrapper {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            height: 100%;
+            width: 100%;
+        }
+
+        .details-text {
+            display: -webkit-box;
+            -webkit-line-clamp: 2;
+            line-clamp: 2;
+            -webkit-box-orient: vertical;
+            overflow: hidden;
+            line-height: 1.4;
+            max-height: 2.8em; 
+            transition: all 0.3s ease;
+            position: relative;
+            width: 100%;
+        }
+
+        .details-text.expanded {
+            display: block;
+            -webkit-line-clamp: unset;
+            line-clamp: unset;
+            max-height: none;
+            overflow: visible;
+        }
+
+        .read-more-btn {
+            color: var(--accent-color);
+            font-size: 0.65rem;
+            font-weight: 600;
+            background: rgba(56, 189, 248, 0.05);
+            border: 1px solid rgba(56, 189, 248, 0.1);
+            padding: 1px 4px;
+            border-radius: 3px;
+            cursor: pointer;
+            margin-top: 4px;
+            display: inline-block;
+        }
+
+        .search-container-mini {
+            background: rgba(255, 255, 255, 0.05);
+            border: 1px solid var(--glass-border);
+            border-radius: 0.5rem;
+            padding: 0.4rem 0.75rem;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            width: 250px;
+        }
+
+        .search-container-mini input {
+            background: none;
+            border: none;
+            color: #fff;
+            width: 100%;
+            font-size: 0.8rem;
+            outline: none;
+        }
+    </style>
+</head>
+
+<body>
+    <div class="dashboard-wrapper">
+        <header class="top-header">
+            <div class="header-left">
+                <button id="sidebar-toggle-btn" class="sidebar-toggle">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none"
+                        stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                        <line x1="3" y1="12" x2="21" y2="12"></line>
+                        <line x1="3" y1="6" x2="21" y2="6"></line>
+                        <line x1="3" y1="18" x2="21" y2="18"></line>
+                    </svg>
+                </button>
+                <div class="sidebar-logo">DBMCI One Mentorship</div>
+            </div>
+            <div class="header-actions">
+                <div class="user-profile" id="user-profile-btn">
+                    <div class="avatar" id="avatar-circle">?</div>
+                    <div class="profile-info">
+                        <span class="name" id="display-name">Loading...</span>
+                        <span class="role" id="display-role">Verifying...</span>
+                    </div>
+                </div>
+            </div>
+        </header>
+
+        <div class="dashboard-container">
+            <aside class="sidebar">
+                <nav class="sidebar-nav" id="sidebar-nav-container">
+                    <!-- Sidebar will be updated in JS -->
+                </nav>
+            </aside>
+
+            <main class="dashboard-main" style="padding: 1rem 1.50rem;">
+                <div class="admin-page-header"
+                    style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1rem;">
+                    <div>
+                        <h1 style="font-size: 1.5rem; margin-bottom: 0.25rem;">Onboarding Form Data</h1>
+                        <p style="color: var(--text-secondary); font-size: 0.8rem;">Consolidated table of student responses.</p>
+                    </div>
+                    <div style="display: flex; gap: 0.75rem; align-items: center;">
+                        <div class="search-container-mini">
+                            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="opacity: 0.5;">
+                                <circle cx="11" cy="11" r="8"></circle>
+                                <line x1="21" y1="21" x2="16.65" y2="16.65"></line>
+                            </svg>
+                            <input type="text" id="onboarding-search" placeholder="Search students...">
+                        </div>
+                        <div id="centre-filter-wrapper" style="display: flex; align-items: center; gap: 0.5rem; background: rgba(56, 189, 248, 0.05); padding: 0.3rem 0.75rem; border: 1px solid var(--accent-color); border-radius: 0.5rem;">
+                            <span style="font-size: 0.7rem; color: var(--accent-color); font-weight: 600; text-transform: uppercase;">Centre:</span>
+                            <select id="centre-select" style="background: none; border: none; color: #fff; font-weight: 700; outline: none; cursor: pointer; padding: 1px 2px; font-size: 0.8rem;">
+                                <option value="" style="color: #000;">Select Centre</option>
+                            </select>
+                        </div>
+                        <div class="stat-badge" style="background: rgba(34, 197, 94, 0.1); color: #22c55e; padding: 0.4rem 0.75rem; border-radius: 0.5rem; font-weight: 600; font-size: 0.75rem; border: 1px solid rgba(34, 197, 94, 0.2);">
+                            Total: <span id="onboarding-count">0</span>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="onboarding-table-container"
+                    style="background: var(--glass-bg); border-radius: 1rem; border: 1px solid var(--glass-border); overflow: auto; flex: 1;">
+                    <table>
+                        <thead>
+                            <tr>
+                                <th style="width: 140px; text-align: center; cursor: pointer;" onclick="toggleSort('enrolment_id')">
+                                    Enrolment ID <span id="sort-enrolment_id" class="sort-icon"></span>
+                                </th>
+                                <th style="width: 200px; text-align: center; cursor: pointer;" onclick="toggleSort('name')">
+                                    Student Name <span id="sort-name" class="sort-icon"></span>
+                                </th>
+                                <th style="width: 150px; text-align: center;">Target Exam</th>
+                                <th style="width: 100px; text-align: center; cursor: pointer;" onclick="toggleSort('target_rank')">
+                                    Target Rank <span id="sort-target_rank" class="sort-icon"></span>
+                                </th>
+                                <th style="width: 100px; text-align: center; cursor: pointer;" onclick="toggleSort('latest_gt_score')">
+                                    GT Score <span id="sort-latest_gt_score" class="sort-icon"></span>
+                                </th>
+                                <th style="width: 120px; text-align: center; cursor: pointer;" onclick="toggleSort('latest_gt_percentile')">
+                                    GT % <span id="sort-latest_gt_percentile" class="sort-icon"></span>
+                                </th>
+                                <th style="width: 350px; text-align: center;">Biggest Challenge</th>
+                                <th style="width: 350px; text-align: center;">Expectation</th>
+                                <th style="width: 120px; text-align: center; cursor: pointer;" onclick="toggleSort('created_at')">
+                                    Date <span id="sort-created_at" class="sort-icon"></span>
+                                </th>
+                            </tr>
+                        </thead>
+                        <tbody id="onboarding-body">
+                            <tr>
+                                <td colspan="9" style="text-align: center; padding: 5rem; color: var(--text-secondary);">
+                                    <div style="display: flex; flex-direction: column; align-items: center; gap: 1rem;">
+                                        <div class="loading-spinner"></div>
+                                        Fetching student responses...
+                                    </div>
+                                </td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+            </main>
+        </div>
+    </div>
+
+    <script src="supabase-init.js"></script>
+    <script src="admin-onboarding-data.js"></script>
+</body>
+
+</html>
