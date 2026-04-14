@@ -340,7 +340,7 @@ document.addEventListener('DOMContentLoaded', async () => {
         let rows = activeStudents.map(student => {
             const metrics = getMetrics(student, dateCondition, dateVal1, dateVal2);
             
-            const renderPercent = (count, maxPassed) => {
+            const renderPercentHtml = (count, maxPassed) => {
                 if (maxPassed === 0) return '-';
                 const p = Math.round((Math.min(count, maxPassed) / maxPassed) * 100);
                 return `
@@ -351,15 +351,25 @@ document.addEventListener('DOMContentLoaded', async () => {
                 `;
             };
 
+            const getPercentVal = (count, maxPassed) => maxPassed === 0 ? -1 : Math.round((Math.min(count, maxPassed) / maxPassed) * 100);
+
             return {
                 enrolment_id: student.enrolment_id || '-',
                 name: student.name || '-',
                 email_id: student.email_id || '',
-                cm_percent: elapsedCMSize > 0 ? renderPercent(metrics.cmCount, elapsedCMSize) : '-',
+                // Raw values for sorting
+                cm_percent_val: getPercentVal(metrics.cmCount, elapsedCMSize),
+                td_percent_val: getPercentVal(metrics.tdCount, elapsedTDSize),
+                gt_percent_val: getPercentVal(metrics.gtCount, elapsedGTSize),
+                cm_median_val: metrics.cmMedian === '-' ? -1 : parseFloat(metrics.cmMedian),
+                td_median_val: metrics.tdMedian === '-' ? -1 : parseFloat(metrics.tdMedian),
+                gt_median_val: metrics.gtMedian === '-' ? -1 : parseFloat(metrics.gtMedian),
+                // HTML for rendering
+                cm_percent: renderPercentHtml(metrics.cmCount, elapsedCMSize),
                 cm_median: metrics.cmMedian,
-                td_percent: elapsedTDSize > 0 ? renderPercent(metrics.tdCount, elapsedTDSize) : '-',
+                td_percent: renderPercentHtml(metrics.tdCount, elapsedTDSize),
                 td_median: metrics.tdMedian,
-                gt_percent: elapsedGTSize > 0 ? renderPercent(metrics.gtCount, elapsedGTSize) : '-',
+                gt_percent: renderPercentHtml(metrics.gtCount, elapsedGTSize),
                 gt_median: metrics.gtMedian
             };
         });
@@ -374,14 +384,17 @@ document.addEventListener('DOMContentLoaded', async () => {
 
         // Sort data
         rows.sort((a, b) => {
-            let valA = a[currentSortColumn];
-            let valB = b[currentSortColumn];
+            let sortCol = currentSortColumn;
+            
+            // Map the display column to the raw numeric column for sorting
+            if (sortCol.includes('percent')) sortCol = sortCol + '_val';
+            if (sortCol.includes('median')) sortCol = sortCol + '_val';
 
-            // Treat medians and percents as numbers if possible
-            if (currentSortColumn.includes('median') || currentSortColumn.includes('percent')) {
-                valA = valA === '-' ? -1 : parseFloat(String(valA).replace('%', ''));
-                valB = valB === '-' ? -1 : parseFloat(String(valB).replace('%', ''));
-            }
+            let valA = a[sortCol];
+            let valB = b[sortCol];
+
+            if (typeof valA === 'string') valA = valA.toLowerCase();
+            if (typeof valB === 'string') valB = valB.toLowerCase();
 
             if (valA < valB) return currentSortAsc ? -1 : 1;
             if (valA > valB) return currentSortAsc ? 1 : -1;
